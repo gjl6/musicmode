@@ -1,0 +1,184 @@
+
+
+:root.clay-light {
+
+  --color-primary: #16A34A;
+  --color-on-primary: #FFFFFF;
+  --color-primary-rgb: 22 163 74;
+  --color-secondary: #22C55E;
+  --color-secondary-rgb: 34 197 94;
+  --color-accent: #16A34A;
+  --color-accent-rgb: 22 163 74;
+
+
+  --color-success: #10B981;
+  --color-success-rgb: 16 185 129;
+  --color-warning: #F59E0B;
+  --color-warning-rgb: 245 158 11;
+  --color-destructive: #EF4444;
+  --color-destructive-rgb: 239 68 68;
+
+
+  --color-bg: #E2EDDE;
+  --color-bg-secondary: #D8E6D2;
+  --color-surface: #E8F3E5;
+  --color-surface-hover: #DFEDDA;
+  --color-surface-elevated: #EDF6EA;
+  --color-sidebar-bg: #D8E6D2;
+  --color-sidebar-hover: rgba(22 163 74 / 0.06);
+
+
+  --color-text: #1A2E1F;
+  --color-text-secondary: #4A6B4F;
+  --color-text-tertiary: #7A9B7F;
+
+
+  --color-border: rgba(22 163 74 / 0.18);
+  --color-border-light: rgba(22 163 74 / 0.06);
+  --color-scrollbar: rgba(22 163 74 / 0.15);
+  --color-tag-bg: rgba(22 163 74 / 0.06);
+  --color-tag-text: #4A6B4F;
+  --color-folder: #CA8A40;
+
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+
+  --border-width-default: 2px;
+  --border-width-strong: 3px;
+
+
+  --gradient-page: linear-gradient(160deg, #E2EDDE 0%, #D6E4D0 50%, #DCE8D8 100%);
+  --gradient-sidebar: linear-gradient(180deg, #DFEAD8 0%, #D4E2CC 100%);
+  --gradient-card: linear-gradient(145deg, #EBF5E8 0%, #E0EEDC 50%, #E4F0E0 100%);
+  --gradient-card-hover: linear-gradient(145deg, #F4FBF2 0%, #E8F4E4 50%, #ECF6E8 100%);
+  --gradient-button: linear-gradient(180deg, #F0F8EE 0%, #E0EEDE 100%);
+  --gradient-button-primary: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
+  --gradient-input: linear-gradient(180deg, #EBF5E8 0%, #E2F0DE 100%);
+  --gradient-table-tray: linear-gradient(180deg, #C4DAC4 0%, #B6CCB6 100%);
+  --gradient-table-row: linear-gradient(180deg, #E4F0E0 0%, #D8E6D4 100%);
+  --gradient-tool-card: linear-gradient(145deg, #E8F3E5 0%, #DDEAD8 50%, #E2EEE0 100%);
+  --gradient-tool-card-hover: linear-gradient(145deg, #F0F8EE 0%, #E5F2E0 50%, #EAF4E6 100%);
+
+
+  --shadow-sm: inset -2px -2px 8px rgba(0 0 0 / 0.04), inset 2px 2px 8px rgba(255 255 255 / 0.9), 2px 2px 6px rgba(22 163 74 / 0.06);
+  --shadow-md: inset -2px -2px 8px rgba(0 0 0 / 0.04), inset 2px 2px 8px rgba(255 255 255 / 0.9), 4px 4px 16px rgba(22 163 74 / 0.1);
+  --shadow-lg: inset -2px -2px 8px rgba(0 0 0 / 0.04), inset 2px 2px 8px rgba(255 255 255 / 0.9), 8px 8px 24px rgba(22 163 74 / 0.14);
+  --shadow-player: inset 1px 1px 4px rgba(255 255 255 / 0.5), 0 -4px 16px rgba(22 163 74 / 0.1);
+
+
+  --effect-card-inner: inset -2px -2px 8px rgba(0 0 0 / 0.04), inset 2px 2px 8px rgba(255 255 255 / 0.9);
+  --effect-card-outer: 4px 4px 14px rgba(22 163 74 / 0.1), -2px -2px 6px rgba(255 255 255 / 0.6);
+  --effect-press: inset 2px 2px 8px rgba(0 0 0 / 0.06), inset -2px -2px 4px rgba(255 255 255 / 0.6);
+  --effect-button-inner: inset 1px 1px 4px rgba(255 255 255 / 0.6), inset -1px -1px 2px rgba(0 0 0 / 0.04);
+  --effect-button-outer: 2px 2px 6px rgba(22 163 74 / 0.08), -1px -1px 3px rgba(255 255 255 / 0.4);
+  --effect-input-inner: inset 1px 1px 4px rgba(0 0 0 / 0.04), inset -1px -1px 2px rgba(255 255 255 / 0.8);
+  --effect-selection-bar: 0 0 8px rgb(var(--color-accent-rgb) / 0.6), 0 0 16px rgb(var(--color-accent-rgb) / 0.25);
+  --effect-selection-glow: 3px 3px 10px rgba(22 163 74 / 0.1);
+
+
+  --selection-bar-width: 3px;
+  --selection-bar-shadow: inset 1px 0 2px rgba(255 255 255 / 0.3);
+
+
+  --transform-card-hover: translateY(-3px);
+  --transform-card-active: scale(0.97) translateY(0);
+  --scale-button-active: 0.95;
+  --transition-button-active: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+
+  --n-color-primary: var(--color-accent);
+  --n-color-success: var(--color-success);
+  --n-color-warning: var(--color-warning);
+  --n-color-error: var(--color-destructive);
+}
+
+
+:root.dark.clay-dark {
+
+  --color-primary: #4ADE80;
+  --color-on-primary: #0A1F12;
+  --color-primary-rgb: 74 222 128;
+  --color-secondary: #34D399;
+  --color-secondary-rgb: 52 211 153;
+  --color-accent: #4ADE80;
+  --color-accent-rgb: 74 222 128;
+
+
+  --color-success: #34D399;
+  --color-success-rgb: 52 211 153;
+  --color-warning: #FBBF24;
+  --color-warning-rgb: 251 191 36;
+  --color-destructive: #F87171;
+  --color-destructive-rgb: 248 113 113;
+
+
+  --color-bg: #0D160F;
+  --color-bg-secondary: #132016;
+  --color-surface: #1A281E;
+  --color-surface-hover: #203226;
+  --color-surface-elevated: #24382C;
+  --color-sidebar-bg: #0B140D;
+  --color-sidebar-hover: rgba(74 222 128 / 0.06);
+
+
+  --color-text: #E0EDE4;
+  --color-text-secondary: #8BA895;
+  --color-text-tertiary: #5A7062;
+
+
+  --color-border: rgba(74 222 128 / 0.12);
+  --color-border-light: rgba(74 222 128 / 0.05);
+  --color-scrollbar: rgba(74 222 128 / 0.12);
+  --color-tag-bg: rgba(74 222 128 / 0.08);
+  --color-tag-text: #8BA895;
+  --color-folder: #CA8A40;
+
+
+  --gradient-page: linear-gradient(160deg, #0D160F 0%, #101C13 50%, #121E16 100%);
+  --gradient-sidebar: linear-gradient(180deg, #0C140E 0%, #08100A 100%);
+  --gradient-card: linear-gradient(145deg, #1E2C22 0%, #18241C 50%, #1A261E 100%);
+  --gradient-card-hover: linear-gradient(145deg, #26362C 0%, #203026 50%, #223228 100%);
+  --gradient-button: linear-gradient(180deg, #223228 0%, #18241C 100%);
+  --gradient-button-primary: linear-gradient(180deg, #4ADE80 0%, #22C55E 100%);
+  --gradient-input: linear-gradient(180deg, #162018 0%, #121C16 100%);
+  --gradient-table-tray: linear-gradient(180deg, #081209 0%, #050E07 100%);
+  --gradient-table-row: linear-gradient(180deg, #141E16 0%, #0F1913 100%);
+  --gradient-tool-card: linear-gradient(145deg, #1A261E 0%, #141E18 50%, #18221C 100%);
+  --gradient-tool-card-hover: linear-gradient(145deg, #24322A 0%, #1E2C22 50%, #202E26 100%);
+
+
+  --shadow-sm: inset -1px -1px 4px rgba(255 255 255 / 0.02), inset 2px 2px 6px rgba(0 0 0 / 0.3), 2px 2px 8px rgba(0 0 0 / 0.3);
+  --shadow-md: inset -1px -1px 4px rgba(255 255 255 / 0.02), inset 2px 2px 6px rgba(0 0 0 / 0.3), 4px 4px 18px rgba(0 0 0 / 0.4);
+  --shadow-lg: inset -1px -1px 4px rgba(255 255 255 / 0.02), inset 2px 2px 6px rgba(0 0 0 / 0.3), 8px 8px 28px rgba(0 0 0 / 0.5);
+  --shadow-player: inset 1px 1px 3px rgba(255 255 255 / 0.02), 0 -4px 20px rgba(0 0 0 / 0.5);
+
+
+  --effect-card-inner: inset -1px -1px 4px rgba(255 255 255 / 0.02), inset 2px 2px 6px rgba(0 0 0 / 0.3);
+  --effect-card-outer: 4px 4px 16px rgba(0 0 0 / 0.4), -2px -2px 6px rgba(255 255 255 / 0.02);
+  --effect-press: inset 2px 2px 8px rgba(0 0 0 / 0.4), inset -1px -1px 3px rgba(255 255 255 / 0.03);
+  --effect-button-inner: inset 1px 1px 3px rgba(255 255 255 / 0.04), inset -1px -1px 2px rgba(0 0 0 / 0.2);
+  --effect-button-outer: 2px 2px 8px rgba(0 0 0 / 0.3);
+  --effect-input-inner: inset 1px 1px 4px rgba(0 0 0 / 0.2), inset -1px -1px 2px rgba(255 255 255 / 0.02);
+  --effect-selection-bar: 0 0 8px rgb(74 222 128 / 0.5), 0 0 16px rgb(74 222 128 / 0.2);
+  --effect-selection-glow: 3px 3px 10px rgba(74 222 128 / 0.12);
+
+
+  --selection-bar-width: 3px;
+  --selection-bar-shadow: inset 1px 0 2px rgba(255 255 255 / 0.1);
+
+
+  --transform-card-hover: translateY(-3px);
+  --transform-card-active: scale(0.97) translateY(0);
+  --scale-button-active: 0.95;
+  --transition-button-active: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+
+  --n-color-primary: var(--color-accent);
+  --n-color-success: var(--color-success);
+  --n-color-warning: var(--color-warning);
+  --n-color-error: var(--color-destructive);
+}

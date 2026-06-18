@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.playback.mapper.PlayQueueMapper">
+
+    <select id="findByUsername" resultType="com.gjl.music.playback.model.PlayQueueEntry">
+        SELECT id, username, song_id AS songId,
+               position, added_at AS addedAt
+        FROM play_queue
+        WHERE username = #{username}
+        ORDER BY position
+    </select>
+
+    <insert id="insert">
+        INSERT INTO play_queue (username, song_id, position, added_at)
+        VALUES (#{username}, #{songId}, #{position}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <delete id="clearByUsername">
+        DELETE FROM play_queue WHERE username = #{username}
+    </delete>
+
+    <delete id="deleteByUsernameAndPosition">
+        DELETE FROM play_queue
+        WHERE username = #{username} AND position = #{position}
+    </delete>
+
+    <insert id="batchInsert">
+        INSERT INTO play_queue (username, song_id, position, added_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.username}, #{item.songId}, #{item.position}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+</mapper>

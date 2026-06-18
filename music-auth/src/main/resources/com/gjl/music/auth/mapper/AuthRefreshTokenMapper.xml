@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.auth.mapper.AuthRefreshTokenMapper">
+
+    <resultMap id="baseMap" type="com.gjl.music.auth.model.AuthRefreshToken">
+        <id     column="id"          property="id"/>
+        <result column="user_id"     property="userId"/>
+        <result column="token"       property="token"/>
+        <result column="expires_at"  property="expiresAt"/>
+        <result column="revoked"     property="revoked"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="findByToken" resultMap="baseMap">
+        SELECT * FROM auth_refresh_token WHERE token = #{token}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO auth_refresh_token (id, user_id, token, expires_at, revoked, create_time)
+        VALUES (#{id}, #{userId}, #{token}, #{expiresAt}, #{revoked},
+                COALESCE(#{createTime}, CURRENT_TIMESTAMP))
+    </insert>
+
+    <delete id="revokeByToken">
+        DELETE FROM auth_refresh_token WHERE token = #{token}
+    </delete>
+
+    <delete id="revokeByUserId">
+        DELETE FROM auth_refresh_token WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteExpired">
+        DELETE FROM auth_refresh_token WHERE expires_at &lt; CURRENT_TIMESTAMP
+    </delete>
+
+</mapper>

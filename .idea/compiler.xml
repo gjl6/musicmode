@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Annotation profile for Music Mode - Parent" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="F:/apache-maven-3.9.4/mvn-repo/org/projectlombok/lombok/1.18.36/lombok-1.18.36.jar" />
+        </processorPath>
+        <module name="music-playback" />
+        <module name="music-auth" />
+        <module name="music-editor" />
+        <module name="music-common" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="21">
+      <module name="music-core" target="21" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="music-auth" options="-parameters" />
+      <module name="music-common" options="-parameters" />
+      <module name="music-core" options="-parameters" />
+      <module name="music-editor" options="-parameters" />
+      <module name="music-playback" options="-parameters" />
+    </option>
+  </component>
+</project>

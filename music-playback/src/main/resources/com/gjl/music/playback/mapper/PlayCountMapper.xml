@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.playback.mapper.PlayCountMapper">
+
+
+    <insert id="incPlayCount" databaseId="mysql">
+        INSERT INTO play_count (user_id, item_id, item_type, play_count, last_played_at)
+        VALUES (#{userId}, #{itemId}, #{itemType}, 1, NOW())
+        ON DUPLICATE KEY UPDATE
+            play_count = IF(TIMESTAMPDIFF(SECOND, last_played_at, NOW()) >= 30,
+                            play_count + 1, play_count),
+            last_played_at = IF(TIMESTAMPDIFF(SECOND, last_played_at, NOW()) >= 30,
+                                NOW(), last_played_at)
+    </insert>
+
+
+    <insert id="incPlayCount" databaseId="h2">
+        INSERT INTO play_count (user_id, item_id, item_type, play_count, last_played_at)
+        VALUES (#{userId}, #{itemId}, #{itemType}, 1, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            play_count = play_count + 1,
+            last_played_at = CURRENT_TIMESTAMP
+    </insert>
+
+
+    <select id="batchGetSongCounts" resultType="java.util.HashMap">
+        SELECT CAST(item_id AS SIGNED) AS itemId, play_count
+        FROM play_count
+        WHERE user_id = #{userId}
+          AND item_type = 'song'
+          AND item_id IN
+          <foreach collection="songIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <select id="getPlayCount" resultType="java.lang.Integer">
+        SELECT play_count FROM play_count
+        WHERE user_id = #{userId} AND item_id = #{itemId} AND item_type = #{itemType}
+    </select>
+
+
+    <delete id="deleteByItem">
+        DELETE FROM play_count WHERE item_id = #{itemId} AND item_type = #{itemType}
+    </delete>
+
+</mapper>

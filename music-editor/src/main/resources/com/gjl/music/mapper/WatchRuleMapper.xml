@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.WatchRuleMapper">
+
+    <resultMap id="WatchRuleMap" type="com.gjl.music.model.WatchRule">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="watchPath" column="watch_path"/>
+        <result property="enabled" column="enabled"/>
+        <result property="autoTrigger" column="auto_trigger"/>
+        <result property="stepsJson" column="steps_json"/>
+        <result property="priority" column="priority"/>
+        <result property="description" column="description"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="WatchRuleMap">
+        SELECT * FROM watch_profile ORDER BY priority DESC, id ASC
+    </select>
+
+    <select id="selectEnabled" resultMap="WatchRuleMap">
+        SELECT * FROM watch_profile WHERE enabled = TRUE ORDER BY priority DESC, id ASC
+    </select>
+
+    <select id="selectAutoTrigger" resultMap="WatchRuleMap">
+        SELECT * FROM watch_profile
+        WHERE enabled = TRUE AND auto_trigger = TRUE
+        ORDER BY priority DESC, id ASC
+    </select>
+
+    <select id="selectById" resultMap="WatchRuleMap">
+        SELECT * FROM watch_profile WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO watch_profile (name, watch_path, enabled, auto_trigger, steps_json, priority, description)
+        VALUES (#{name}, #{watchPath}, #{enabled}, #{autoTrigger}, #{stepsJson}, #{priority}, #{description})
+    </insert>
+
+    <update id="update">
+        UPDATE watch_profile SET
+            name = #{name},
+            watch_path = #{watchPath},
+            enabled = #{enabled},
+            auto_trigger = #{autoTrigger},
+            steps_json = #{stepsJson},
+            priority = #{priority},
+            description = #{description}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM watch_profile WHERE id = #{id}
+    </delete>
+
+</mapper>

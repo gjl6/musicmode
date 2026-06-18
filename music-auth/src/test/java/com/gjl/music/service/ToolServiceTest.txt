@@ -1,0 +1,143 @@
+package com.gjl.music.service;
+
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * ToolService 集成测试 —— 加载完整 Spring 上下文，验证 5 个工具方法。
+ *
+ * <p>repair / convert / write 模板末尾包含 writer，返回写入结果。
+ * enrich 返回元数据，dedup 返回重复组。</p>
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class ToolServiceTest {
+
+    @Autowired
+    private ToolService toolService;
+
+    private static final String TEST_FILE = "10 回十八(无线电视剧＜梁山伯与祝英台＞插曲).mp3";
+    private static final String TEST_DIR = "宝石Gem - 副本/";
+
+    // ── repairEncoding（写入结果）──
+
+    @Test
+    @DisplayName("修复单个 MP3 文件并写回")
+    void repairSingleFile() {
+        Map<String, Object> result = toolService.repairEncoding(TEST_FILE, null);
+
+        assertNotNull(result.get("success"), "应有 success 字段");
+        assertTrue(result.get("durationMs") instanceof Number);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.get("data");
+        assertNotNull(data, "data 不能为空");
+        assertTrue(data.containsKey("totalCount"), "应有 totalCount");
+        System.out.println("repair 结果: success=" + result.get("success")
+                + ", total=" + data.get("totalCount")
+                + ", ok=" + data.get("successCount")
+                + ", fail=" + data.get("failCount"));
+    }
+
+    @Test
+    @DisplayName("只修复指定字段并写回")
+    void repairWithFields() {
+        Map<String, Object> options = Map.of(
+                "encoding-repair", Map.of("fields", List.of("song.title", "artist.artistName"))
+        );
+        Map<String, Object> result = toolService.repairEncoding(TEST_FILE, options);
+
+        assertNotNull(result.get("success"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.get("data");
+        System.out.println("指定字段 repair: ok=" + data.get("successCount")
+                + ", fail=" + data.get("failCount"));
+    }
+
+    @Test
+    @DisplayName("修复 FLAC 文件并写回")
+    void repairFlacFile() {
+        Map<String, Object> result = toolService.repairEncoding("蔡依林 - 爱无赦.flac", null);
+
+        assertNotNull(result.get("success"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.get("data");
+        System.out.println("FLAC repair: ok=" + data.get("successCount")
+                + ", fail=" + data.get("failCount"));
+    }
+
+    @Test
+    @DisplayName("不存在的文件返回错误")
+    void repairNonExistentFile() {
+        Map<String, Object> result = toolService.repairEncoding("不存在的文件_xyz.mp3", null);
+
+        Object success = result.get("success");
+        System.out.println("不存在文件: success=" + success + ", error=" + result.get("error"));
+        // 可能 success=false，或者 success=true 但 failCount=1
+    }
+
+    @Test
+    @DisplayName("修复整个目录并写回")
+    void repairDirectory() {
+        Map<String, Object> result = toolService.repairEncoding(TEST_DIR, null);
+
+        assertNotNull(result.get("success"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.get("data");
+        assertNotNull(data);
+        System.out.println("目录 repair: " + data.get("totalCount") + " 个文件, ok="
+                + data.get("successCount") + ", fail=" + data.get("failCount"));
+    }
+
+    // ── 全部工具冒烟测试 ──
+
+    @Test
+    @DisplayName("全部 5 个工具冒烟测试")
+    void allToolsSmokeTest() {
+        // 1. repair（写入结果）
+        Map<String, Object> r1 = toolService.repairEncoding(TEST_FILE, null);
+        assertTrue(r1.containsKey("success"), "repair 应有 success");
+        printWriteResult("repair", r1);
+
+        // 2. convert（写入结果）
+        Map<String, Object> r2 = toolService.convertChinese(TEST_FILE, null);
+        assertTrue(r2.containsKey("success"), "convert 应有 success");
+        printWriteResult("convert", r2);
+
+        // 3. enrich（元数据，可能因网络失败）
+        Map<String, Object> r3 = toolService.enrichMetadata(TEST_FILE, null);
+        assertTrue(r3.containsKey("success"), "enrich 应有 success");
+        System.out.println("enrich: success=" + r3.get("success")
+                + ", duration=" + r3.get("durationMs") + "ms");
+
+        // 4. dedup
+        Map<String, Object> r4 = toolService.detectDuplicates(TEST_FILE, null);
+        assertTrue(r4.containsKey("success"), "dedup 应有 success");
+        System.out.println("dedup: success=" + r4.get("success")
+                + ", error=" + r4.get("error"));
+
+        // 5. write（写入结果）
+        Map<String, Object> r5 = toolService.writeTags(TEST_FILE, null);
+        assertTrue(r5.containsKey("success"), "write 应有 success");
+        printWriteResult("write", r5);
+    }
+
+    private static void printWriteResult(String label, Map<String, Object> result) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.get("data");
+        if (data != null) {
+            System.out.println(label + ": success=" + result.get("success")
+                    + ", total=" + data.get("totalCount")
+                    + ", ok=" + data.get("successCount")
+                    + ", fail=" + data.get("failCount"));
+        } else {
+            System.out.println(label + ": success=" + result.get("success")
+                    + ", error=" + result.get("error"));
+        }
+    }
+}

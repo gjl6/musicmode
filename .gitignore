@@ -1,0 +1,58 @@
+# 音频文件
+/music/
+
+# Maven
+**/target/
+.mvn/
+
+# 封面缓存
+covers/
+
+# H2 数据库
+**/data/
+
+# Node
+music-web/node_modules/
+music-web/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编译产物
+*.class
+
+# 外部工具
+chromaprint-fpcalc*/
+
+# Playwright MCP 会话
+.playwright-mcp/
+
+# 日志
+*.log
+
+# 文档
+docs/
+CLAUDE.md
+
+# 根目录调试文件
+/*.png
+/*.zip
+/*.md.orig
+pipeline-*.md
+
+# 临时脚本/调试
+/*.py
+/*.txt
+/*.html
+/*.java
+/*.class
+/*.md
+!/README.md
+navidrome/
+tools/

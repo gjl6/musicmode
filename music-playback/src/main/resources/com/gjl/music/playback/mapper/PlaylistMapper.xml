@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.playback.mapper.PlaylistMapper">
+
+    <select id="findByOwner" resultType="com.gjl.music.playback.model.Playlist">
+        SELECT id, name, sort_name AS sortName, comment, cover_path AS coverPath,
+               owner, owner_id AS ownerId,
+               is_public AS isPublic, song_count AS songCount,
+               duration, total_size AS totalSize,
+               created_at AS createdAt, updated_at AS updatedAt
+        FROM playlist
+        WHERE owner = #{owner}
+        ORDER BY updated_at DESC
+    </select>
+
+    <select id="findById" resultType="com.gjl.music.playback.model.Playlist">
+        SELECT id, name, sort_name AS sortName, comment, cover_path AS coverPath,
+               owner, owner_id AS ownerId,
+               is_public AS isPublic, song_count AS songCount,
+               duration, total_size AS totalSize,
+               created_at AS createdAt, updated_at AS updatedAt
+        FROM playlist WHERE id = #{id}
+    </select>
+
+    <select id="findByIds" resultType="com.gjl.music.playback.model.Playlist">
+        SELECT id, name, sort_name AS sortName, comment, cover_path AS coverPath,
+               owner, owner_id AS ownerId,
+               is_public AS isPublic, song_count AS songCount,
+               duration, total_size AS totalSize,
+               created_at AS createdAt, updated_at AS updatedAt
+        FROM playlist
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO playlist (name, sort_name, comment, cover_path, owner, owner_id, is_public,
+                              song_count, duration, total_size, created_at, updated_at)
+        VALUES (#{name}, #{sortName}, #{comment}, #{coverPath}, #{owner}, #{ownerId}, #{isPublic},
+                0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    </insert>
+
+    <update id="update">
+        UPDATE playlist SET
+            name = #{name},
+            sort_name = #{sortName},
+            comment = #{comment},
+            cover_path = #{coverPath},
+            is_public = #{isPublic},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM playlist WHERE id = #{id}
+    </delete>
+
+    <update id="updateSongCount" databaseId="h2">
+        UPDATE playlist SET
+            song_count = (SELECT COUNT(*) FROM playlist_track WHERE playlist_id = #{id}),
+            duration = COALESCE((SELECT SUM(s.duration) FROM playlist_track pt
+                       JOIN song s ON pt.song_id = s.id WHERE pt.playlist_id = #{id}), 0),
+            total_size = COALESCE((SELECT SUM(s.file_size) FROM playlist_track pt
+                         JOIN song s ON pt.song_id = s.id WHERE pt.playlist_id = #{id}), 0),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateSongCount" databaseId="mysql">
+        UPDATE playlist p SET
+            song_count = (SELECT COUNT(*) FROM playlist_track pt WHERE pt.playlist_id = p.id),
+            duration = COALESCE((SELECT SUM(s.duration) FROM playlist_track pt
+                       JOIN song s ON pt.song_id = s.id WHERE pt.playlist_id = p.id), 0),
+            total_size = COALESCE((SELECT SUM(s.file_size) FROM playlist_track pt
+                         JOIN song s ON pt.song_id = s.id WHERE pt.playlist_id = p.id), 0),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE p.id = #{id}
+    </update>
+
+</mapper>

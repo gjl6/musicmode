@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.CustomProviderMapper">
+
+    <resultMap id="baseMap" type="com.gjl.music.model.CustomProvider">
+        <id     column="id"             property="id"/>
+        <result column="name"           property="name"/>
+        <result column="label"          property="label"/>
+        <result column="icon"           property="icon"/>
+        <result column="description"    property="description"/>
+        <result column="enabled"        property="enabled"/>
+        <result column="mode"           property="mode"/>
+        <result column="config_json"    property="configJson"/>
+        <result column="source_code"    property="sourceCode"/>
+        <result column="metadata_tags"  property="metadataTags"/>
+        <result column="version"        property="version"/>
+        <result column="sort_order"     property="sortOrder"/>
+        <result column="created_at"     property="createdAt"/>
+        <result column="updated_at"     property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="baseMap">
+        SELECT * FROM custom_provider ORDER BY sort_order, id
+    </select>
+
+    <select id="selectEnabled" resultMap="baseMap">
+        SELECT * FROM custom_provider WHERE enabled = TRUE ORDER BY sort_order, id
+    </select>
+
+    <select id="selectById" resultMap="baseMap">
+        SELECT * FROM custom_provider WHERE id = #{id}
+    </select>
+
+    <select id="selectByName" resultMap="baseMap">
+        SELECT * FROM custom_provider WHERE name = #{name}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO custom_provider (name, label, icon, description, enabled, mode,
+                                     config_json, source_code, metadata_tags, version, sort_order)
+        VALUES (#{name}, #{label}, #{icon}, #{description}, #{enabled}, #{mode},
+                #{configJson}, #{sourceCode}, #{metadataTags}, #{version}, #{sortOrder})
+    </insert>
+
+    <update id="update">
+        UPDATE custom_provider SET
+            name = #{name}, label = #{label}, icon = #{icon},
+            description = #{description}, enabled = #{enabled},
+            mode = #{mode}, config_json = #{configJson},
+            source_code = #{sourceCode}, metadata_tags = #{metadataTags},
+            version = #{version}, sort_order = #{sortOrder},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateConfig">
+        UPDATE custom_provider
+        SET config_json = #{configJson}, source_code = #{sourceCode}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM custom_provider WHERE id = #{id}
+    </delete>
+
+</mapper>

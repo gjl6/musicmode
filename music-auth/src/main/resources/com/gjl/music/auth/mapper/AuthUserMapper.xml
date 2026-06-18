@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.auth.mapper.AuthUserMapper">
+
+    <resultMap id="baseMap" type="com.gjl.music.auth.model.AuthUser">
+        <id     column="id"              property="id" javaType="long"/>
+        <result column="username"        property="username"/>
+        <result column="password"        property="password"/>
+        <result column="email"           property="email"/>
+        <result column="display_name"    property="displayName"/>
+        <result column="status"          property="status"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+        <result column="failed_attempts" property="failedAttempts"/>
+        <result column="locked_until"    property="lockedUntil"/>
+        <result column="create_time"     property="createTime"/>
+        <result column="update_time"     property="updateTime"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="baseMap">
+        SELECT * FROM auth_user WHERE id = #{id}
+    </select>
+
+    <select id="selectByUsername" resultMap="baseMap">
+        SELECT * FROM auth_user WHERE username = #{username}
+    </select>
+
+    <select id="selectAll" resultMap="baseMap">
+        SELECT * FROM auth_user ORDER BY id
+    </select>
+
+    <select id="existsByUsername" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM auth_user WHERE username = #{username}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO auth_user (username, password, email, display_name, status, create_time, update_time)
+        VALUES (#{username}, #{password}, #{email}, #{displayName}, #{status},
+                COALESCE(#{createTime}, CURRENT_TIMESTAMP),
+                COALESCE(#{updateTime}, CURRENT_TIMESTAMP))
+    </insert>
+
+    <update id="updateById">
+        UPDATE auth_user
+        SET username = #{username}, email = #{email}, display_name = #{displayName},
+            status = #{status}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE auth_user SET password = #{password}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateLoginTime">
+        UPDATE auth_user
+        SET last_login_time = CURRENT_TIMESTAMP, failed_attempts = 0, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM auth_user WHERE id = #{id}
+    </delete>
+
+    <select id="selectPage" resultMap="baseMap">
+        SELECT * FROM auth_user
+        <where>
+            <if test="keyword != null and keyword != ''">
+                username LIKE CONCAT('%', #{keyword}, '%')
+                OR email LIKE CONCAT('%', #{keyword}, '%')
+                OR display_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy} ${orderDir}
+            </when>
+            <otherwise>
+                ORDER BY id
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM auth_user
+        <where>
+            <if test="keyword != null and keyword != ''">
+                username LIKE CONCAT('%', #{keyword}, '%')
+                OR email LIKE CONCAT('%', #{keyword}, '%')
+                OR display_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByRoleCode" resultMap="baseMap">
+        SELECT u.* FROM auth_user u
+        INNER JOIN auth_user_role ur ON u.id = ur.user_id
+        INNER JOIN auth_role r ON ur.role_id = r.id
+        WHERE r.role_code = #{roleCode}
+    </select>
+
+</mapper>

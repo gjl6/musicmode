@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.playback.mapper.UserStarredMapper">
+
+
+    <insert id="insert" databaseId="mysql">
+        INSERT INTO user_starred (user_id, item_id, item_type, starred_at)
+        VALUES (#{userId}, #{itemId}, #{itemType}, #{starredAt})
+        ON DUPLICATE KEY UPDATE starred_at = VALUES(starred_at)
+    </insert>
+
+
+    <insert id="insert" databaseId="h2">
+        MERGE INTO user_starred (user_id, item_id, item_type, starred_at)
+        KEY (user_id, item_id, item_type)
+        VALUES (#{userId}, #{itemId}, #{itemType}, #{starredAt})
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM user_starred
+        WHERE user_id = #{userId} AND item_id = #{itemId} AND item_type = #{itemType}
+    </delete>
+
+    <select id="findStarredIds" resultType="long">
+        SELECT item_id FROM user_starred
+        WHERE user_id = #{userId} AND item_type = #{itemType}
+    </select>
+
+    <select id="isStarred" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM user_starred
+        WHERE user_id = #{userId} AND item_id = #{itemId} AND item_type = #{itemType}
+    </select>
+
+    <delete id="deleteByItem">
+        DELETE FROM user_starred WHERE item_id = #{itemId} AND item_type = #{itemType}
+    </delete>
+
+</mapper>

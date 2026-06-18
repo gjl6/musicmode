@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.FileWatchSnapshotMapper">
+
+    <select id="selectAll" resultType="com.gjl.music.model.FileWatchSnapshot">
+        SELECT dir_path AS dirPath, last_modified AS lastModified,
+               file_count AS fileCount, updated_at AS updatedAt
+        FROM file_watch_snapshot
+    </select>
+
+    <insert id="batchUpsert" databaseId="h2">
+        MERGE INTO file_watch_snapshot (dir_path, last_modified, file_count, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=", ">
+            (#{item.dirPath}, #{item.lastModified}, #{item.fileCount}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsert" databaseId="mysql">
+        INSERT INTO file_watch_snapshot (dir_path, last_modified, file_count, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=", ">
+            (#{item.dirPath}, #{item.lastModified}, #{item.fileCount}, NOW())
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            last_modified = VALUES(last_modified),
+            file_count    = VALUES(file_count),
+            updated_at    = NOW()
+    </insert>
+
+</mapper>

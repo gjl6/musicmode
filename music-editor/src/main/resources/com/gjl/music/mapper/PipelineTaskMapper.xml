@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.PipelineTaskMapper">
+
+    <insert id="insert" databaseId="h2">
+        INSERT INTO pipeline_task (id, state, template_name, graph_json,
+            input_paths, total_files, success_files, failed_files,
+            error_node, error_message, create_time, update_time)
+        VALUES (#{id}, #{state}, #{templateName}, #{graphJson},
+            #{inputPaths}, #{totalFiles}, #{successFiles}, #{failedFiles},
+            #{errorNode}, #{errorMessage}, #{createTime}, #{updateTime})
+    </insert>
+
+    <insert id="insert" databaseId="mysql">
+        INSERT INTO pipeline_task (id, state, template_name, graph_json,
+            input_paths, total_files, success_files, failed_files,
+            error_node, error_message, create_time, update_time)
+        VALUES (#{id}, #{state}, #{templateName}, #{graphJson},
+            #{inputPaths}, #{totalFiles}, #{successFiles}, #{failedFiles},
+            #{errorNode}, #{errorMessage}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="update" databaseId="h2">
+        MERGE INTO pipeline_task (id, state, template_name, graph_json,
+            input_paths, total_files, success_files, failed_files,
+            error_node, error_message, update_time)
+        KEY(id)
+        VALUES (#{id}, #{state}, #{templateName}, #{graphJson},
+            #{inputPaths}, #{totalFiles}, #{successFiles}, #{failedFiles},
+            #{errorNode}, #{errorMessage}, CURRENT_TIMESTAMP)
+    </update>
+
+    <update id="update" databaseId="mysql">
+        INSERT INTO pipeline_task (id, state, template_name, graph_json,
+            input_paths, total_files, success_files, failed_files,
+            error_node, error_message, update_time)
+        VALUES (#{id}, #{state}, #{templateName}, #{graphJson},
+            #{inputPaths}, #{totalFiles}, #{successFiles}, #{failedFiles},
+            #{errorNode}, #{errorMessage}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            state         = VALUES(state),
+            template_name = VALUES(template_name),
+            graph_json    = VALUES(graph_json),
+            input_paths   = VALUES(input_paths),
+            total_files   = VALUES(total_files),
+            success_files = VALUES(success_files),
+            failed_files  = VALUES(failed_files),
+            error_node    = VALUES(error_node),
+            error_message = VALUES(error_message),
+            update_time   = CURRENT_TIMESTAMP
+    </update>
+
+    <update id="updateState">
+        UPDATE pipeline_task SET state = #{state}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStateWithDuration">
+        UPDATE pipeline_task SET state = #{state}, duration_ms = #{durationMs}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateProgress">
+        UPDATE pipeline_task
+        SET total_files   = COALESCE(#{totalFiles}, total_files),
+            success_files = COALESCE(#{successFiles}, success_files),
+            failed_files  = COALESCE(#{failedFiles}, failed_files),
+            error_node    = COALESCE(#{errorNode}, error_node),
+            error_message = COALESCE(#{errorMessage}, error_message),
+            update_time   = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" resultType="com.gjl.music.model.PipelineTask">
+        SELECT id, state, template_name AS templateName, graph_json AS graphJson,
+               input_paths AS inputPaths,
+               total_files AS totalFiles, success_files AS successFiles,
+               failed_files AS failedFiles,
+               error_node AS errorNode, error_message AS errorMessage,
+               create_time AS createTime, update_time AS updateTime
+        FROM pipeline_task WHERE id = #{id}
+    </select>
+
+    <select id="selectByNonTerminal" resultType="com.gjl.music.model.PipelineTask">
+        SELECT id, state, template_name AS templateName, graph_json AS graphJson,
+               input_paths AS inputPaths,
+               total_files AS totalFiles, success_files AS successFiles,
+               failed_files AS failedFiles,
+               error_node AS errorNode, error_message AS errorMessage,
+               create_time AS createTime, update_time AS updateTime
+        FROM pipeline_task
+        WHERE state NOT IN ('COMPLETED', 'FAILED', 'CANCELLED')
+        ORDER BY create_time ASC
+    </select>
+
+    <select id="selectAll" resultType="com.gjl.music.model.PipelineTask">
+        SELECT id, state, template_name AS templateName, graph_json AS graphJson,
+               input_paths AS inputPaths,
+               total_files AS totalFiles, success_files AS successFiles,
+               failed_files AS failedFiles,
+               error_node AS errorNode, error_message AS errorMessage,
+               create_time AS createTime, update_time AS updateTime
+        FROM pipeline_task
+        ORDER BY create_time DESC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM pipeline_task WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteExpired">
+        DELETE FROM pipeline_task
+        WHERE state IN ('COMPLETED', 'FAILED', 'CANCELLED')
+          AND create_time &lt; #{before}
+    </delete>
+
+</mapper>

@@ -1,0 +1,78 @@
+#── 持久化开关 ──
+music:
+  persist:
+    enabled: true
+  write-tags:
+    enabled: true
+  enrich:
+    default-provider: qqmusic,kugou,kuwo,netease,itunes,musicbrainz,migu
+    providers:
+      default:
+        rate-limit-ms: 240
+        max-concurrent: 6
+        timeout-seconds: 15
+        rate-limit-retries: 3
+        rate-limit-backoff-ms: 30000
+      qqmusic:
+        rate-limit-ms: 120
+        max-concurrent: 8
+        timeout-seconds: 15
+        rate-limit-retries: 3
+        rate-limit-backoff-ms: 3000
+        search-url: https://u.y.qq.com/cgi-bin/musicu.fcg
+        album-url: https://i.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg
+        lyric-url: https://i.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg
+      kugou:
+        rate-limit-ms: 240
+        timeout-seconds: 15
+      kuwo:
+        rate-limit-ms: 240
+        timeout-seconds: 15
+      netease:
+        rate-limit-ms: 240
+        timeout-seconds: 15
+      itunes:
+        rate-limit-ms: 2000
+        timeout-seconds: 15
+        rate-limit-retries: 1
+        search-url: https://itunes.apple.com/search
+        lookup-url: https://itunes.apple.com/lookup
+      musicbrainz:
+        rate-limit-ms: 1500
+        timeout-seconds: 20
+        rate-limit-retries: 3
+        rate-limit-backoff-ms: 60000
+        search-url: https://musicbrainz.org/ws/2/recording
+        release-url: https://musicbrainz.org/ws/2/release
+        user-agent: MusicPipeline/1.0
+      migu:
+        rate-limit-ms: 240
+        timeout-seconds: 15
+        search-url: https://m.music.migu.cn/migu/remoting/scr_search_tag
+        song-url: https://c.musicapp.migu.cn/MIGUM2/v2.0/music/song
+        referer: https://music.migu.cn
+
+#── 文件监控 ──
+  watch:
+    enabled: true
+    incremental-interval-sec: 30
+    full-scan-interval-min: 120
+
+#── 声学指纹 ──
+  fingerprint:
+    skip-if-exists: true
+    timeout-seconds: 120
+
+#── 管道线程池 ──
+pipeline:
+  executor:
+    scheduler:
+      max-pipelines: 1
+    worker:
+      queue-capacity: 2000
+    virtual:
+      max-concurrent: 0
+  recovery:
+    enabled: true
+  task:
+    retention-hours: 720

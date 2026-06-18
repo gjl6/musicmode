@@ -1,0 +1,25 @@
+#── MyBatis ──
+mybatis:
+  type-aliases-package: com.gjl.music.model
+  configuration:
+    map-underscore-to-camel-case: true
+
+#── 音乐文件根目录 ──
+music:
+  root-dir: ./music
+  covers-dir: ./covers
+  ffmpeg:
+    path: ${FFMPEG_PATH:/path/to/ffmpeg}
+  ffprobe:
+    path: ${FFPROBE_PATH:/path/to/ffprobe}
+
+#── Redis（可选，不可用时自动降级）──
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3s
+      lettuce:
+        pool:
+          enabled: false

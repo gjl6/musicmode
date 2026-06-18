@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.playback.mapper.UserRatingMapper">
+
+
+    <insert id="upsert" databaseId="mysql">
+        INSERT INTO user_rating (user_id, item_id, item_type, rating, rated_at)
+        VALUES (#{userId}, #{itemId}, #{itemType}, #{rating}, NOW())
+        ON DUPLICATE KEY UPDATE
+            rating = VALUES(rating),
+            rated_at = NOW()
+    </insert>
+
+
+    <insert id="upsert" databaseId="h2">
+        MERGE INTO user_rating (user_id, item_id, item_type, rating, rated_at)
+        KEY (user_id, item_id, item_type)
+        VALUES (#{userId}, #{itemId}, #{itemType}, #{rating}, CURRENT_TIMESTAMP)
+    </insert>
+
+
+    <delete id="delete">
+        DELETE FROM user_rating
+        WHERE user_id = #{userId} AND item_id = #{itemId} AND item_type = #{itemType}
+    </delete>
+
+    <select id="findByUserItem" resultType="com.gjl.music.playback.model.UserRating">
+        SELECT user_id AS userId, item_id AS itemId, item_type AS itemType,
+               rating, rated_at AS ratedAt
+        FROM user_rating
+        WHERE user_id = #{userId} AND item_id = #{itemId} AND item_type = #{itemType}
+    </select>
+
+    <select id="getAverageRatings" resultType="java.util.HashMap">
+        SELECT CAST(item_id AS SIGNED) AS itemId,
+               AVG(rating) AS avgRating, COUNT(*) AS cnt
+        FROM user_rating
+        WHERE item_type = #{itemType}
+          AND item_id IN
+          <foreach collection="itemIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        GROUP BY item_id
+    </select>
+
+    <delete id="deleteByItem">
+        DELETE FROM user_rating WHERE item_id = #{itemId} AND item_type = #{itemType}
+    </delete>
+
+
+    <select id="batchGetUserRatings" resultType="java.util.HashMap">
+        SELECT CAST(item_id AS SIGNED) AS itemId, rating
+        FROM user_rating
+        WHERE user_id = #{userId}
+          AND item_type = #{itemType}
+          AND item_id IN
+          <foreach collection="itemIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+</mapper>

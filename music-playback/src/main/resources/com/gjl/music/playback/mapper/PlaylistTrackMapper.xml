@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.playback.mapper.PlaylistTrackMapper">
+
+    <select id="findByPlaylistId" resultType="com.gjl.music.playback.model.PlaylistTrack">
+        SELECT id, playlist_id AS playlistId, song_id AS songId,
+               position, added_at AS addedAt
+        FROM playlist_track
+        WHERE playlist_id = #{playlistId}
+        ORDER BY position
+    </select>
+
+    <insert id="insert" databaseId="h2">
+        INSERT INTO playlist_track (playlist_id, song_id, position, added_at)
+        VALUES (#{playlistId}, #{songId}, #{position}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="insert" databaseId="mysql">
+        INSERT INTO playlist_track (playlist_id, song_id, position, added_at)
+        VALUES (#{playlistId}, #{songId}, #{position}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO playlist_track (playlist_id, song_id, position, added_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.playlistId}, #{item.songId}, #{item.position}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <delete id="deleteByPlaylistId">
+        DELETE FROM playlist_track WHERE playlist_id = #{playlistId}
+    </delete>
+
+    <delete id="deleteByPlaylistAndPosition">
+        DELETE FROM playlist_track
+        WHERE playlist_id = #{playlistId} AND position = #{position}
+    </delete>
+
+    <select id="maxPosition" resultType="int">
+        SELECT COALESCE(MAX(position), -1) FROM playlist_track
+        WHERE playlist_id = #{playlistId}
+    </select>
+
+
+    <update id="updatePosition">
+        UPDATE playlist_track SET position = #{newPosition}
+        WHERE playlist_id = #{playlistId} AND position = #{oldPosition}
+    </update>
+
+
+    <update id="setPosition">
+        UPDATE playlist_track SET position = #{newPosition}
+        WHERE playlist_id = #{playlistId} AND id = #{id}
+    </update>
+
+
+    <select id="findPlaylistIdsBySongId" resultType="long">
+        SELECT playlist_id FROM playlist_track
+        WHERE song_id = #{songId}
+    </select>
+
+
+    <select id="findFirstNByPlaylistId" resultType="com.gjl.music.playback.model.PlaylistTrack">
+        SELECT id, playlist_id AS playlistId, song_id AS songId,
+               position, added_at AS addedAt
+        FROM playlist_track
+        WHERE playlist_id = #{playlistId}
+        ORDER BY position
+        LIMIT #{limit}
+    </select>
+
+
+    <select id="findFirstNByPlaylistIds" resultType="com.gjl.music.playback.model.PlaylistTrack">
+        SELECT id, playlist_id AS playlistId, song_id AS songId,
+               position, added_at AS addedAt
+        FROM (
+            SELECT pt.*,
+                   ROW_NUMBER() OVER (PARTITION BY pt.playlist_id ORDER BY pt.position) AS rn
+            FROM playlist_track pt
+            WHERE pt.playlist_id IN
+            <foreach collection="playlistIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
+        ) sub
+        WHERE sub.rn &lt;= #{limit}
+    </select>
+
+</mapper>

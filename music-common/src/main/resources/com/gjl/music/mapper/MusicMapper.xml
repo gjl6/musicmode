@@ -1,0 +1,1847 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.MusicMapper">
+
+
+    <insert id="upsertArtist" databaseId="h2">
+        MERGE INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        KEY(artist_name)
+        VALUES (#{artistName}, #{artistCover}, #{introduction}, #{gender}, #{country}, #{sortArtistName}, #{albumCount}, #{songCount}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertArtist" databaseId="mysql">
+        INSERT INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        VALUES (#{artistName}, #{artistCover}, #{introduction}, #{gender}, #{country}, #{sortArtistName}, #{albumCount}, #{songCount}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            artist_cover    = VALUES(artist_cover),
+            introduction    = VALUES(introduction),
+            gender          = VALUES(gender),
+            country         = VALUES(country),
+            sort_artist_name = VALUES(sort_artist_name),
+            album_count     = VALUES(album_count),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectArtistIdByName" resultType="long">
+        SELECT id FROM artist WHERE artist_name = #{artistName}
+    </select>
+
+    <insert id="batchUpsertArtists" databaseId="h2">
+        MERGE INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        KEY(artist_name)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.artistName}, #{item.artistCover}, #{item.introduction}, #{item.gender}, #{item.country}, #{item.sortArtistName}, #{item.albumCount}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsertArtists" databaseId="mysql">
+        INSERT INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.artistName}, #{item.artistCover}, #{item.introduction}, #{item.gender}, #{item.country}, #{item.sortArtistName}, #{item.albumCount}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            artist_cover    = VALUES(artist_cover),
+            introduction    = VALUES(introduction),
+            gender          = VALUES(gender),
+            country         = VALUES(country),
+            sort_artist_name = VALUES(sort_artist_name),
+            album_count     = VALUES(album_count),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectArtistIdsByNames" resultType="map">
+        SELECT artist_name, id FROM artist WHERE artist_name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+
+    <insert id="upsertAlbum" databaseId="h2">
+        MERGE INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        KEY(album_name)
+        VALUES (#{albumName}, #{albumType}, #{albumCover}, #{introduction}, #{albumYear}, #{company}, #{language}, #{sortAlbumName}, #{artistId}, #{songCount}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertAlbum" databaseId="mysql">
+        INSERT INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        VALUES (#{albumName}, #{albumType}, #{albumCover}, #{introduction}, #{albumYear}, #{company}, #{language}, #{sortAlbumName}, #{artistId}, #{songCount}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            album_type      = VALUES(album_type),
+            album_cover     = VALUES(album_cover),
+            introduction    = VALUES(introduction),
+            album_year      = VALUES(album_year),
+            company         = VALUES(company),
+            language        = VALUES(language),
+            sort_album_name = VALUES(sort_album_name),
+            artist_id       = VALUES(artist_id),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectAlbumIdByName" resultType="long">
+        SELECT id FROM album WHERE album_name = #{albumName}
+    </select>
+
+    <update id="updateArtist">
+        UPDATE artist
+        <set>
+            <if test="artistName != null">artist_name = #{artistName},</if>
+            <if test="introduction != null">introduction = #{introduction},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="country != null">country = #{country},</if>
+            <if test="artistCover != null">artist_cover = #{artistCover},</if>
+            <if test="enrichSource != null">enrich_source = #{enrichSource},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateAlbum">
+        UPDATE album
+        <set>
+            <if test="albumName != null">album_name = #{albumName},</if>
+            <if test="albumType != null">album_type = #{albumType},</if>
+            <if test="albumYear != null">album_year = #{albumYear},</if>
+            <if test="introduction != null">introduction = #{introduction},</if>
+            <if test="company != null">company = #{company},</if>
+            <if test="language != null">language = #{language},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStyle">
+        UPDATE style
+        <set>
+            <if test="styleName != null">style_name = #{styleName},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="styleImage != null">style_image = #{styleImage},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <insert id="batchUpsertAlbums" databaseId="h2">
+        MERGE INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        KEY(album_name)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.albumName}, #{item.albumType}, #{item.albumCover}, #{item.introduction}, #{item.albumYear}, #{item.company}, #{item.language}, #{item.sortAlbumName}, #{item.artistId}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsertAlbums" databaseId="mysql">
+        INSERT INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.albumName}, #{item.albumType}, #{item.albumCover}, #{item.introduction}, #{item.albumYear}, #{item.company}, #{item.language}, #{item.sortAlbumName}, #{item.artistId}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            album_type      = VALUES(album_type),
+            album_cover     = VALUES(album_cover),
+            introduction    = VALUES(introduction),
+            album_year      = VALUES(album_year),
+            company         = VALUES(company),
+            language        = VALUES(language),
+            sort_album_name = VALUES(sort_album_name),
+            artist_id       = VALUES(artist_id),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectAlbumIdsByNames" resultType="map">
+        SELECT album_name, id FROM album WHERE album_name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+
+    <insert id="upsertSong" databaseId="h2">
+        MERGE INTO song AS t
+        USING (VALUES (
+            #{song.title}, #{song.filePath}, #{song.fileName}, #{song.fileFormat}, #{song.fileSize}, #{song.fileHash},
+            #{song.fingerprint}, #{song.duration}, #{song.coverPath}, #{song.year}, #{song.bitrate}, #{song.sampleRate},
+            #{song.channels}, #{song.bitsPerSample}, #{song.language}, #{albumId}, #{song.trackNumber},
+            #{song.discNumber}, #{song.trackGain}, #{song.trackPeak}, #{song.composer}, #{song.lyricist},
+            #{song.arranger}, #{song.producer}, #{song.extraTags}, #{song.sortTitle}, #{song.fileMtime}
+        )) AS s(title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id, track_number,
+               disc_number, track_gain, track_peak, composer, lyricist,
+               arranger, producer, extra_tags, sort_title, file_mtime)
+        ON t.file_path = s.file_path
+        WHEN MATCHED THEN UPDATE SET
+            title = CASE WHEN s.title IS NOT NULL THEN s.title ELSE t.title END,
+            file_name = CASE WHEN s.file_name IS NOT NULL THEN s.file_name ELSE t.file_name END,
+            file_format = CASE WHEN s.file_format IS NOT NULL THEN s.file_format ELSE t.file_format END,
+            file_size = CASE WHEN s.file_size IS NOT NULL THEN s.file_size ELSE t.file_size END,
+            file_hash = CASE WHEN s.file_hash IS NOT NULL THEN s.file_hash ELSE t.file_hash END,
+            fingerprint = CASE WHEN s.fingerprint IS NOT NULL THEN s.fingerprint ELSE t.fingerprint END,
+            duration = CASE WHEN s.duration IS NOT NULL THEN s.duration ELSE t.duration END,
+            cover_path = CASE WHEN s.cover_path IS NOT NULL THEN s.cover_path ELSE t.cover_path END,
+            "year" = CASE WHEN s."year" IS NOT NULL THEN s."year" ELSE t."year" END,
+            bitrate = CASE WHEN s.bitrate IS NOT NULL THEN s.bitrate ELSE t.bitrate END,
+            sample_rate = CASE WHEN s.sample_rate IS NOT NULL THEN s.sample_rate ELSE t.sample_rate END,
+            channels = CASE WHEN s.channels IS NOT NULL THEN s.channels ELSE t.channels END,
+            bits_per_sample = CASE WHEN s.bits_per_sample IS NOT NULL THEN s.bits_per_sample ELSE t.bits_per_sample END,
+            language = CASE WHEN s.language IS NOT NULL THEN s.language ELSE t.language END,
+            album_id = CASE WHEN s.album_id IS NOT NULL THEN s.album_id ELSE t.album_id END,
+            track_number = CASE WHEN s.track_number IS NOT NULL THEN s.track_number ELSE t.track_number END,
+            disc_number = CASE WHEN s.disc_number IS NOT NULL THEN s.disc_number ELSE t.disc_number END,
+            track_gain = CASE WHEN s.track_gain IS NOT NULL THEN s.track_gain ELSE t.track_gain END,
+            track_peak = CASE WHEN s.track_peak IS NOT NULL THEN s.track_peak ELSE t.track_peak END,
+            composer = CASE WHEN s.composer IS NOT NULL THEN s.composer ELSE t.composer END,
+            lyricist = CASE WHEN s.lyricist IS NOT NULL THEN s.lyricist ELSE t.lyricist END,
+            arranger = CASE WHEN s.arranger IS NOT NULL THEN s.arranger ELSE t.arranger END,
+            producer = CASE WHEN s.producer IS NOT NULL THEN s.producer ELSE t.producer END,
+            extra_tags = CASE WHEN s.extra_tags IS NOT NULL THEN s.extra_tags ELSE t.extra_tags END,
+            sort_title = CASE WHEN s.sort_title IS NOT NULL THEN s.sort_title ELSE t.sort_title END,
+            file_mtime = CASE WHEN s.file_mtime IS NOT NULL THEN s.file_mtime ELSE t.file_mtime END,
+            update_time = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN INSERT (title, file_path, file_name, file_format, file_size, file_hash,
+            fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+            channels, bits_per_sample, language, album_id, track_number,
+            disc_number, track_gain, track_peak, composer, lyricist,
+            arranger, producer, extra_tags, sort_title, file_mtime, update_time)
+            VALUES (s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+            s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+            s.channels, s.bits_per_sample, s.language, s.album_id, s.track_number,
+            s.disc_number, s.track_gain, s.track_peak, s.composer, s.lyricist,
+            s.arranger, s.producer, s.extra_tags, s.sort_title, s.file_mtime, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertSong" databaseId="mysql">
+        INSERT INTO song (title, file_path, file_name, file_format, file_size, file_hash,
+                          fingerprint, duration, cover_path, `year`, bitrate, sample_rate,
+                          channels, bits_per_sample, language, album_id, track_number,
+                          disc_number, track_gain, track_peak, composer, lyricist,
+                          arranger, producer, extra_tags, sort_title, file_mtime, update_time)
+        VALUES (#{song.title}, #{song.filePath}, #{song.fileName}, #{song.fileFormat}, #{song.fileSize}, #{song.fileHash},
+                #{song.fingerprint}, #{song.duration}, #{song.coverPath}, #{song.year}, #{song.bitrate}, #{song.sampleRate},
+                #{song.channels}, #{song.bitsPerSample}, #{song.language}, #{albumId}, #{song.trackNumber},
+                #{song.discNumber}, #{song.trackGain}, #{song.trackPeak}, #{song.composer}, #{song.lyricist},
+                #{song.arranger}, #{song.producer}, #{song.extraTags}, #{song.sortTitle}, #{song.fileMtime}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            title           = IF(VALUES(title)           IS NOT NULL, VALUES(title),           title),
+            file_path       = VALUES(file_path),
+            file_name       = IF(VALUES(file_name)       IS NOT NULL, VALUES(file_name),       file_name),
+            file_format     = IF(VALUES(file_format)     IS NOT NULL, VALUES(file_format),     file_format),
+            file_size       = IF(VALUES(file_size)       IS NOT NULL, VALUES(file_size),       file_size),
+            file_hash       = IF(VALUES(file_hash)       IS NOT NULL, VALUES(file_hash),       file_hash),
+            fingerprint     = IF(VALUES(fingerprint)     IS NOT NULL, VALUES(fingerprint),     fingerprint),
+            duration        = IF(VALUES(duration)        IS NOT NULL, VALUES(duration),        duration),
+            cover_path      = IF(VALUES(cover_path)      IS NOT NULL, VALUES(cover_path),      cover_path),
+            `year`          = IF(VALUES(`year`)          IS NOT NULL, VALUES(`year`),          `year`),
+            bitrate         = IF(VALUES(bitrate)         IS NOT NULL, VALUES(bitrate),         bitrate),
+            sample_rate     = IF(VALUES(sample_rate)     IS NOT NULL, VALUES(sample_rate),     sample_rate),
+            channels        = IF(VALUES(channels)        IS NOT NULL, VALUES(channels),        channels),
+            bits_per_sample = IF(VALUES(bits_per_sample) IS NOT NULL, VALUES(bits_per_sample), bits_per_sample),
+            language        = IF(VALUES(language)        IS NOT NULL, VALUES(language),        language),
+            album_id        = IF(VALUES(album_id)        IS NOT NULL, VALUES(album_id),        album_id),
+            track_number    = IF(VALUES(track_number)    IS NOT NULL, VALUES(track_number),    track_number),
+            disc_number     = IF(VALUES(disc_number)     IS NOT NULL, VALUES(disc_number),     disc_number),
+            track_gain      = IF(VALUES(track_gain)      IS NOT NULL, VALUES(track_gain),      track_gain),
+            track_peak      = IF(VALUES(track_peak)      IS NOT NULL, VALUES(track_peak),      track_peak),
+            composer        = IF(VALUES(composer)        IS NOT NULL, VALUES(composer),        composer),
+            lyricist        = IF(VALUES(lyricist)        IS NOT NULL, VALUES(lyricist),        lyricist),
+            arranger        = IF(VALUES(arranger)        IS NOT NULL, VALUES(arranger),        arranger),
+            producer        = IF(VALUES(producer)        IS NOT NULL, VALUES(producer),        producer),
+            extra_tags      = IF(VALUES(extra_tags)      IS NOT NULL, VALUES(extra_tags),      extra_tags),
+            sort_title      = IF(VALUES(sort_title)      IS NOT NULL, VALUES(sort_title),      sort_title),
+            file_mtime      = IF(VALUES(file_mtime)      IS NOT NULL, VALUES(file_mtime),      file_mtime),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectSongIdByFilePath" resultType="long">
+        SELECT id FROM song WHERE file_path = #{filePath}
+    </select>
+
+    <insert id="batchUpsertSongs" databaseId="h2">
+        MERGE INTO song AS t
+        USING (VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.title}, #{item.filePath}, #{item.fileName}, #{item.fileFormat}, #{item.fileSize}, #{item.fileHash},
+             #{item.fingerprint}, #{item.duration}, #{item.coverPath}, #{item.year}, #{item.bitrate}, #{item.sampleRate},
+             #{item.channels}, #{item.bitsPerSample}, #{item.language}, #{item.albumId}, #{item.trackNumber},
+             #{item.discNumber}, #{item.trackGain}, #{item.trackPeak}, #{item.composer}, #{item.lyricist},
+             #{item.arranger}, #{item.producer}, #{item.extraTags}, #{item.sortTitle}, #{item.fileMtime})
+        </foreach>
+        ) AS s(title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id, track_number,
+               disc_number, track_gain, track_peak, composer, lyricist,
+               arranger, producer, extra_tags, sort_title, file_mtime)
+        ON t.file_path = s.file_path
+        WHEN MATCHED THEN UPDATE SET
+            title = CASE WHEN s.title IS NOT NULL THEN s.title ELSE t.title END,
+            file_name = CASE WHEN s.file_name IS NOT NULL THEN s.file_name ELSE t.file_name END,
+            file_format = CASE WHEN s.file_format IS NOT NULL THEN s.file_format ELSE t.file_format END,
+            file_size = CASE WHEN s.file_size IS NOT NULL THEN s.file_size ELSE t.file_size END,
+            file_hash = CASE WHEN s.file_hash IS NOT NULL THEN s.file_hash ELSE t.file_hash END,
+            fingerprint = CASE WHEN s.fingerprint IS NOT NULL THEN s.fingerprint ELSE t.fingerprint END,
+            duration = CASE WHEN s.duration IS NOT NULL THEN s.duration ELSE t.duration END,
+            cover_path = CASE WHEN s.cover_path IS NOT NULL THEN s.cover_path ELSE t.cover_path END,
+            "year" = CASE WHEN s."year" IS NOT NULL THEN s."year" ELSE t."year" END,
+            bitrate = CASE WHEN s.bitrate IS NOT NULL THEN s.bitrate ELSE t.bitrate END,
+            sample_rate = CASE WHEN s.sample_rate IS NOT NULL THEN s.sample_rate ELSE t.sample_rate END,
+            channels = CASE WHEN s.channels IS NOT NULL THEN s.channels ELSE t.channels END,
+            bits_per_sample = CASE WHEN s.bits_per_sample IS NOT NULL THEN s.bits_per_sample ELSE t.bits_per_sample END,
+            language = CASE WHEN s.language IS NOT NULL THEN s.language ELSE t.language END,
+            album_id = CASE WHEN s.album_id IS NOT NULL THEN s.album_id ELSE t.album_id END,
+            track_number = CASE WHEN s.track_number IS NOT NULL THEN s.track_number ELSE t.track_number END,
+            disc_number = CASE WHEN s.disc_number IS NOT NULL THEN s.disc_number ELSE t.disc_number END,
+            track_gain = CASE WHEN s.track_gain IS NOT NULL THEN s.track_gain ELSE t.track_gain END,
+            track_peak = CASE WHEN s.track_peak IS NOT NULL THEN s.track_peak ELSE t.track_peak END,
+            composer = CASE WHEN s.composer IS NOT NULL THEN s.composer ELSE t.composer END,
+            lyricist = CASE WHEN s.lyricist IS NOT NULL THEN s.lyricist ELSE t.lyricist END,
+            arranger = CASE WHEN s.arranger IS NOT NULL THEN s.arranger ELSE t.arranger END,
+            producer = CASE WHEN s.producer IS NOT NULL THEN s.producer ELSE t.producer END,
+            extra_tags = CASE WHEN s.extra_tags IS NOT NULL THEN s.extra_tags ELSE t.extra_tags END,
+            sort_title = CASE WHEN s.sort_title IS NOT NULL THEN s.sort_title ELSE t.sort_title END,
+            file_mtime = CASE WHEN s.file_mtime IS NOT NULL THEN s.file_mtime ELSE t.file_mtime END,
+            update_time = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN INSERT (title, file_path, file_name, file_format, file_size, file_hash,
+            fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+            channels, bits_per_sample, language, album_id, track_number,
+            disc_number, track_gain, track_peak, composer, lyricist,
+            arranger, producer, extra_tags, sort_title, file_mtime, update_time)
+            VALUES (s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+            s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+            s.channels, s.bits_per_sample, s.language, s.album_id, s.track_number,
+            s.disc_number, s.track_gain, s.track_peak, s.composer, s.lyricist,
+            s.arranger, s.producer, s.extra_tags, s.sort_title, s.file_mtime, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="batchUpsertSongs" databaseId="mysql">
+        INSERT INTO song (title, file_path, file_name, file_format, file_size, file_hash,
+                          fingerprint, duration, cover_path, `year`, bitrate, sample_rate,
+                          channels, bits_per_sample, language, album_id, track_number,
+                          disc_number, track_gain, track_peak, composer, lyricist,
+                          arranger, producer, extra_tags, sort_title, file_mtime, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.title}, #{item.filePath}, #{item.fileName}, #{item.fileFormat}, #{item.fileSize}, #{item.fileHash},
+             #{item.fingerprint}, #{item.duration}, #{item.coverPath}, #{item.year}, #{item.bitrate}, #{item.sampleRate},
+             #{item.channels}, #{item.bitsPerSample}, #{item.language}, #{item.albumId}, #{item.trackNumber},
+             #{item.discNumber}, #{item.trackGain}, #{item.trackPeak}, #{item.composer}, #{item.lyricist},
+             #{item.arranger}, #{item.producer}, #{item.extraTags}, #{item.sortTitle}, #{item.fileMtime}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            title           = IF(VALUES(title)           IS NOT NULL, VALUES(title),           title),
+            file_path       = VALUES(file_path),
+            file_name       = IF(VALUES(file_name)       IS NOT NULL, VALUES(file_name),       file_name),
+            file_format     = IF(VALUES(file_format)     IS NOT NULL, VALUES(file_format),     file_format),
+            file_size       = IF(VALUES(file_size)       IS NOT NULL, VALUES(file_size),       file_size),
+            file_hash       = IF(VALUES(file_hash)       IS NOT NULL, VALUES(file_hash),       file_hash),
+            fingerprint     = IF(VALUES(fingerprint)     IS NOT NULL, VALUES(fingerprint),     fingerprint),
+            duration        = IF(VALUES(duration)        IS NOT NULL, VALUES(duration),        duration),
+            cover_path      = IF(VALUES(cover_path)      IS NOT NULL, VALUES(cover_path),      cover_path),
+            `year`          = IF(VALUES(`year`)          IS NOT NULL, VALUES(`year`),          `year`),
+            bitrate         = IF(VALUES(bitrate)         IS NOT NULL, VALUES(bitrate),         bitrate),
+            sample_rate     = IF(VALUES(sample_rate)     IS NOT NULL, VALUES(sample_rate),     sample_rate),
+            channels        = IF(VALUES(channels)        IS NOT NULL, VALUES(channels),        channels),
+            bits_per_sample = IF(VALUES(bits_per_sample) IS NOT NULL, VALUES(bits_per_sample), bits_per_sample),
+            language        = IF(VALUES(language)        IS NOT NULL, VALUES(language),        language),
+            album_id        = IF(VALUES(album_id)        IS NOT NULL, VALUES(album_id),        album_id),
+            track_number    = IF(VALUES(track_number)    IS NOT NULL, VALUES(track_number),    track_number),
+            disc_number     = IF(VALUES(disc_number)     IS NOT NULL, VALUES(disc_number),     disc_number),
+            track_gain      = IF(VALUES(track_gain)      IS NOT NULL, VALUES(track_gain),      track_gain),
+            track_peak      = IF(VALUES(track_peak)      IS NOT NULL, VALUES(track_peak),      track_peak),
+            composer        = IF(VALUES(composer)        IS NOT NULL, VALUES(composer),        composer),
+            lyricist        = IF(VALUES(lyricist)        IS NOT NULL, VALUES(lyricist),        lyricist),
+            arranger        = IF(VALUES(arranger)        IS NOT NULL, VALUES(arranger),        arranger),
+            producer        = IF(VALUES(producer)        IS NOT NULL, VALUES(producer),        producer),
+            extra_tags      = IF(VALUES(extra_tags)      IS NOT NULL, VALUES(extra_tags),      extra_tags),
+            sort_title      = IF(VALUES(sort_title)      IS NOT NULL, VALUES(sort_title),      sort_title),
+            file_mtime      = IF(VALUES(file_mtime)      IS NOT NULL, VALUES(file_mtime),      file_mtime),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectSongIdsByFilePaths" resultType="map">
+        SELECT file_path, id FROM song WHERE file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+    </select>
+
+
+    <insert id="upsertStyle" databaseId="h2">
+        MERGE INTO style (style_name, sort_style_name, description, style_image, song_count, update_time)
+        KEY(style_name)
+        VALUES (#{styleName}, #{sortStyleName}, #{description}, #{styleImage}, #{songCount}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertStyle" databaseId="mysql">
+        INSERT INTO style (style_name, sort_style_name, description, style_image, song_count, update_time)
+        VALUES (#{styleName}, #{sortStyleName}, #{description}, #{styleImage}, #{songCount}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            sort_style_name = VALUES(sort_style_name),
+            description     = VALUES(description),
+            style_image     = VALUES(style_image),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectStyleIdByName" resultType="long">
+        SELECT id FROM style WHERE style_name = #{styleName}
+    </select>
+
+    <select id="findStyleById" resultType="com.gjl.music.model.Style">
+        SELECT id, style_name AS styleName, sort_style_name AS sortStyleName,
+               description, style_image AS styleImage, song_count AS songCount,
+               create_time AS createTime, update_time AS updateTime
+        FROM style WHERE id = #{id}
+    </select>
+
+    <select id="selectStyleInfoByName" resultType="map">
+        SELECT id, style_name AS "name", style_image AS "image", description, song_count AS "songCount"
+        FROM style WHERE style_name = #{styleName}
+    </select>
+
+    <insert id="batchUpsertStyles" databaseId="h2">
+        MERGE INTO style (style_name, sort_style_name, description, style_image, song_count, update_time)
+        KEY(style_name)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.styleName}, #{item.sortStyleName}, #{item.description}, #{item.styleImage}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsertStyles" databaseId="mysql">
+        INSERT INTO style (style_name, sort_style_name, description, style_image, song_count, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.styleName}, #{item.sortStyleName}, #{item.description}, #{item.styleImage}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            sort_style_name = VALUES(sort_style_name),
+            description     = VALUES(description),
+            style_image     = VALUES(style_image),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectStyleIdsByNames" resultType="map">
+        SELECT style_name, id FROM style WHERE style_name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+
+    <insert id="upsertLyric" databaseId="h2">
+        MERGE INTO lyric (content, lrc_path, type, lyric_hash, song_id, update_time)
+        KEY(lyric_hash, song_id)
+        VALUES (#{content}, #{lrcPath}, #{type}, #{lyricHash}, #{songId}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertLyric" databaseId="mysql">
+        INSERT INTO lyric (content, lrc_path, type, lyric_hash, song_id, update_time)
+        VALUES (#{content}, #{lrcPath}, #{type}, #{lyricHash}, #{songId}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            content     = VALUES(content),
+            lrc_path    = VALUES(lrc_path),
+            type        = VALUES(type),
+            update_time = CURRENT_TIMESTAMP
+    </insert>
+
+    <insert id="batchUpsertLyrics" databaseId="h2">
+        MERGE INTO lyric (content, lrc_path, type, lyric_hash, song_id, update_time)
+        KEY(lyric_hash, song_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.content}, #{item.lrcPath}, #{item.type}, #{item.lyricHash}, #{item.songId}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsertLyrics" databaseId="mysql">
+        INSERT INTO lyric (content, lrc_path, type, lyric_hash, song_id, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.content}, #{item.lrcPath}, #{item.type}, #{item.lyricHash}, #{item.songId}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            content     = VALUES(content),
+            lrc_path    = VALUES(lrc_path),
+            type        = VALUES(type),
+            update_time = CURRENT_TIMESTAMP
+    </insert>
+
+
+    <select id="findLyricBySongId" resultType="map">
+        SELECT id, content, lrc_path AS lrcPath, type, lyric_hash AS lyricHash,
+               song_id AS songId, create_time AS createTime, update_time AS updateTime
+        FROM lyric
+        WHERE song_id = #{songId}
+        ORDER BY id LIMIT 1
+    </select>
+
+
+    <select id="findHashDuplicates" resultType="map" databaseId="h2">
+        SELECT file_hash AS hash, LISTAGG(file_path, '||') AS paths,
+               LISTAGG(file_name, '||') AS names, COUNT(*) AS cnt
+        FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%')
+        GROUP BY file_hash HAVING COUNT(*) > 1
+    </select>
+
+    <select id="findHashDuplicates" resultType="map" databaseId="mysql">
+        SELECT file_hash AS hash, GROUP_CONCAT(file_path SEPARATOR '||') AS paths,
+               GROUP_CONCAT(file_name SEPARATOR '||') AS names, COUNT(*) AS cnt
+        FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%')
+        GROUP BY file_hash HAVING COUNT(*) > 1
+    </select>
+
+    <select id="findFileNameDuplicates" resultType="map" databaseId="h2">
+        SELECT file_name AS name, LISTAGG(file_path, '||') AS paths,
+               LISTAGG(file_name, '||') AS names, COUNT(*) AS cnt
+        FROM song
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        GROUP BY file_name HAVING COUNT(*) > 1
+    </select>
+
+    <select id="findFileNameDuplicates" resultType="map" databaseId="mysql">
+        SELECT file_name AS name, GROUP_CONCAT(file_path SEPARATOR '||') AS paths,
+               GROUP_CONCAT(file_name SEPARATOR '||') AS names, COUNT(*) AS cnt
+        FROM song
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        GROUP BY file_name HAVING COUNT(*) > 1
+    </select>
+
+    <select id="findMetadataForDedup" resultType="map" databaseId="h2">
+        SELECT s.file_path AS filePath, s.file_name AS fileName,
+               s.title, s.duration, al.album_name AS albumName,
+               LISTAGG(a.artist_name, ',') WITHIN GROUP (ORDER BY sa.sort_order, a.id) AS artistNames
+        FROM song s
+        LEFT JOIN album al ON s.album_id = al.id
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            s.file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        GROUP BY s.id
+    </select>
+
+    <select id="findMetadataForDedup" resultType="map" databaseId="mysql">
+        SELECT s.file_path AS filePath, s.file_name AS fileName,
+               s.title, s.duration, al.album_name AS albumName,
+               GROUP_CONCAT(a.artist_name ORDER BY sa.sort_order, a.id SEPARATOR ',') AS artistNames
+        FROM song s
+        LEFT JOIN album al ON s.album_id = al.id
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            s.file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        GROUP BY s.id
+    </select>
+
+    <select id="findFingerprintsForDedup" resultType="map">
+        SELECT file_path AS filePath, file_name AS fileName,
+               fingerprint, duration
+        FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%') AND fingerprint IS NOT NULL
+        ORDER BY id
+    </select>
+
+    <select id="findFingerprintsByPaths" resultType="map">
+        SELECT file_path AS filePath, file_name AS fileName, fingerprint
+        FROM song
+        WHERE file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+    </select>
+
+    <select id="findMetadataByPaths" resultType="map">
+        SELECT s.file_path AS filePath,
+               s.title AS TITLE, s.duration AS DURATION,
+               GROUP_CONCAT(DISTINCT a.artist_name ORDER BY sa.sort_order SEPARATOR ',') AS ARTISTNAMES,
+               al.album_name AS ALBUMNAME
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+        GROUP BY s.id
+    </select>
+
+
+    <select id="findFullMetadataByPaths" resultType="map">
+        SELECT s.file_path                                     AS FILEPATH,
+               s.title                                         AS TITLE,
+               s.file_name                                     AS FILE_NAME,
+               s.file_format                                   AS FILE_FORMAT,
+               s.file_size                                     AS FILE_SIZE,
+               s.file_hash                                     AS FILE_HASH,
+               s.fingerprint                                   AS FINGERPRINT,
+               s.duration                                      AS DURATION,
+               s.cover_path                                    AS COVER_PATH,
+               <![CDATA[s."year"]]>                                        AS "YEAR",
+               s.bitrate                                       AS BITRATE,
+               s.sample_rate                                   AS SAMPLE_RATE,
+               s.channels                                      AS CHANNELS,
+               s.bits_per_sample                               AS BITS_PER_SAMPLE,
+               s.language                                      AS LANGUAGE,
+               s.album_id                                      AS ALBUM_ID,
+               s.track_number                                  AS TRACK_NUMBER,
+               s.disc_number                                   AS DISC_NUMBER,
+               s.track_gain                                    AS TRACK_GAIN,
+               s.track_peak                                    AS TRACK_PEAK,
+               s.composer                                      AS COMPOSER,
+               s.lyricist                                      AS LYRICIST,
+               s.arranger                                      AS ARRANGER,
+               s.producer                                      AS PRODUCER,
+               s.file_mtime                                    AS FILE_MTIME,
+               al.album_name                                   AS ALBUM_NAME,
+               al.album_year                                   AS ALBUM_YEAR,
+               al.introduction                                 AS ALBUM_INTRODUCTION,
+               al.company                                      AS ALBUM_COMPANY,
+               al.language                                     AS ALBUM_LANGUAGE,
+               GROUP_CONCAT(DISTINCT
+                   CONCAT(a.artist_name, '::', COALESCE(a.country, ''))
+                   ORDER BY sa.sort_order, a.id
+                   SEPARATOR '||')                             AS ARTIST_DATA,
+               GROUP_CONCAT(DISTINCT st.style_name
+                   SEPARATOR '||')                             AS STYLE_NAMES,
+               GROUP_CONCAT(DISTINCT l.content
+                   SEPARATOR '|||')                            AS LYRIC_CONTENTS
+        FROM song s
+        LEFT JOIN album al ON s.album_id = al.id
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN song_style ss ON s.id = ss.song_id
+        LEFT JOIN style st ON ss.style_id = st.id
+        LEFT JOIN lyric l ON s.id = l.song_id
+        WHERE s.file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+        GROUP BY s.id, al.id
+    </select>
+
+
+    <select id="findAllSongsUnderRoot" resultType="map">
+        SELECT file_path AS filePath, file_name AS fileName,
+               file_hash AS fileHash, fingerprint, duration
+        FROM song
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        ORDER BY id
+    </select>
+
+
+    <update id="batchUpdateSongHash">
+        UPDATE song SET file_hash = CASE file_path
+        <foreach collection="list" item="item" separator=" ">
+            WHEN #{item.filePath} THEN #{item.fileHash}
+        </foreach>
+        END
+        WHERE file_path IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.filePath}
+        </foreach>
+    </update>
+
+
+    <update id="batchUpdateSongFingerprint">
+        UPDATE song SET fingerprint = CASE file_path
+        <foreach collection="list" item="item" separator=" ">
+            WHEN #{item.filePath} THEN #{item.fingerprint}
+        </foreach>
+        END
+        WHERE file_path IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.filePath}
+        </foreach>
+    </update>
+
+
+    <insert id="insertSongArtist" databaseId="h2">
+        MERGE INTO song_artist (song_id, artist_id, sort_order) KEY(song_id, artist_id) VALUES (#{songId}, #{artistId}, #{sortOrder})
+    </insert>
+
+    <insert id="insertSongArtist" databaseId="mysql">
+        INSERT INTO song_artist (song_id, artist_id, sort_order) VALUES (#{songId}, #{artistId}, #{sortOrder})
+        ON DUPLICATE KEY UPDATE sort_order = VALUES(sort_order)
+    </insert>
+
+    <insert id="insertSongStyle" databaseId="h2">
+        MERGE INTO song_style (song_id, style_id) KEY(song_id, style_id) VALUES (#{songId}, #{styleId})
+    </insert>
+
+    <insert id="insertSongStyle" databaseId="mysql">
+        INSERT IGNORE INTO song_style (song_id, style_id) VALUES (#{songId}, #{styleId})
+    </insert>
+
+    <insert id="batchInsertSongArtists" databaseId="h2">
+        MERGE INTO song_artist (song_id, artist_id, sort_order) KEY(song_id, artist_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.songId}, #{item.artistId}, #{item.sortOrder})
+        </foreach>
+    </insert>
+
+    <insert id="batchInsertSongArtists" databaseId="mysql">
+        INSERT INTO song_artist (song_id, artist_id, sort_order) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.songId}, #{item.artistId}, #{item.sortOrder})
+        </foreach>
+        ON DUPLICATE KEY UPDATE sort_order = VALUES(sort_order)
+    </insert>
+
+    <insert id="batchInsertSongStyles" databaseId="h2">
+        MERGE INTO song_style (song_id, style_id) KEY(song_id, style_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.songId}, #{item.styleId})
+        </foreach>
+    </insert>
+
+    <insert id="batchInsertSongStyles" databaseId="mysql">
+        INSERT IGNORE INTO song_style (song_id, style_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.songId}, #{item.styleId})
+        </foreach>
+    </insert>
+
+
+    <select id="selectSongPathsUnderRoot" resultType="map">
+        SELECT id, file_path, file_size, file_mtime FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%')
+    </select>
+
+    <select id="selectSongPathsUnderDirs" resultType="map">
+        SELECT id, file_path, file_size, file_mtime FROM song WHERE
+        <foreach collection="dirs" item="dir" open="(" separator=" OR " close=")">
+            file_path LIKE CONCAT(#{dir}, '%')
+        </foreach>
+    </select>
+
+    <delete id="deleteSongArtistsBySongIds">
+        DELETE FROM song_artist WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteSongStylesBySongIds">
+        DELETE FROM song_style WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteLyricsBySongIds">
+        DELETE FROM lyric WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteSongsByIds">
+        DELETE FROM song WHERE id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+
+    <update id="updateSongFilePath" databaseId="h2">
+        UPDATE song SET file_path = #{newPath}, file_name = #{newFileName},
+                        update_time = CURRENT_TIMESTAMP
+        WHERE file_path = #{oldPath}
+    </update>
+
+    <update id="updateSongFilePath" databaseId="mysql">
+        UPDATE song SET file_path = #{newPath}, file_name = #{newFileName},
+                        update_time = CURRENT_TIMESTAMP
+        WHERE file_path = #{oldPath}
+    </update>
+
+
+    <resultMap id="songResultMap" type="com.gjl.music.model.Song">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="file_path" property="filePath"/>
+        <result column="file_name" property="fileName"/>
+        <result column="file_format" property="fileFormat"/>
+        <result column="file_size" property="fileSize"/>
+        <result column="file_hash" property="fileHash"/>
+        <result column="fingerprint" property="fingerprint"/>
+        <result column="duration" property="duration"/>
+        <result column="cover_path" property="coverPath"/>
+        <result column="year" property="year"/>
+        <result column="bitrate" property="bitrate"/>
+        <result column="sample_rate" property="sampleRate"/>
+        <result column="channels" property="channels"/>
+        <result column="bits_per_sample" property="bitsPerSample"/>
+        <result column="language" property="language"/>
+        <result column="album_id" property="albumId"/>
+        <result column="track_number" property="trackNumber"/>
+        <result column="disc_number" property="discNumber"/>
+        <result column="track_gain" property="trackGain"/>
+        <result column="track_peak" property="trackPeak"/>
+        <result column="composer" property="composer"/>
+        <result column="lyricist" property="lyricist"/>
+        <result column="arranger" property="arranger"/>
+        <result column="producer" property="producer"/>
+        <result column="extra_tags" property="extraTags"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="sort_title" property="sortTitle"/>
+        <result column="artist_name" property="artistName"/>
+        <result column="album_name" property="albumName"/>
+        <result column="artist_id" property="artistId"/>
+    </resultMap>
+
+    <select id="findSongById" resultMap="songResultMap">
+        SELECT s.id, s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+               s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id,
+               a.artist_name,
+               al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.id = #{id}
+        ORDER BY sa.sort_order
+        LIMIT 1
+    </select>
+
+    <select id="findSongByFilePath" resultMap="songResultMap">
+        SELECT id, title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id,
+               track_number, disc_number, track_gain, track_peak,
+               composer, lyricist, arranger, producer, extra_tags,
+               create_time, update_time
+        FROM song WHERE file_path = #{filePath}
+    </select>
+
+    <select id="findSongsByIds" resultMap="songResultMap">
+        SELECT s.id, s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+               s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findAlbumById" resultType="com.gjl.music.model.Album">
+        SELECT id, album_name AS albumName, album_type AS albumType,
+               album_cover AS albumCover, introduction, album_year AS albumYear,
+               company, language, artist_id AS artistId, song_count AS songCount,
+               create_time AS createTime, update_time AS updateTime
+        FROM album WHERE id = #{id}
+    </select>
+
+    <select id="findAlbumsByIds" resultType="com.gjl.music.model.Album">
+        SELECT id, album_name AS albumName, album_type AS albumType,
+               album_cover AS albumCover, introduction, album_year AS albumYear,
+               company, language, artist_id AS artistId, song_count AS songCount,
+               create_time AS createTime, update_time AS updateTime
+        FROM album WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findArtistById" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist WHERE id = #{id}
+    </select>
+
+    <select id="findArtistsByIds" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findStylesByIds" resultType="com.gjl.music.model.Style">
+        SELECT id, style_name AS styleName, sort_style_name AS sortStyleName,
+               description, style_image AS styleImage,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM style WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+
+    <select id="findFirstSongCoverByAlbumId" resultType="string">
+        SELECT cover_path FROM song
+        WHERE album_id = #{albumId} AND cover_path IS NOT NULL AND cover_path != ''
+        ORDER BY track_number ASC, disc_number ASC
+        LIMIT 1
+    </select>
+
+    <select id="findFirstAlbumCoverByArtistId" resultType="string">
+        SELECT album_cover FROM album
+        WHERE artist_id = #{artistId} AND album_cover IS NOT NULL AND album_cover != ''
+        ORDER BY album_year DESC
+        LIMIT 1
+    </select>
+
+    <select id="findFirstSongCoverByArtistId" resultType="string">
+        SELECT s.cover_path FROM song s
+        JOIN album a ON s.album_id = a.id
+        WHERE a.artist_id = #{artistId} AND s.cover_path IS NOT NULL AND s.cover_path != ''
+        ORDER BY a.album_year DESC, s.track_number ASC
+        LIMIT 1
+    </select>
+
+    <select id="findAllSongIds" resultType="long">
+        SELECT id FROM song ORDER BY id
+    </select>
+
+    <select id="findSongIdsUpdatedAfter" resultType="long">
+        SELECT id FROM song WHERE update_time > #{since} ORDER BY id
+    </select>
+
+
+    <select id="findArtists" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                    AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                OR COALESCE(sort_artist_name, artist_name) IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "albumCount"'>
+                ORDER BY album_count DESC, artist_name
+            </when>
+            <when test='sort == "songCount"'>
+                ORDER BY song_count DESC, artist_name
+            </when>
+            <otherwise>
+                ORDER BY COALESCE(sort_artist_name, artist_name)
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countArtists" resultType="int">
+        SELECT COUNT(*) FROM artist
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                    AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                OR COALESCE(sort_artist_name, artist_name) IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="getArtistLetters" resultType="map">
+        SELECT
+            CASE
+                WHEN UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt;= 'A'
+                    AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt;= 'Z'
+                    THEN UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1))
+                WHEN SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) >= '0'
+                    AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+                    THEN '0-9'
+                ELSE '#'
+            END AS letter,
+            COUNT(*) AS cnt
+        FROM artist
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <select id="findAlbumsByType" resultType="com.gjl.music.model.Album">
+        SELECT album.id, album.album_name AS albumName, album.album_type AS albumType,
+               album.album_cover AS albumCover, album.introduction, album.album_year AS albumYear,
+               album.company, album.language, album.artist_id AS artistId, album.song_count AS songCount,
+               album.create_time AS createTime, album.update_time AS updateTime
+        FROM album
+        <if test="(type == 'frequent' or type == 'mostPlayed' or type == 'recent' or type == 'recentlyPlayed') and userId != null">
+            LEFT JOIN play_count pc ON pc.item_id = album.id
+                AND pc.item_type = 'album' AND pc.user_id = #{userId}
+        </if>
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) >= '0'
+                AND SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                (SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) &lt; '0'
+                OR (SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) > '9'
+                    AND SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) &lt; 'A')
+                OR (SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) > 'Z'
+                    AND SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) &lt; 'a')
+                OR SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) > 'z'
+                OR (album.sort_album_name IS NULL AND album.album_name IS NULL))
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                COALESCE(album.sort_album_name, album.album_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+            <if test="starred != null and starred == true">
+                AND album.id IN (SELECT item_id FROM user_starred WHERE item_type = 'album'
+                    AND user_id = (SELECT id FROM auth_user WHERE username = #{starredUsername}))
+            </if>
+            <if test="artistId != null">
+                AND album.artist_id = #{artistId}
+            </if>
+        </where>
+        <choose>
+            <when test="type == 'alphabetical' or type == 'alphabeticalByName'">
+                ORDER BY COALESCE(album.sort_album_name, album.album_name) ASC
+            </when>
+            <when test="type == 'random'">ORDER BY RAND()</when>
+            <when test="type == 'byYear'">ORDER BY album.album_year DESC NULLS LAST</when>
+            <when test="type == 'frequent' or type == 'mostPlayed'">
+                ORDER BY COALESCE(pc.play_count, 0) DESC,
+                    COALESCE(album.sort_album_name, album.album_name) ASC
+            </when>
+            <when test="type == 'recent' or type == 'recentlyPlayed'">
+                ORDER BY COALESCE(pc.last_played_at, album.create_time) DESC
+            </when>
+            <otherwise>ORDER BY album.create_time DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAlbumsByLetter" resultType="int">
+        SELECT COUNT(*) FROM album
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) >= '0'
+                AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; '0'
+                OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) > '9'
+                    AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'A')
+                OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) > 'Z'
+                    AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'a')
+                OR SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) > 'z'
+                OR (sort_album_name IS NULL AND album_name IS NULL))
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                album_name LIKE CONCAT(#{letter}, '%')
+            </if>
+            <if test="starred != null and starred == true">
+                AND album.id IN (SELECT item_id FROM user_starred WHERE item_type = 'album'
+                    AND user_id = (SELECT id FROM auth_user WHERE username = #{starredUsername}))
+            </if>
+            <if test="artistId != null">
+                AND album.artist_id = #{artistId}
+            </if>
+        </where>
+    </select>
+
+    <select id="getAlbumLetters" resultType="map">
+        SELECT
+            CASE
+                WHEN UPPER(SUBSTR(COALESCE(sort_album_name, album_name), 1, 1)) >= 'A'
+                    AND UPPER(SUBSTR(COALESCE(sort_album_name, album_name), 1, 1)) &lt;= 'Z'
+                    THEN UPPER(SUBSTR(COALESCE(sort_album_name, album_name), 1, 1))
+                WHEN SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) >= '0'
+                    AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt;= '9' THEN '0-9'
+                ELSE '#'
+            END AS letter,
+            COUNT(*) AS cnt
+        FROM album
+        <if test="starred != null and starred == true">
+            WHERE album.id IN (SELECT item_id FROM user_starred WHERE item_type = 'album'
+                AND user_id = (SELECT id FROM auth_user WHERE username = #{starredUsername}))
+        </if>
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <select id="findSongsByAlbumIds" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.album_id IN
+        <foreach collection="albumIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY s.album_id, s.disc_number ASC NULLS FIRST, s.track_number ASC NULLS FIRST
+    </select>
+
+    <select id="findAlbumsByArtistId" resultType="com.gjl.music.model.Album">
+        SELECT id, album_name AS albumName, album_type AS albumType,
+               album_cover AS albumCover, introduction, album_year AS albumYear,
+               company, language, artist_id AS artistId, song_count AS songCount,
+               create_time AS createTime, update_time AS updateTime
+        FROM album
+        WHERE artist_id = #{artistId}
+        ORDER BY album_year DESC NULLS LAST, album_name ASC
+    </select>
+
+    <select id="findSongsByArtistId" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        INNER JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE sa.artist_id = #{artistId}
+        ORDER BY s.album_id, s.disc_number ASC NULLS FIRST, s.track_number ASC NULLS FIRST
+    </select>
+
+    <select id="findSongsByAlbumId" resultMap="songResultMap">
+        SELECT id, title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id,
+               track_number, disc_number, track_gain, track_peak,
+               composer, lyricist, arranger, producer, extra_tags,
+               create_time, update_time
+        FROM song
+        WHERE album_id = #{albumId}
+        ORDER BY disc_number ASC NULLS FIRST, track_number ASC NULLS FIRST
+    </select>
+
+    <select id="findSongsPaginated" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        <if test='sort == "frequent" and userId != null'>
+            LEFT JOIN play_count pc ON pc.item_id = s.id
+                AND pc.item_type = 'song' AND pc.user_id = #{userId}
+        </if>
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(s.sort_title, 1, 1) >= '0' AND SUBSTR(s.sort_title, 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                SUBSTR(s.sort_title, 1, 1) &lt; '0'
+                OR (SUBSTR(s.sort_title, 1, 1) > '9' AND SUBSTR(s.sort_title, 1, 1) &lt; 'A')
+                OR (SUBSTR(s.sort_title, 1, 1) > 'Z' AND SUBSTR(s.sort_title, 1, 1) &lt; 'a')
+                OR SUBSTR(s.sort_title, 1, 1) > 'z'
+                OR s.sort_title IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                s.sort_title LIKE CONCAT(#{letter}, '%')
+            </if>
+            <if test="artistId != null">
+                AND sa.artist_id = #{artistId}
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "frequent"'>ORDER BY COALESCE(pc.play_count, 0) DESC, s.sort_title</when>
+            <when test='sort == "newest"'>ORDER BY s.create_time DESC</when>
+            <otherwise>ORDER BY s.sort_title, s.create_time DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSongs" resultType="int">
+        SELECT COUNT(*) FROM song s
+        <if test="artistId != null">
+            INNER JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        </if>
+        <where>
+            <if test='letter == "0-9"'>
+                s.sort_title >= '0' AND s.sort_title &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                s.sort_title &lt; '0'
+                OR (s.sort_title > '9' AND s.sort_title &lt; 'A')
+                OR (s.sort_title > 'Z' AND s.sort_title &lt; 'a')
+                OR s.sort_title > 'z'
+                OR s.sort_title IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                s.sort_title LIKE CONCAT(#{letter}, '%')
+            </if>
+            <if test="artistId != null">
+                AND sa.artist_id = #{artistId}
+            </if>
+        </where>
+    </select>
+
+    <select id="getSongLetters" resultType="map">
+        SELECT
+            CASE
+                WHEN UPPER(SUBSTR(sort_title, 1, 1)) >= 'A' AND UPPER(SUBSTR(sort_title, 1, 1)) &lt;= 'Z' THEN UPPER(SUBSTR(sort_title, 1, 1))
+                WHEN SUBSTR(sort_title, 1, 1) >= '0' AND SUBSTR(sort_title, 1, 1) &lt;= '9' THEN '0-9'
+                ELSE '#'
+            END AS letter,
+            COUNT(*) AS cnt
+        FROM song
+        WHERE sort_title IS NOT NULL
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <select id="findRandomSongs" resultMap="songResultMap">
+        SELECT id, title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id,
+               track_number, disc_number, track_gain, track_peak,
+               composer, lyricist, arranger, producer, extra_tags,
+               create_time, update_time
+        FROM song
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+    <select id="findDistinctGenres" resultType="map">
+        SELECT st.id AS "id", st.style_name AS "genre", st.style_image AS "image",
+               st.description AS "description",
+               st.song_count AS "songCount"
+        FROM style st
+        WHERE st.song_count > 0
+        ORDER BY st.song_count DESC, st.style_name ASC
+    </select>
+
+    <select id="findSongsByGenre" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               a.artist_name, al.album_name
+        FROM song s
+        INNER JOIN song_style ss ON s.id = ss.song_id
+        INNER JOIN style st ON ss.style_id = st.id AND st.style_name = #{genre}
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        <if test='sort == "frequent" and userId != null'>
+            LEFT JOIN play_count pc ON pc.item_id = s.id
+                AND pc.item_type = 'song' AND pc.user_id = #{userId}
+        </if>
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(s.sort_title, 1, 1) >= '0' AND SUBSTR(s.sort_title, 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                SUBSTR(s.sort_title, 1, 1) &lt; '0'
+                OR (SUBSTR(s.sort_title, 1, 1) > '9' AND SUBSTR(s.sort_title, 1, 1) &lt; 'A')
+                OR (SUBSTR(s.sort_title, 1, 1) > 'Z' AND SUBSTR(s.sort_title, 1, 1) &lt; 'a')
+                OR SUBSTR(s.sort_title, 1, 1) > 'z'
+                OR s.sort_title IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                s.sort_title LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "frequent"'>ORDER BY COALESCE(pc.play_count, 0) DESC, s.sort_title</when>
+            <when test='sort == "newest"'>ORDER BY s.create_time DESC</when>
+            <otherwise>ORDER BY s.sort_title, s.create_time DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSongsByGenre" resultType="int">
+        SELECT COUNT(*)
+        FROM song s
+        INNER JOIN song_style ss ON s.id = ss.song_id
+        INNER JOIN style st ON ss.style_id = st.id AND st.style_name = #{genre}
+        <where>
+            <if test='letter == "0-9"'>
+                s.sort_title >= '0' AND s.sort_title &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                s.sort_title &lt; '0'
+                OR (s.sort_title > '9' AND s.sort_title &lt; 'A')
+                OR (s.sort_title > 'Z' AND s.sort_title &lt; 'a')
+                OR s.sort_title > 'z'
+                OR s.sort_title IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                s.sort_title LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="findGenresPaginated" resultType="map">
+        SELECT st.id AS "id", st.style_name AS "genre", st.style_image AS "image",
+               st.description AS "description",
+               st.song_count AS "songCount"
+        FROM style st
+        <where>
+            st.song_count > 0
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) >= '0'
+                AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(st.style_name, ''), 1, 1) > '9' AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; 'A')
+                    OR (SUBSTR(COALESCE(st.style_name, ''), 1, 1) > 'Z' AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; 'a')
+                    OR SUBSTR(COALESCE(st.style_name, ''), 1, 1) > 'z'
+                    OR st.style_name IS NULL)
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND st.style_name LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "songCount"'>ORDER BY st.song_count DESC, st.style_name ASC</when>
+            <otherwise>ORDER BY st.style_name ASC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countGenres" resultType="int">
+        SELECT COUNT(*)
+        FROM style st
+        <where>
+            st.song_count > 0
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) >= '0'
+                AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(st.style_name, ''), 1, 1) > '9' AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; 'A')
+                    OR (SUBSTR(COALESCE(st.style_name, ''), 1, 1) > 'Z' AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; 'a')
+                    OR SUBSTR(COALESCE(st.style_name, ''), 1, 1) > 'z'
+                    OR st.style_name IS NULL)
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND st.style_name LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="getGenreLetters" resultType="map">
+        SELECT
+            CASE
+                WHEN UPPER(SUBSTR(COALESCE(st.style_name, ''), 1, 1)) >= 'A'
+                    AND UPPER(SUBSTR(COALESCE(st.style_name, ''), 1, 1)) &lt;= 'Z'
+                    THEN UPPER(SUBSTR(st.style_name, 1, 1))
+                WHEN SUBSTR(COALESCE(st.style_name, ''), 1, 1) >= '0'
+                    AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt;= '9'
+                    THEN '0-9'
+                ELSE '#'
+            END AS "letter",
+            COUNT(*) AS "cnt"
+        FROM style st
+        WHERE st.style_name IS NOT NULL AND st.song_count > 0
+        GROUP BY "letter"
+        ORDER BY "letter"
+    </select>
+
+    <select id="findArtistIndex" resultType="map" databaseId="h2">
+        SELECT UPPER(LEFT(COALESCE(sort_artist_name, artist_name), 1)) AS letter, COUNT(*) AS cnt
+        FROM artist
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <select id="findArtistIndex" resultType="map" databaseId="mysql">
+        SELECT UPPER(LEFT(COALESCE(sort_artist_name, artist_name), 1)) AS letter, COUNT(*) AS cnt
+        FROM artist
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+
+    <select id="findFirstArtistIdBySongId" resultType="java.lang.Integer">
+        SELECT sa.artist_id FROM song_artist sa
+        WHERE sa.song_id = #{songId}
+        ORDER BY sa.sort_order
+        LIMIT 1
+    </select>
+
+    <select id="findFirstGenreBySongId" resultType="string">
+        SELECT st.style_name FROM song_style ss
+        JOIN style st ON ss.style_id = st.id
+        WHERE ss.song_id = #{songId}
+        ORDER BY ss.song_id, ss.style_id
+        LIMIT 1
+    </select>
+
+
+    <select id="findGenresBySongIds" resultType="map">
+        SELECT ss.song_id AS songId, st.style_name AS styleName
+        FROM song_style ss
+        JOIN style st ON ss.style_id = st.id
+        WHERE ss.song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY ss.song_id, ss.style_id
+    </select>
+
+
+    <select id="findArtistIdsBySongId" resultType="long">
+        SELECT artist_id FROM song_artist WHERE song_id = #{songId} ORDER BY sort_order
+    </select>
+
+    <select id="findStyleIdsBySongId" resultType="long">
+        SELECT style_id FROM song_style WHERE song_id = #{songId}
+    </select>
+
+    <select id="findSongIdsByStyleId" resultType="long">
+        SELECT song_id FROM song_style WHERE style_id = #{styleId}
+    </select>
+
+    <select id="findUserIdByUsername" resultType="long">
+        SELECT id FROM auth_user WHERE username = #{username}
+    </select>
+
+
+    <select id="findAlbumIdsBySongIds" resultType="long">
+        SELECT DISTINCT album_id FROM song
+        WHERE id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND album_id IS NOT NULL
+    </select>
+
+    <select id="findArtistIdsBySongIds" resultType="long">
+        SELECT DISTINCT artist_id FROM song_artist
+        WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="updateAlbumSongCounts">
+        UPDATE album SET song_count = (
+            SELECT COUNT(*) FROM song WHERE song.album_id = album.id
+        ), update_time = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="albumIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateArtistAlbumCounts">
+        UPDATE artist SET album_count = (
+            SELECT COUNT(*) FROM album WHERE album.artist_id = artist.id
+        ), update_time = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="artistIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateArtistSongCounts">
+        UPDATE artist SET song_count = (
+            SELECT COUNT(*) FROM song s
+            INNER JOIN song_artist sa ON s.id = sa.song_id
+            WHERE sa.artist_id = artist.id
+        ), update_time = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="artistIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="findStyleIdsBySongIds" resultType="long">
+        SELECT DISTINCT style_id FROM song_style
+        WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="updateStyleSongCounts">
+        UPDATE style SET song_count = (
+            SELECT COUNT(*) FROM song_style WHERE song_style.style_id = style.id
+        ), update_time = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="styleIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+
+    <select id="searchArtists" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND artist_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                        AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                    OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                    OR COALESCE(sort_artist_name, artist_name) IS NULL)
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "albumCount"'>
+                ORDER BY album_count DESC, artist_name
+            </when>
+            <when test='sort == "songCount"'>
+                ORDER BY song_count DESC, artist_name
+            </when>
+            <otherwise>
+                ORDER BY COALESCE(sort_artist_name, artist_name)
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearchArtists" resultType="int">
+        SELECT COUNT(*) FROM artist
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND artist_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                        AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                    OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                    OR COALESCE(sort_artist_name, artist_name) IS NULL)
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+
+    <select id="findDuplicateArtistNames" resultType="map" databaseId="h2">
+        SELECT LOWER(artist_name) AS "normName", COUNT(*) AS "cnt",
+               LISTAGG(CAST(id AS VARCHAR), ',') AS "ids"
+        FROM artist
+        GROUP BY LOWER(artist_name)
+        HAVING COUNT(*) > 1
+        ORDER BY "cnt" DESC
+    </select>
+
+    <select id="findDuplicateArtistNames" resultType="map" databaseId="mysql">
+        SELECT LOWER(artist_name) AS normName, COUNT(*) AS cnt,
+               GROUP_CONCAT(id SEPARATOR ',') AS ids
+        FROM artist
+        GROUP BY LOWER(artist_name)
+        HAVING COUNT(*) > 1
+        ORDER BY cnt DESC
+    </select>
+
+    <select id="findArtistsByNormalizedName" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist
+        WHERE LOWER(artist_name) = LOWER(#{normName})
+        ORDER BY song_count DESC, album_count DESC
+    </select>
+
+
+    <update id="reassignSongArtists" databaseId="h2">
+        UPDATE song_artist
+        SET artist_id = #{targetId}
+        WHERE artist_id = #{sourceId}
+          AND song_id NOT IN (
+              SELECT song_id FROM song_artist WHERE artist_id = #{targetId}
+          )
+    </update>
+
+    <update id="reassignSongArtists" databaseId="mysql">
+        UPDATE song_artist
+        SET artist_id = #{targetId}
+        WHERE artist_id = #{sourceId}
+          AND song_id NOT IN (
+              SELECT song_id FROM (SELECT sa.song_id AS song_id FROM song_artist sa WHERE sa.artist_id = #{targetId}) tmp
+          )
+    </update>
+
+
+    <delete id="deleteConflictingSongArtists" databaseId="h2">
+        DELETE FROM song_artist
+        WHERE artist_id = #{sourceId}
+          AND song_id IN (
+              SELECT song_id FROM song_artist WHERE artist_id = #{targetId}
+          )
+    </delete>
+
+    <delete id="deleteConflictingSongArtists" databaseId="mysql">
+        DELETE FROM song_artist
+        WHERE artist_id = #{sourceId}
+          AND song_id IN (
+              SELECT song_id FROM (SELECT sa.song_id AS song_id FROM song_artist sa WHERE sa.artist_id = #{targetId}) tmp
+          )
+    </delete>
+
+
+    <update id="reassignAlbumArtist">
+        UPDATE album SET artist_id = #{targetId}, update_time = CURRENT_TIMESTAMP
+        WHERE artist_id = #{sourceId}
+    </update>
+
+
+    <delete id="deleteArtist">
+        DELETE FROM artist WHERE id = #{id}
+    </delete>
+
+
+    <sql id="artistScannerOverlay">
+        <if test="minSongs != null">
+            AND a.song_count &gt;= #{minSongs}
+        </if>
+        <if test="maxSongs != null">
+            AND a.song_count &lt;= #{maxSongs}
+        </if>
+        <if test="country != null and country != ''">
+            AND a.country = #{country}
+        </if>
+        <if test="style != null and style != ''">
+            AND a.id IN (
+                SELECT sa.artist_id FROM song_artist sa
+                JOIN song_style ss ON sa.song_id = ss.song_id
+                JOIN style st ON ss.style_id = st.id
+                WHERE st.style_name = #{style}
+            )
+        </if>
+    </sql>
+
+
+    <sql id="artistScannerLetter">
+        <if test='letter != null and letter != ""'>
+            <choose>
+                <when test='letter == "0-9"'>
+                    AND SUBSTR(COALESCE(a.sort_artist_name, a.artist_name), 1, 1) &gt;= '0'
+                    AND SUBSTR(COALESCE(a.sort_artist_name, a.artist_name), 1, 1) &lt;= '9'
+                </when>
+                <when test='letter == "#"'>
+                    AND (SUBSTR(COALESCE(a.sort_artist_name, a.artist_name), 1, 1) &lt; '0'
+                        OR (SUBSTR(COALESCE(a.sort_artist_name, a.artist_name), 1, 1) &gt; '9'
+                            AND UPPER(SUBSTR(COALESCE(a.sort_artist_name, a.artist_name), 1, 1)) &lt; 'A')
+                        OR UPPER(SUBSTR(COALESCE(a.sort_artist_name, a.artist_name), 1, 1)) &gt; 'Z'
+                        OR COALESCE(a.sort_artist_name, a.artist_name) IS NULL)
+                </when>
+                <otherwise>
+                    AND COALESCE(a.sort_artist_name, a.artist_name) LIKE CONCAT(#{letter}, '%')
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+
+    <sql id="artistScannerKeyword">
+        <if test="keyword != null and keyword != ''">
+            AND a.artist_name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+    </sql>
+
+
+    <select id="findAllArtistIds" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+
+    <select id="findArtistIdsByLetter" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+
+    <select id="findArtistIdsByKeyword" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+
+    <select id="findIncompleteArtistIds" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            (a.artist_cover IS NULL OR a.artist_cover = ''
+             OR a.introduction IS NULL OR a.introduction = ''
+             OR a.country IS NULL OR a.country = ''
+             OR a.gender IS NULL)
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+
+    <select id="findUnenrichedArtistIds" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            a.enrich_source IS NULL
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+
+    <select id="findNonstandardArtistIds" databaseId="h2" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            (
+                a.artist_name REGEXP '[Ａ-Ｚａ-ｚ０-９]'
+                OR a.artist_name REGEXP '  +'
+                OR REGEXP_LIKE(a.artist_name, '(?i)\bfeat\.|\bft\.|&amp;|\bx\b')
+            )
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+    <select id="findNonstandardArtistIds" databaseId="mysql" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            (
+                a.artist_name REGEXP '[Ａ-Ｚａ-ｚ０-９]'
+                OR a.artist_name REGEXP '  +'
+                OR a.artist_name REGEXP '(?i)\bfeat\.|\bft\.|&amp;|\\bx\\b'
+            )
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+
+    <select id="findNakedArtistIds" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            (a.artist_cover IS NULL OR a.artist_cover = '')
+            AND (a.introduction IS NULL OR a.introduction = '')
+            AND (a.country IS NULL OR a.country = '')
+            AND (a.gender IS NULL)
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+
+    <select id="findDuplicateArtistIds" resultType="long">
+        SELECT a.id FROM artist a
+        <where>
+            LOWER(a.artist_name) IN (
+                SELECT LOWER(artist_name) FROM artist
+                GROUP BY LOWER(artist_name) HAVING COUNT(*) > 1
+            )
+            <include refid="artistScannerLetter"/>
+            <include refid="artistScannerKeyword"/>
+            <include refid="artistScannerOverlay"/>
+        </where>
+        ORDER BY a.id
+    </select>
+
+
+</mapper>

@@ -1,0 +1,15 @@
+# MySQL 数据源（--spring.profiles.active=mysql 激活时覆盖默认 H2 配置）
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/musicdb
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password:
+  sql:
+    init:
+      platform: mysql
+      schema-locations:
+        - classpath*:schema-common-mysql.sql
+        - classpath*:schema-editor-mysql.sql
+        - classpath:schema-auth-mysql.sql
+        - classpath*:schema-playback-mysql.sql
