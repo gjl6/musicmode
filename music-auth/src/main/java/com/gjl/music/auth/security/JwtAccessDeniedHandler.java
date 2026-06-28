@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-
+/**
+ * 授权失败处理器 —— 返回统一格式 403。
+ */
 @Component
 public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 

@@ -1,10 +1,13 @@
 package com.gjl.music.playback.service;
 
+import com.gjl.music.dto.SongResult;
 import com.gjl.music.model.Song;
 
 import java.util.Map;
 
-
+/**
+ * 流派业务逻辑接口。
+ */
 public interface GenreService {
 
     Map<String, Object> getGenres(String sort, String letter, int limit, int offset);
@@ -16,5 +19,5 @@ public interface GenreService {
 
     Long resolveUserId(String username);
 
-    Map<String, Object> toSongMap(Song s);
+    SongResult toSongResult(Song s);
 }

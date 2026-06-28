@@ -80,7 +80,7 @@
           <SplitPanel v-if="appStore.splitPanelVisible" />
           <ReplacePanel v-if="appStore.replacePanelVisible" />
           <div class="drawer-edit-area">
-
+            <!-- 封面 -->
             <div class="cover-area" v-memo="[coverUrl]">
           <div
             class="cover-box"
@@ -98,7 +98,7 @@
           </div>
         </div>
 
-
+        <!-- 分组表单 -->
         <div class="edit-sections">
           <EditSection
             :title="t('edit.song')"
@@ -186,7 +186,7 @@
               </div>
             </div>
 
-
+            <!-- 技术信息（只读） -->
             <n-collapse class="tech-collapse" v-memo="[tech]">
               <n-collapse-item :title="t('edit.techInfo')" name="tech">
                 <div class="tech-grid">
@@ -292,7 +292,7 @@
             :title="t('edit.artist')"
             :dirty-count="editStore.dirtyCountByGroup.artist"
           >
-
+            <!-- 艺术家切换 tabs -->
             <div class="artist-tabs">
               <span
                 v-for="(a, i) in editStore.currentMeta.artists"
@@ -491,7 +491,7 @@ const editStore = useEditStore()
 const appStore = useAppStore()
 const auth = useAuthStore()
 
-const hasEdit = computed(() => auth.hasPermission('music:edit'))
+const hasEdit = computed(() => auth.hasPermission('music:write'))
 const saving = ref(false)
 
 const drawerWidth = computed(() => {
@@ -501,6 +501,8 @@ const drawerWidth = computed(() => {
 })
 
 
+// ── 双向绑定 ──
+
 const visible = computed({
   get: () => appStore.drawerVisible,
   set: (v) => { if (!v) handleClose() },
@@ -508,6 +510,7 @@ const visible = computed({
 
 const dirtyState = computed(() => editStore.dirtyFields)
 
+// display-directive="show" 时 mask 始终在 DOM 中，需程序化控制 pointer-events
 watch(() => appStore.drawerVisible, (v) => {
   nextTick(() => {
     const mask = document.querySelector('.n-drawer-mask')
@@ -515,24 +518,28 @@ watch(() => appStore.drawerVisible, (v) => {
   })
 }, { immediate: true })
 
+// ── 封面 ──
 
 const coverUrl = computed(() => {
   const p = editStore.currentMeta.song?.coverPath
   return getCoverUrl(p)
 })
 
+// ── 格式 ──
 
 const format = computed(() => {
   const f = editStore.currentMeta.song?._readonly?.fileFormat
   return f || ''
 })
 
+// ── 文件名 ──
 
 const drawerTitle = computed(() => {
   if (!editStore.editingFile) return t('edit.title')
   return editStore.editingFile.fileName || editStore.editingFile.name || ''
 })
 
+// ── 技术信息 ──
 
 const tech = computed(() => {
   const r = editStore.currentMeta.song?._readonly || {}
@@ -567,6 +574,7 @@ function formatFileSize(bytes) {
   return `${size.toFixed(1)} GB`
 }
 
+// ── 下拉选项 ──
 
 const albumTypeOptions = [
   { label: 'ALBUM', value: 'ALBUM' },
@@ -588,6 +596,7 @@ const lyricTypeOptions = [
   { label: 'LRC', value: 'LRC' },
 ]
 
+// ── 操作 ──
 
 async function handleSave() {
   if (!editStore.isDirty || !editStore.editingFile) return
@@ -631,10 +640,10 @@ function handleClose() {
 </script>
 
 <style scoped>
-
+/* ── Drawer 整体 ── */
 
 :deep(.n-drawer-content-wrapper) {
-
+  /* will-change removed — let Naive UI manage compositing */
 }
 
 :deep(.n-drawer-content) {
@@ -658,6 +667,7 @@ function handleClose() {
   overflow: hidden;
 }
 
+/* ── Header ── */
 
 .drawer-header {
   display: flex;
@@ -700,6 +710,7 @@ function handleClose() {
   flex-shrink: 0;
 }
 
+/* ── 空态 ── */
 
 .empty-hint {
   display: flex;
@@ -710,6 +721,7 @@ function handleClose() {
   color: var(--ct-text-2);
 }
 
+/* ── 封面 ── */
 
 .cover-area {
   display: flex;
@@ -774,12 +786,14 @@ function handleClose() {
   opacity: 1;
 }
 
+/* ── 分组折叠 ── */
 
 .edit-sections {
   display: flex;
   flex-direction: column;
 }
 
+/* :deep(.edit-section) 已移除空规则 */
 
 :deep(.section-header) {
   display: flex;
@@ -837,6 +851,7 @@ function handleClose() {
   padding-bottom: 8px;
 }
 
+/* ── 艺术家 tabs ── */
 
 .artist-tabs {
   display: flex;
@@ -906,6 +921,7 @@ function handleClose() {
   color: rgb(var(--ct-accent-rgb));
 }
 
+/* ── 字段行 ── */
 
 .field-row {
   position: relative;
@@ -936,7 +952,7 @@ function handleClose() {
   min-width: 0;
 }
 
-
+/* dirty dot */
 .dirty-dot {
   position: absolute;
   top: 18px;
@@ -948,6 +964,7 @@ function handleClose() {
   pointer-events: none;
 }
 
+/* ── 技术信息 ── */
 
 .tech-collapse {
   margin-top: 8px;
@@ -997,6 +1014,7 @@ function handleClose() {
   white-space: nowrap;
 }
 
+/* ── Footer ── */
 
 .drawer-footer {
   display: flex;
@@ -1034,8 +1052,9 @@ function handleClose() {
 </style>
 
 <style>
+/* ── 非 scoped 样式（Naive UI 深度覆盖 + 编辑区域布局） ── */
 
-
+/* EnrichPanel 与编辑表单并排布局 */
 .drawer-body-layout {
   display: flex;
   height: 100%;
@@ -1055,7 +1074,7 @@ function handleClose() {
   contain: layout style;
 }
 
-
+/* 字段输入框 */
 .edit-sections .n-input {
   --n-color: var(--ct-bg-secondary);
   --n-color-focus: var(--ct-bg-secondary);
@@ -1084,7 +1103,7 @@ function handleClose() {
   --n-font-size: 12.5px;
 }
 
-
+/* textarea */
 .edit-sections .n-input.n-input--textarea {
   --n-padding: 6px 10px;
 }

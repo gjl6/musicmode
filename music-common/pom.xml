@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.gjl</groupId>
         <artifactId>music-mode</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,52 +18,52 @@
     <description>共享数据层：model、mapper、基础 config、异常、工具类</description>
 
     <dependencies>
-
+        <!-- Spring Boot（不含 web/websocket） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
-
+        <!-- MyBatis -->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>
             <version>${mybatis-starter.version}</version>
         </dependency>
 
-
+        <!-- Redis（Lettuce，@ConditionalOnClass 保护） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-
+        <!-- Caffeine 缓存（ConfigService 用） -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
 
-
+        <!-- Jackson -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-
+        <!-- jaudiotagger — 音频标签解析（Parser 模块） -->
         <dependency>
             <groupId>net.jthink</groupId>
             <artifactId>jaudiotagger</artifactId>
             <version>${jaudiotagger.version}</version>
         </dependency>
 
-
+        <!-- 拼音转换（sort_title 计算） -->
         <dependency>
             <groupId>com.belerweb</groupId>
             <artifactId>pinyin4j</artifactId>
             <version>${pinyin4j.version}</version>
         </dependency>
 
-
+        <!-- 数据库驱动 -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -74,7 +74,7 @@
             <scope>runtime</scope>
         </dependency>
 
-
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -82,7 +82,24 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Apache Lucene（全文搜索） -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analysis-smartcn</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-queryparser</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
 
+        <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc-test</artifactId>
@@ -90,5 +107,6 @@
         </dependency>
     </dependencies>
 
+    <!-- ★ 不引入 spring-boot-maven-plugin：music-common 是纯 JAR 库，不是可执行应用 -->
 
 </project>

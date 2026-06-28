@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="fc-main">
-
+      <!-- 标题 -->
       <div class="fc-topbar">
         <span class="fc-title">{{ t('formatConvert.title') }}</span>
         <n-tag type="info" size="small" :bordered="false">
@@ -13,7 +13,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 目标格式 -->
       <div class="fc-section">
         <div class="fc-section-header">
           <span class="fc-section-title">{{ t('formatConvert.targetFormat') }}</span>
@@ -28,7 +28,7 @@
         </n-radio-group>
       </div>
 
-
+      <!-- 比特率 / 质量 -->
       <div class="fc-section">
         <div class="fc-section-header">
           <span class="fc-section-title">{{ t('formatConvert.bitrate') }}</span>
@@ -47,7 +47,7 @@
         </template>
       </div>
 
-
+      <!-- 高级选项（折叠） -->
       <n-collapse>
         <n-collapse-item :title="t('formatConvert.advanced')" name="advanced">
           <div class="fc-section">
@@ -73,7 +73,7 @@
         </n-collapse-item>
       </n-collapse>
 
-
+      <!-- 删除原文件 -->
       <div class="fc-section">
         <n-checkbox v-model:checked="deleteOriginal">
           {{ t('formatConvert.deleteOriginal') }}
@@ -83,7 +83,7 @@
         </n-text>
       </div>
 
-
+      <!-- 提交 & 结果 -->
       <div class="fc-section">
         <n-button
           type="primary"
@@ -94,14 +94,6 @@
         >
           {{ processing ? t('tool.processing') : t('tool.startProcessing') }}
         </n-button>
-
-        <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="fc-result-alert">
-          <template #header>
-            <span v-if="result.success">{{ t('tool.success') }}</span>
-            <span v-else>{{ t('tool.failure') }}</span>
-          </template>
-          <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-        </n-alert>
 
         <n-alert v-if="error" type="error" class="fc-result-alert">{{ error }}</n-alert>
       </div>
@@ -132,9 +124,9 @@ const { t } = useI18n()
 const message = useMessage()
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
+// ── 表单状态 ──
 
 const targetFormat = ref('mp3')
 const bitrate = ref(320)
@@ -142,6 +134,7 @@ const sampleRate = ref(0)
 const channels = ref(0)
 const deleteOriginal = ref(false)
 
+// ── 格式选项 ──
 
 const formatOptions = [
   { value: 'mp3', label: 'MP3', desc: t('formatConvert.formatDescs.mp3') },
@@ -159,6 +152,7 @@ const LOSSY_FORMATS = new Set(['mp3', 'aac', 'ogg', 'opus', 'wma'])
 
 const isLossy = computed(() => LOSSY_FORMATS.has(targetFormat.value))
 
+// 比特率选项随格式变化
 const bitrateOptions = computed(() => {
   const fmt = targetFormat.value
   if (fmt === 'mp3') {
@@ -208,6 +202,7 @@ const bitrateOptions = computed(() => {
   return [{ label: '—', value: 320 }]
 })
 
+// 当切换格式时重置默认比特率
 watch(targetFormat, (newFmt) => {
   if (newFmt === 'mp3') bitrate.value = 320
   else if (newFmt === 'aac') bitrate.value = 256
@@ -233,11 +228,11 @@ const totalCount = computed(() => props.selectedFiles.length + props.selectedFol
 
 const hasTargets = computed(() => totalCount.value > 0)
 
+// ── 提交 ──
 
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const moduleConfig = {
@@ -253,12 +248,11 @@ async function handleSubmit() {
       'format-convert': moduleConfig,
     }
     const res = await runTool('formatConvert', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')

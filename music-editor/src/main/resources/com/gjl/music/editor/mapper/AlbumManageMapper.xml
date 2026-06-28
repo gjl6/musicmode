@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.editor.mapper.AlbumManageMapper">
+
+    <!-- ══════════════════════════════════════════════════
+         专辑搜索
+         ══════════════════════════════════════════════════ -->
+
+    <select id="searchAlbums" resultType="com.gjl.music.model.Album">
+        SELECT id, album_name AS albumName, album_type AS albumType,
+               album_cover AS albumCover, introduction, album_year AS albumYear,
+               company, language, artist_id AS artistId, song_count AS songCount,
+               create_time AS createTime, update_time AS updateTime
+        FROM album
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND album_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; '9'
+                        AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'A')
+                    OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; 'Z'
+                        AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'a')
+                    OR SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; 'z'
+                    OR (sort_album_name IS NULL AND album_name IS NULL))
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND COALESCE(sort_album_name, album_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "songCount"'>
+                ORDER BY song_count DESC, album_name
+            </when>
+            <when test='sort == "year"'>
+                ORDER BY album_year DESC NULLS LAST, album_name
+            </when>
+            <otherwise>
+                ORDER BY COALESCE(sort_album_name, album_name)
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearchAlbums" resultType="int">
+        SELECT COUNT(*) FROM album
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND album_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; '9'
+                        AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'A')
+                    OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; 'Z'
+                        AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'a')
+                    OR SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; 'z'
+                    OR (sort_album_name IS NULL AND album_name IS NULL))
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND COALESCE(sort_album_name, album_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         重复检测
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findDuplicateAlbumNames" resultType="map" databaseId="h2">
+        SELECT LOWER(album_name) AS "normName", COUNT(*) AS "cnt",
+               LISTAGG(CAST(id AS VARCHAR), ',') AS "ids"
+        FROM album
+        GROUP BY LOWER(album_name)
+        HAVING COUNT(*) > 1
+        ORDER BY "cnt" DESC
+    </select>
+
+    <select id="findDuplicateAlbumNames" resultType="map" databaseId="mysql">
+        SELECT LOWER(album_name) AS normName, COUNT(*) AS cnt,
+               GROUP_CONCAT(id SEPARATOR ',') AS ids
+        FROM album
+        GROUP BY LOWER(album_name)
+        HAVING COUNT(*) > 1
+        ORDER BY cnt DESC
+    </select>
+
+    <select id="findAlbumsByNormalizedName" resultType="com.gjl.music.model.Album">
+        SELECT id, album_name AS albumName, album_type AS albumType,
+               album_cover AS albumCover, introduction, album_year AS albumYear,
+               company, language, artist_id AS artistId, song_count AS songCount,
+               create_time AS createTime, update_time AS updateTime
+        FROM album
+        WHERE LOWER(album_name) = LOWER(#{normName})
+        ORDER BY song_count DESC, album_year DESC
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         合并操作
+         ══════════════════════════════════════════════════ -->
+
+    <update id="reassignSongAlbum" databaseId="h2">
+        UPDATE song
+        SET album_id = #{targetId}
+        WHERE album_id = #{sourceId}
+          AND id NOT IN (
+              SELECT id FROM song WHERE album_id = #{targetId}
+          )
+    </update>
+
+    <update id="reassignSongAlbum" databaseId="mysql">
+        UPDATE song
+        SET album_id = #{targetId}
+        WHERE album_id = #{sourceId}
+          AND id NOT IN (
+              SELECT id FROM (SELECT s.id FROM song s WHERE s.album_id = #{targetId}) tmp
+          )
+    </update>
+
+    <delete id="deleteConflictingSongAlbums">
+        DELETE FROM song
+        WHERE album_id = #{sourceId}
+          AND id IN (
+              SELECT id FROM (SELECT s.id FROM song s WHERE s.album_id = #{targetId}) tmp
+          )
+    </delete>
+
+    <delete id="deleteAlbum">
+        DELETE FROM album WHERE id = #{id}
+    </delete>
+
+    <!-- ══════════════════════════════════════════════════
+         Pipeline 扫描查询（Album Scanner）
+         ══════════════════════════════════════════════════ -->
+
+    <sql id="albumFilterWhere">
+        <where>
+            <if test="letter != null and letter != '' and letter != 'all'">
+                <choose>
+                    <when test='letter == "0-9"'>
+                        AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt;= '0'
+                        AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt;= '9'
+                    </when>
+                    <when test='letter == "#"'>
+                        AND (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; '0'
+                            OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; '9'
+                                AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'A')
+                            OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; 'Z'
+                                AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'a')
+                            OR SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &gt; 'z'
+                            OR (sort_album_name IS NULL AND album_name IS NULL))
+                    </when>
+                    <otherwise>
+                        AND COALESCE(sort_album_name, album_name) LIKE CONCAT(#{letter}, '%')
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND album_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="artistId != null">
+                AND artist_id = #{artistId}
+            </if>
+            <if test="minSongs != null">
+                AND song_count &gt;= #{minSongs}
+            </if>
+            <if test="maxSongs != null">
+                AND song_count &lt;= #{maxSongs}
+            </if>
+        </where>
+    </sql>
+
+    <select id="findAllAlbumIds" resultType="long">
+        SELECT id FROM album
+        <include refid="albumFilterWhere"/>
+        ORDER BY COALESCE(sort_album_name, album_name)
+    </select>
+
+    <select id="findAlbumIdsByLetter" resultType="long">
+        SELECT id FROM album
+        <include refid="albumFilterWhere"/>
+        ORDER BY COALESCE(sort_album_name, album_name)
+    </select>
+
+    <select id="findAlbumIdsByKeyword" resultType="long">
+        SELECT id FROM album
+        <include refid="albumFilterWhere"/>
+        ORDER BY COALESCE(sort_album_name, album_name)
+    </select>
+
+    <select id="findIncompleteAlbumIds" resultType="long">
+        SELECT id FROM album
+        <include refid="albumFilterWhere"/>
+        AND (album_cover IS NULL OR album_cover = ''
+             OR introduction IS NULL OR introduction = ''
+             OR album_type IS NULL
+             OR album_year IS NULL
+             OR company IS NULL OR company = ''
+             OR language IS NULL OR language = '')
+        ORDER BY COALESCE(sort_album_name, album_name)
+    </select>
+
+    <select id="findUnenrichedAlbumIds" resultType="long">
+        SELECT id FROM album
+        <include refid="albumFilterWhere"/>
+        AND enrich_source IS NULL
+        ORDER BY COALESCE(sort_album_name, album_name)
+    </select>
+
+    <select id="findNakedAlbumIds" resultType="long">
+        SELECT id FROM album
+        <include refid="albumFilterWhere"/>
+        AND (album_cover IS NULL OR album_cover = '')
+        AND (introduction IS NULL OR introduction = '')
+        AND (album_type IS NULL)
+        AND (album_year IS NULL)
+        AND (company IS NULL OR company = '')
+        AND (language IS NULL OR language = '')
+        ORDER BY COALESCE(sort_album_name, album_name)
+    </select>
+
+    <select id="findDuplicateAlbumIds" resultType="long">
+        SELECT id FROM album
+        <include refid="albumFilterWhere"/>
+        AND LOWER(album_name) IN (
+            SELECT LOWER(album_name) FROM album
+            GROUP BY LOWER(album_name) HAVING COUNT(*) > 1
+        )
+        ORDER BY COALESCE(sort_album_name, album_name)
+    </select>
+
+</mapper>

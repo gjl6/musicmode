@@ -43,25 +43,25 @@
         WHERE playlist_id = #{playlistId}
     </select>
 
-
+    <!-- 更新单条曲目的 position（大间隔插入用） -->
     <update id="updatePosition">
         UPDATE playlist_track SET position = #{newPosition}
         WHERE playlist_id = #{playlistId} AND position = #{oldPosition}
     </update>
 
-
+    <!-- 单条 SET position（程序化 renumber 使用） -->
     <update id="setPosition">
         UPDATE playlist_track SET position = #{newPosition}
         WHERE playlist_id = #{playlistId} AND id = #{id}
     </update>
 
-
+    <!-- 查询歌曲所属的歌单 ID -->
     <select id="findPlaylistIdsBySongId" resultType="long">
         SELECT playlist_id FROM playlist_track
         WHERE song_id = #{songId}
     </select>
 
-
+    <!-- 查询歌单前 N 首曲目 -->
     <select id="findFirstNByPlaylistId" resultType="com.gjl.music.playback.model.PlaylistTrack">
         SELECT id, playlist_id AS playlistId, song_id AS songId,
                position, added_at AS addedAt
@@ -71,7 +71,7 @@
         LIMIT #{limit}
     </select>
 
-
+    <!-- 批量查询多个歌单的前 N 首曲目（ROW_NUMBER 窗口函数，一次查询替代 N+1） -->
     <select id="findFirstNByPlaylistIds" resultType="com.gjl.music.playback.model.PlaylistTrack">
         SELECT id, playlist_id AS playlistId, song_id AS songId,
                position, added_at AS addedAt

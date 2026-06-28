@@ -17,10 +17,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.*;
 
-
+/**
+ * 播放列表 REST API。
+ */
 @RestController
 @RequestMapping("/api/playlists")
-@PreAuthorize("hasAuthority('music:browse')")
+@PreAuthorize("hasAuthority('playlist:write')")
 public class PlaylistController {
 
     private final PlaylistService playlistService;
@@ -32,13 +34,13 @@ public class PlaylistController {
         this.playQueueService = playQueueService;
     }
 
-
+    /** 列出当前用户的播放列表 */
     @GetMapping
     public List<Playlist> list(Principal principal) {
         return playlistService.listByUsername(principal.getName());
     }
 
-
+    /** 获取播放列表详情 */
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getById(@PathVariable Long id) {
         Playlist pl = playlistService.getById(id);
@@ -47,7 +49,7 @@ public class PlaylistController {
         return ResponseEntity.ok(Map.of("playlist", pl, "songs", songs));
     }
 
-
+    /** 创建播放列表 */
     @PostMapping
     public Playlist create(@RequestBody Map<String, Object> body, Principal principal) {
         String name = (String) body.get("name");
@@ -59,7 +61,7 @@ public class PlaylistController {
                 isPublic, coverPath);
     }
 
-
+    /** 上传歌单封面 */
     @PostMapping("/{id}/cover")
     public ResponseEntity<?> uploadCover(@PathVariable Long id,
                                          @RequestParam("file") MultipartFile file)
@@ -72,7 +74,7 @@ public class PlaylistController {
         }
     }
 
-
+    /** 更新播放列表 */
     @PutMapping("/{id}")
     public ResponseEntity<Playlist> update(@PathVariable Long id,
                                            @RequestBody Map<String, Object> body) {
@@ -90,7 +92,7 @@ public class PlaylistController {
         }
     }
 
-
+    /** 删除播放列表 */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         try {
@@ -101,7 +103,7 @@ public class PlaylistController {
         }
     }
 
-
+    /** 向播放列表添加歌曲 */
     @PostMapping("/{id}/songs")
     public ResponseEntity<?> addSongs(@PathVariable Long id,
                                        @RequestBody Map<String, Object> body) {
@@ -117,7 +119,7 @@ public class PlaylistController {
         }
     }
 
-
+    /** 从播放列表移除歌曲 */
     @DeleteMapping("/{id}/songs/{position}")
     public ResponseEntity<Void> removeSong(@PathVariable Long id,
                                            @PathVariable int position) {
@@ -129,7 +131,7 @@ public class PlaylistController {
         }
     }
 
-
+    /** 调整歌曲排序位置 */
     @PutMapping("/{id}/tracks/{position}/move")
     public ResponseEntity<?> reorderSong(@PathVariable Long id,
                                           @PathVariable int position,
@@ -144,7 +146,7 @@ public class PlaylistController {
         }
     }
 
-
+    /** 全量替换播放列表歌曲顺序（前端排序后一次落盘） */
     @PutMapping("/{id}/tracks")
     public ResponseEntity<?> reorderAll(@PathVariable Long id,
                                          @RequestBody Map<String, Object> body) {
@@ -162,7 +164,7 @@ public class PlaylistController {
         }
     }
 
-
+    /** 查询歌曲所属的歌单 */
     @GetMapping("/containing/{songId}")
     public ResponseEntity<List<Playlist>> getContainingPlaylists(@PathVariable Long songId,
                                                                    Principal principal) {
@@ -170,7 +172,7 @@ public class PlaylistController {
                 playlistService.getPlaylistsContainingSong(principal.getName(), songId));
     }
 
-
+    /** 导出 M3U8 */
     @GetMapping("/{id}/export.m3u")
     public ResponseEntity<String> exportM3u(@PathVariable Long id) {
         Playlist pl = playlistService.getById(id);
@@ -183,7 +185,7 @@ public class PlaylistController {
                 .body(content);
     }
 
-
+    /** 导入 M3U（增强：部分成功 + 失败路径反馈） */
     @PostMapping("/{id}/import")
     public ResponseEntity<Map<String, Object>> importM3u(@PathVariable Long id,
                                                           @RequestParam("file") MultipartFile file,

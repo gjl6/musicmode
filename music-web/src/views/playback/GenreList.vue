@@ -1,12 +1,25 @@
 <template>
   <div class="genre-list-page">
-
+    <!-- ═══ 页面头部 ═══ -->
     <div class="page-header">
       <div class="header-left">
         <h1>{{ $t('genre.title') }}</h1>
         <span class="header-count">{{ $t('genre.count', { count: library.genreTotal }) }}</span>
       </div>
       <div class="header-actions">
+        <n-input
+          v-model:value="searchText"
+          :placeholder="$t('player.searchPlaceholder')"
+          size="small"
+          clearable
+          round
+          style="width:180px"
+          @keyup.enter="doSearch"
+        >
+          <template #prefix>
+            <n-icon :size="16"><SearchOutline /></n-icon>
+          </template>
+        </n-input>
         <n-select
           v-model:value="sortType"
           :options="sortOptions"
@@ -19,7 +32,7 @@
       </div>
     </div>
 
-
+    <!-- ═══ 字母索引（仅按名称排序时显示）═══ -->
     <div v-if="sortType === 'name' && letterChips.length" class="letter-bar">
       <button
         class="letter-chip"
@@ -37,7 +50,7 @@
     </div>
 
     <n-spin :show="library.loading" size="medium">
-
+      <!-- ═══ 网格视图 ═══ -->
       <div v-if="view === 'grid' && displayGenres.length" class="genre-grid">
         <GenreCard
           v-for="genre in displayGenres"
@@ -49,7 +62,7 @@
         />
       </div>
 
-
+      <!-- ═══ 列表视图 ═══ -->
       <GenreTable
         v-if="view === 'list' && displayGenres.length"
         :genres="displayGenres"
@@ -59,7 +72,7 @@
         @play="playGenre"
       />
 
-
+      <!-- ═══ 空状态 ═══ -->
       <n-empty
         v-if="!library.loading && !displayGenres.length"
         :description="$t('genre.none')"
@@ -68,7 +81,7 @@
       />
     </n-spin>
 
-
+    <!-- ═══ 分页 ═══ -->
     <n-pagination
       v-if="library.genreTotal > 0"
       v-model:page="currentPage"
@@ -88,6 +101,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { SearchOutline } from '@vicons/ionicons5'
 import { useMessage } from 'naive-ui'
 import { useLibraryStore } from '@/store/playback/library.js'
 import { usePlayerStore } from '@/store/playback/player.js'
@@ -102,6 +116,15 @@ const message = useMessage()
 const library = useLibraryStore()
 const player = usePlayerStore()
 
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
+
+// ═══ 状态 ═══
 
 const view = computed({
   get: () => library.currentView,
@@ -122,12 +145,13 @@ const sortOptions = computed(() => [
   { label: t('genre.sortBySongCount'), value: 'songCount' },
 ])
 
+// ═══ 计算属性 ═══
 
 const genres = computed(() => library.genres)
 
 const displayGenres = computed(() => genres.value)
 
-
+/** 将后端统计数据转为前端字母 chip 列表 */
 const letterChips = computed(() => {
   const list = library.genreLetters
   if (!list.length) return []
@@ -147,9 +171,11 @@ const letterChips = computed(() => {
   return result
 })
 
+// ═══ 数据加载 ═══
 
 onMounted(async () => {
-    library.loadGenreLetters()
+  // 并行加载字母统计和风格列表（互不阻塞）
+  library.loadGenreLetters()
   doLoad()
 })
 
@@ -186,6 +212,7 @@ function onPageSizeChange() {
   doLoad()
 }
 
+// ═══ 操作 ═══
 
 async function playGenre(genre) {
   const name = genre?.genre
@@ -210,7 +237,9 @@ function goDetail(genreName) {
 </script>
 
 <style scoped>
-
+/* ════════════════════════════════════════════════════
+   风格列表页 — 字母索引 + 服务端分页 + 双视图
+   ════════════════════════════════════════════════════ */
 
 .genre-list-page {
   width: min(100% - var(--content-padding-x) * 2, var(--content-max-width));
@@ -218,7 +247,7 @@ function goDetail(genreName) {
   padding: 24px 0;
 }
 
-
+/* ── 页头 ── */
 .page-header {
   display: flex;
   align-items: center;
@@ -254,7 +283,7 @@ function goDetail(genreName) {
   flex-shrink: 0;
 }
 
-
+/* ── 字母索引 ── */
 .letter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -295,14 +324,14 @@ function goDetail(genreName) {
   cursor: default;
 }
 
-
+/* ── 风格网格 ── */
 .genre-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
 }
 
-
+/* ── 分页 ── */
 .genre-pagination {
   margin-top: 16px;
   justify-content: flex-end;

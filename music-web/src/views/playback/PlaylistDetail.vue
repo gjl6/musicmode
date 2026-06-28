@@ -2,17 +2,30 @@
   <div class="playlist-detail-page">
     <n-spin :show="!pl" size="medium">
       <template v-if="pl">
-
+        <!-- ═══ Hero ═══ -->
         <div class="detail-hero">
           <n-button text class="back-btn" @click="$router.push('/player/playlists')">
             <template #icon><n-icon :size="20"><ArrowBackOutline /></n-icon></template>
           </n-button>
+          <n-input
+            v-model:value="searchText"
+            :placeholder="$t('player.searchPlaceholder')"
+            size="tiny"
+            clearable
+            round
+            style="width:160px;position:absolute;top:16px;right:16px"
+            @keyup.enter="doSearch"
+          >
+            <template #prefix>
+              <n-icon :size="14"><SearchOutline /></n-icon>
+            </template>
+          </n-input>
           <PlaylistCover
             :entries="entries"
             :size="220"
           />
           <div class="hero-info">
-
+            <!-- 歌单名（双击内联编辑） -->
             <div class="hero-name-row">
               <h1 v-if="!editingName" @dblclick="startEditName" :title="$t('playlist.edit')">
                 {{ pl.name || '—' }}
@@ -27,7 +40,7 @@
                 @keyup.enter="commitEditName"
                 @keyup.escape="editingName = false"
               />
-
+              <!-- 收藏按钮 -->
               <n-button
                 class="hero-fav-btn"
                 text
@@ -43,7 +56,7 @@
               </n-button>
             </div>
 
-
+            <!-- 描述（双击内联编辑） -->
             <p v-if="!editingComment && pl.comment" class="hero-comment" @dblclick="startEditComment">
               {{ pl.comment }}
             </p>
@@ -64,7 +77,7 @@
               @keyup.escape="editingComment = false"
             />
 
-
+            <!-- 标签行 -->
             <div class="hero-meta">
               <n-tag size="small" :bordered="false">
                 {{ $t('playlist.songCount', { count: pl.songCount || entries.length || 0 }) }}
@@ -79,7 +92,7 @@
               <n-tag v-if="pl.public" size="small" type="success" :bordered="false">Public</n-tag>
             </div>
 
-
+            <!-- 操作按钮 -->
             <n-space style="margin-top:12px">
               <n-button type="primary" size="small" @click="playAll" :disabled="!entries.length">
                 <template #icon><n-icon :size="16"><PlayOutline /></n-icon></template>
@@ -106,7 +119,7 @@
           </div>
         </div>
 
-
+        <!-- ═══ 批量操作栏 ═══ -->
         <div v-if="selectedPositions.size > 0" class="batch-bar">
           <span class="batch-hint">{{ $t('playlist.selected', { count: selectedPositions.size }) }}</span>
           <n-space>
@@ -121,7 +134,7 @@
           </n-space>
         </div>
 
-
+        <!-- ═══ 歌曲表格 ═══ -->
         <div class="detail-songs">
           <n-data-table
             v-if="entries.length"
@@ -147,7 +160,7 @@ import { useMessage } from 'naive-ui'
 import {
   PlayOutline, CreateOutline, TrashOutline, DownloadOutline,
   CloseOutline, HeartOutline, Heart, ArrowUpOutline, ArrowDownOutline,
-  ArrowBackOutline, AddOutline,
+  ArrowBackOutline, AddOutline, SearchOutline,
 } from '@vicons/ionicons5'
 import {
   NButton, NIcon, NText, NSpace, NTag, NCheckbox, NInput, NDataTable, NPopconfirm,
@@ -163,6 +176,15 @@ import PlaylistCover from '@/components/playback/PlaylistCover.vue'
 
 const route = useRoute()
 const router = useRouter()
+
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
+
 const library = useLibraryStore()
 const player = usePlayerStore()
 const message = useMessage()
@@ -171,6 +193,7 @@ const { t } = useI18n()
 const pl = computed(() => library.playlistDetail)
 const entries = computed(() => pl.value?.entry || [])
 
+// ═══ 收藏 ═══
 
 const isFav = computed(() => player.isPlaylistStarred(pl.value?.id))
 
@@ -190,6 +213,7 @@ async function toggleFavPlaylist() {
   }
 }
 
+// ═══ 内联编辑 ═══
 
 const editingName = ref(false)
 const editingComment = ref(false)
@@ -231,6 +255,7 @@ async function commitEditComment() {
   } catch { message.warning('更新失败') }
 }
 
+// ═══ 统计 ═══
 
 const totalDurationText = computed(() => {
   const dur = pl.value?.duration
@@ -251,8 +276,9 @@ const totalSizeText = computed(() => {
   return `${(sz / 1073741824).toFixed(2)} GB`
 })
 
+// ═══ 批量选择 ═══
 
-const selectedPositions = ref(new Set())
+const selectedPositions = ref(new Set()) // 1-indexed position numbers
 
 const selectedSongs = computed(() =>
   entries.value.filter((_, i) => selectedPositions.value.has(i + 1))
@@ -277,9 +303,10 @@ function toggleSelectRow(pos) {
 }
 
 async function batchRemove() {
-    const posList = [...selectedPositions.value].sort((a, b) => b - a)
+  // 倒序：先乐观删除前端数据
+  const posList = [...selectedPositions.value].sort((a, b) => b - a)
   const entry = pl.value.entry
-  const removed = []
+  const removed = [] // 备份用于回滚
   for (const pos of posList) {
     const idx = pos - 1
     if (idx >= 0 && idx < entry.length) {
@@ -288,14 +315,16 @@ async function batchRemove() {
   }
   selectedPositions.value = new Set()
 
-    let ok = 0
+  // 异步后端落盘
+  let ok = 0
   for (const pos of posList) {
-    try { await removeSongFromPlaylist(pl.value.id, pos); ok++ } catch {  }
+    try { await removeSongFromPlaylist(pl.value.id, pos); ok++ } catch { /* skip */ }
   }
   if (ok === posList.length) {
     if (ok > 0) message.success(`已移除 ${ok} 首`)
   } else {
-        message.warning(`已移除 ${ok}/${posList.length} 首，正在刷新...`)
+    // 部分失败 → 回滚
+    message.warning(`已移除 ${ok}/${posList.length} 首，正在刷新...`)
     library.loadPlaylist(pl.value.id)
   }
 }
@@ -309,8 +338,9 @@ function batchAddToQueue() {
   }
 }
 
+// ═══ 拖拽排序 ═══
 
-const dragRow = ref(null)
+const dragRow = ref(null) // dragged entry index (0-based)
 
 const rowKey = (row) => row.id
 
@@ -332,6 +362,7 @@ const rowProps = (row, index) => ({
   ondragend: () => { dragRow.value = null },
 })
 
+// 前端乐观移动 entry（不含后端调用）
 function localMove(fromIndex, toIndex) {
   const entry = pl.value.entry
   if (!entry || fromIndex === toIndex) return
@@ -339,7 +370,7 @@ function localMove(fromIndex, toIndex) {
   entry.splice(toIndex, 0, moved)
 }
 
-
+/** 将当前 entries 的完整 songId 列表落盘 */
 async function saveOrder() {
   const id = pl.value?.id
   if (!id) return
@@ -348,7 +379,7 @@ async function saveOrder() {
     await savePlaylistOrder(id, songIds)
   } catch {
     message.warning('排序保存失败，已恢复')
-    library.loadPlaylist(id)
+    library.loadPlaylist(id) // 回滚
   }
 }
 
@@ -357,21 +388,23 @@ async function handleDrop(toIndex) {
   if (fromIndex == null || fromIndex === toIndex) return
   dragRow.value = null
 
-    localMove(fromIndex, toIndex)
+  // 乐观更新：立即在前端移动，UI 瞬间响应
+  localMove(fromIndex, toIndex)
   saveOrder()
 }
 
+// ═══ 行操作 ═══
 
 async function moveUp(pos) {
   if (pos <= 1 || !pl.value?.id) return
-  localMove(pos - 1, pos - 2)
+  localMove(pos - 1, pos - 2)  // 上移一位
   saveOrder()
 }
 
 async function moveDown(pos) {
   const last = entries.value.length
   if (pos >= last || !pl.value?.id) return
-  localMove(pos - 1, pos)
+  localMove(pos - 1, pos)  // 下移一位
   saveOrder()
 }
 
@@ -379,16 +412,19 @@ async function doRemoveSong(position) {
   const entry = pl.value.entry
   const idx = position - 1
   const removed = entry[idx]
-    entry.splice(idx, 1)
+  // 乐观删除
+  entry.splice(idx, 1)
   try {
     await removeSongFromPlaylist(pl.value.id, position)
     message.success('已移除')
   } catch {
-        entry.splice(idx, 0, removed)
+    // 回滚
+    entry.splice(idx, 0, removed)
     message.warning('移除失败')
   }
 }
 
+// ═══ 表格列 ═══
 
 function formatDuration(s) {
   if (!s || !isFinite(s)) return '—'
@@ -402,7 +438,8 @@ function stopBubble(fn) {
 }
 
 const songColumns = computed(() => [
-    {
+  // 复选框
+  {
     title: () => h(NCheckbox, {
       checked: isAllSelected.value,
       indeterminate: selectedPositions.value.size > 0 && !isAllSelected.value,
@@ -417,7 +454,8 @@ const songColumns = computed(() => [
       size: 'small',
     }),
   },
-    {
+  // 序号
+  {
     title: '#',
     key: 'track',
     width: 44,
@@ -425,7 +463,8 @@ const songColumns = computed(() => [
     render: (_, idx) => h(NText, { depth: 3, style: 'font-size:12px;font-variant-numeric:tabular-nums' },
       { default: () => String(idx + 1) }),
   },
-    {
+  // 标题
+  {
     title: t('song.cols.title'),
     key: 'title',
     width: 260,
@@ -435,15 +474,17 @@ const songColumns = computed(() => [
       onClick: stopBubble(() => r.id && router.push(`/player/songs/${r.id}`)),
     }, r.title || '—'),
   },
-    {
+  // 艺术家
+  {
     title: t('song.cols.artist'),
     key: 'artist',
     width: 150,
     ellipsis: { tooltip: true },
     render: (r) => h(NText, { depth: 2, style: 'font-size:13px' },
-      { default: () => r.artist || '—' }),
+      { default: () => r.displayArtist || r.artist || '—' }),
   },
-    {
+  // 专辑
+  {
     title: t('song.cols.album'),
     key: 'album',
     width: 170,
@@ -451,7 +492,8 @@ const songColumns = computed(() => [
     render: (r) => h(NText, { depth: 2, style: 'font-size:13px' },
       { default: () => r.album || '—' }),
   },
-    {
+  // 时长
+  {
     title: t('song.cols.duration'),
     key: 'duration',
     width: 60,
@@ -459,7 +501,8 @@ const songColumns = computed(() => [
     render: (r) => h(NText, { depth: 3, style: 'font-size:12px;font-variant-numeric:tabular-nums' },
       { default: () => formatDuration(r.duration) }),
   },
-    {
+  // 操作
+  {
     title: '',
     key: 'actions',
     width: 130,
@@ -496,6 +539,7 @@ const songColumns = computed(() => [
   },
 ])
 
+// ═══ 生命周期 ═══
 
 onMounted(() => {
   const id = route.params.id
@@ -505,6 +549,7 @@ onMounted(() => {
   }
 })
 
+// ═══ 其他操作 ═══
 
 function playSong(idx) {
   const song = entries.value[idx]
@@ -536,7 +581,7 @@ function doExportM3u() {
   padding: 32px 0 48px;
 }
 
-
+/* ═══ Hero ═══ */
 .detail-hero {
   display: flex;
   gap: 32px;
@@ -612,7 +657,7 @@ function doExportM3u() {
   margin-bottom: 4px;
 }
 
-
+/* ═══ 批量操作栏 ═══ */
 .batch-bar {
   display: flex;
   align-items: center;
@@ -630,7 +675,7 @@ function doExportM3u() {
   font-weight: 500;
 }
 
-
+/* ═══ 返回按钮 ═══ */
 .back-btn {
   flex-shrink: 0;
   margin-right: -8px;
@@ -639,7 +684,7 @@ function doExportM3u() {
 }
 .back-btn:hover { color: var(--ct-accent); }
 
-
+/* ═══ 表格 ═══ */
 :deep(.n-data-table) {
   --n-td-padding: 10px 14px;
   --n-th-padding: 10px 14px;
@@ -712,7 +757,7 @@ function doExportM3u() {
   margin-top: 0;
 }
 
-
+/* ═══ 响应式 ═══ */
 @media (max-width: 768px) {
   .playlist-detail-page {
     padding: 16px 16px 32px;

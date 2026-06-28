@@ -1,20 +1,30 @@
+/* ═══════════════════════════════════════════════════════════════
+   Music Mode — Claymorphism Design Tokens v2
+   粘土风格：软 3D 凸起、3px 厚边框、双层阴影、大圆角
+   浅色 = 绿色系薄荷调 | 暗色 = 暗绿黑调
 
+   :root.clay-light → 覆盖默认浅色变量
+   :root.dark.clay-dark → 覆盖暗色变量（叠加 .dark）
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════
+   CLAY LIGHT — 绿色系薄荷调
+   ═══════════════════════════════════════════════════════════════ */
 :root.clay-light {
-
+  /* 主色 — 鲜绿 */
   --color-primary: #16A34A;
   --color-on-primary: #FFFFFF;
   --color-primary-rgb: 22 163 74;
 
-
+  /* 辅色 — 翠绿 */
   --color-secondary: #22C55E;
   --color-secondary-rgb: 34 197 94;
 
-
+  /* 强调色 */
   --color-accent: #16A34A;
   --color-accent-rgb: 22 163 74;
 
-
+  /* 功能色 */
   --color-success: #10B981;
   --color-success-rgb: 16 185 129;
   --color-warning: #F59E0B;
@@ -22,14 +32,14 @@
   --color-destructive: #EF4444;
   --color-destructive-rgb: 239 68 68;
 
-
+  /* 表面 — 不发白，偏绿调 */
   --color-bg: #EDF4ED;
   --color-bg-secondary: #E4F0E4;
   --color-surface: #F2F8F2;
   --color-surface-hover: #E8F5E8;
   --color-surface-elevated: #F6FBF6;
 
-
+  /* 粘土渐变 */
   --gradient-page: linear-gradient(160deg, #EDF4ED 0%, #E0EDE0 50%, #E8F2E8 100%);
   --gradient-card: linear-gradient(145deg, #F6FBF6 0%, #EDF5ED 50%, #F0F7F0 100%);
   --gradient-card-hover: linear-gradient(145deg, #FFFFFF 0%, #F2F9F2 50%, #F5FBF5 100%);
@@ -41,30 +51,30 @@
   --gradient-tool-card-hover: linear-gradient(145deg, #F8FDF8 0%, #EEF7EE 50%, #F2F9F2 100%);
   --gradient-table-row: linear-gradient(180deg, #F4FAF4 0%, #ECF4EC 100%);
 
-
+  /* 侧栏 */
   --color-sidebar-bg: #E8F3E8;
   --color-sidebar-hover: rgba(22 163 74 / 0.06);
 
-
+  /* 文字 */
   --color-text: #1A2E1F;
   --color-text-secondary: #4A6B4F;
   --color-text-tertiary: #7A9B7F;
 
-
+  /* 边框 — 粘土用可见边框色 */
   --color-border: rgba(22 163 74 / 0.18);
   --color-border-light: rgba(22 163 74 / 0.06);
 
-
+  /* 滚动条 */
   --color-scrollbar: rgba(22 163 74 / 0.15);
 
-
+  /* 格式标签 */
   --color-tag-bg: rgba(22 163 74 / 0.06);
   --color-tag-text: #4A6B4F;
 
-
+  /* 文件夹图标 */
   --color-folder: #CA8A40;
 
-
+  /* 粘土阴影 — 浅色: 白高光 + 绿投影 */
   --shadow-clay-inner: inset -2px -2px 8px rgba(0 0 0 / 0.04), inset 2px 2px 8px rgba(255 255 255 / 0.9);
   --shadow-clay-outer: 4px 4px 14px rgba(22 163 74 / 0.1), -2px -2px 6px rgba(255 255 255 / 0.6);
   --shadow-sm: var(--shadow-clay-inner), 2px 2px 6px rgba(22 163 74 / 0.06);
@@ -72,41 +82,43 @@
   --shadow-lg: var(--shadow-clay-inner), 8px 8px 24px rgba(22 163 74 / 0.14);
   --shadow-player: inset 1px 1px 4px rgba(255 255 255 / 0.5), 0 -4px 16px rgba(22 163 74 / 0.1);
 
-
+  /* 粘土按压阴影（按钮按下时内凹） */
   --shadow-press: inset 2px 2px 8px rgba(0 0 0 / 0.06), inset -2px -2px 4px rgba(255 255 255 / 0.6);
 
-
+  /* 圆角 */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
 
-
+  /* 边框宽度 */
   --border-width-clay: 3px;
 
-
+  /* Naive UI 变量 */
   --n-color-primary: var(--color-accent);
   --n-color-success: var(--color-success);
   --n-color-warning: var(--color-warning);
   --n-color-error: var(--color-destructive);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   CLAY DARK — 暗绿黑调
+   ═══════════════════════════════════════════════════════════════ */
 :root.dark.clay-dark {
-
+  /* 主色 — 亮绿 */
   --color-primary: #4ADE80;
   --color-on-primary: #0A1F12;
   --color-primary-rgb: 74 222 128;
 
-
+  /* 辅色 — 翠绿 */
   --color-secondary: #34D399;
   --color-secondary-rgb: 52 211 153;
 
-
+  /* 强调色 */
   --color-accent: #4ADE80;
   --color-accent-rgb: 74 222 128;
 
-
+  /* 功能色 */
   --color-success: #34D399;
   --color-success-rgb: 52 211 153;
   --color-warning: #FBBF24;
@@ -114,14 +126,14 @@
   --color-destructive: #F87171;
   --color-destructive-rgb: 248 113 113;
 
-
+  /* 表面颜色 */
   --color-bg: #0F1713;
   --color-bg-secondary: #16201B;
   --color-surface: #1E2A24;
   --color-surface-hover: #24322C;
   --color-surface-elevated: #283832;
 
-
+  /* 粘土渐变 */
   --gradient-page: linear-gradient(160deg, #0F1713 0%, #111D16 50%, #141F18 100%);
   --gradient-card: linear-gradient(145deg, #223028 0%, #1C2822 50%, #1E2A24 100%);
   --gradient-card-hover: linear-gradient(145deg, #2A3A32 0%, #24342C 50%, #26362E 100%);
@@ -133,30 +145,30 @@
   --gradient-tool-card-hover: linear-gradient(145deg, #283630 0%, #223028 50%, #24322C 100%);
   --gradient-table-row: linear-gradient(180deg, #1C2822 0%, #18231D 100%);
 
-
+  /* 侧栏 */
   --color-sidebar-bg: #0E1612;
   --color-sidebar-hover: rgba(74 222 128 / 0.06);
 
-
+  /* 文字 */
   --color-text: #E0EDE4;
   --color-text-secondary: #8BA895;
   --color-text-tertiary: #5A7062;
 
-
+  /* 边框 */
   --color-border: rgba(74 222 128 / 0.12);
   --color-border-light: rgba(74 222 128 / 0.05);
 
-
+  /* 滚动条 */
   --color-scrollbar: rgba(74 222 128 / 0.12);
 
-
+  /* 格式标签 */
   --color-tag-bg: rgba(74 222 128 / 0.08);
   --color-tag-text: #8BA895;
 
-
+  /* 文件夹图标 */
   --color-folder: #CA8A40;
 
-
+  /* 粘土阴影 — 暗色: 微高光 + 深投影 */
   --shadow-clay-inner: inset -1px -1px 4px rgba(255 255 255 / 0.02), inset 2px 2px 6px rgba(0 0 0 / 0.3);
   --shadow-clay-outer: 4px 4px 16px rgba(0 0 0 / 0.4), -2px -2px 6px rgba(255 255 255 / 0.02);
   --shadow-sm: var(--shadow-clay-inner), 2px 2px 8px rgba(0 0 0 / 0.3);
@@ -164,26 +176,30 @@
   --shadow-lg: var(--shadow-clay-inner), 8px 8px 28px rgba(0 0 0 / 0.5);
   --shadow-player: inset 1px 1px 3px rgba(255 255 255 / 0.02), 0 -4px 20px rgba(0 0 0 / 0.5);
 
-
+  /* 粘土按压阴影 */
   --shadow-press: inset 2px 2px 8px rgba(0 0 0 / 0.4), inset -1px -1px 3px rgba(255 255 255 / 0.03);
 
-
+  /* 圆角 */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
 
-
+  /* 边框宽度 */
   --border-width-clay: 3px;
 
-
+  /* Naive UI 变量 */
   --n-color-primary: var(--color-accent);
   --n-color-success: var(--color-success);
   --n-color-warning: var(--color-warning);
   --n-color-error: var(--color-destructive);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   NAIVE UI 组件 — 粘土覆盖
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ── 全局背景渐变 ── */
 :root.clay-light .n-layout,
 :root.clay-light .n-layout-content,
 :root.clay-light body,
@@ -193,7 +209,7 @@
   background: var(--gradient-page) !important;
 }
 
-
+/* ── 按钮: 默认/普通类型渐变，排除语义色按钮 ── */
 :root.clay-light .n-button:not(.n-button--primary-type):not(.n-button--error-type):not(.n-button--warning-type):not(.n-button--info-type):not(.n-button--success-type),
 :root.dark.clay-dark .n-button:not(.n-button--primary-type):not(.n-button--error-type):not(.n-button--warning-type):not(.n-button--info-type):not(.n-button--success-type) {
   border-radius: 16px !important;
@@ -202,7 +218,7 @@
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-
+/* ── 语义色按钮保持自身颜色，只加粘土效果 ── */
 :root.clay-light .n-button--error-type,
 :root.dark.clay-dark .n-button--error-type {
   border-radius: 16px !important;
@@ -240,7 +256,7 @@
   box-shadow: var(--shadow-press) !important;
 }
 
-
+/* ── 卡片: 渐变背景 ── */
 :root.clay-light .n-card,
 :root.dark.clay-dark .n-card {
   border-radius: 20px !important;
@@ -254,7 +270,7 @@
   box-shadow: var(--shadow-lg);
 }
 
-
+/* ── 输入框 / 选择器: 渐变 + 内凹 ── */
 :root.clay-light .n-input,
 :root.dark.clay-dark .n-input {
   border-radius: 12px !important;
@@ -274,14 +290,14 @@
   box-shadow: inset 1px 1px 4px rgba(0 0 0 / 0.2), inset -1px -1px 2px rgba(255 255 255 / 0.02);
 }
 
-
+/* ── 标签 ── */
 :root.clay-light .n-tag,
 :root.dark.clay-dark .n-tag {
   border-radius: 8px !important;
   box-shadow: var(--shadow-clay-inner), 2px 2px 4px rgba(0 0 0 / 0.04);
 }
 
-
+/* ── 表格: 行渐变 ── */
 :root.clay-light .n-data-table-tr,
 :root.dark.clay-dark .n-data-table-tr {
   border-radius: 10px;
@@ -312,13 +328,13 @@
   background: var(--gradient-button) !important;
 }
 
-
+/* ── 进度条 ── */
 :root.clay-light .n-progress,
 :root.dark.clay-dark .n-progress {
   border-radius: 10px;
 }
 
-
+/* ── Modal / Drawer: 渐变 ── */
 :root.clay-light .n-modal .n-card,
 :root.dark.clay-dark .n-modal .n-card,
 :root.clay-light .n-drawer-content,
@@ -328,27 +344,27 @@
   box-shadow: var(--shadow-lg);
 }
 
-
+/* ── 弹出层 ── */
 :root.clay-light .n-popover,
 :root.dark.clay-dark .n-popover {
   border-radius: 16px !important;
   box-shadow: var(--shadow-lg);
 }
 
-
+/* ── 下拉菜单 ── */
 :root.clay-light .n-dropdown-menu,
 :root.dark.clay-dark .n-dropdown-menu {
   border-radius: 14px;
   box-shadow: var(--shadow-lg);
 }
 
-
+/* ── 折叠面板 ── */
 :root.clay-light .n-collapse-item,
 :root.dark.clay-dark .n-collapse-item {
   border-radius: 12px;
 }
 
-
+/* ── 开关 ── */
 :root.clay-light .n-switch__rail,
 :root.dark.clay-dark .n-switch__rail {
   box-shadow: inset 1px 1px 4px rgba(0 0 0 / 0.1);
@@ -359,13 +375,13 @@
   box-shadow: 1px 1px 4px rgba(0 0 0 / 0.15), -1px -1px 2px rgba(255 255 255 / 0.3);
 }
 
-
+/* ── 分页 ── */
 :root.clay-light .n-pagination .n-button,
 :root.dark.clay-dark .n-pagination .n-button {
   border-radius: 10px !important;
 }
 
-
+/* ── 单选/复选 ── */
 :root.clay-light .n-radio,
 :root.clay-light .n-checkbox,
 :root.dark.clay-dark .n-radio,
@@ -373,7 +389,7 @@
   border-radius: 6px;
 }
 
-
+/* ── Alert ── */
 :root.clay-light .n-alert,
 :root.dark.clay-dark .n-alert {
   border-radius: 14px;
@@ -381,14 +397,18 @@
   box-shadow: var(--shadow-clay-inner), 2px 2px 6px rgba(0 0 0 / 0.04);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   应用组件 — 粘土覆盖
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ── Sidebar 侧边栏: 渐变 ── */
 :root.clay-light .sidebar,
 :root.dark.clay-dark .sidebar {
   border-right: 3px solid var(--color-border);
   background: var(--gradient-sidebar) !important;
 }
 
-
+/* 树项目选中态 */
 :root.clay-light .tree-item.file.selected,
 :root.dark.clay-dark .tree-item.file.selected,
 :root.clay-light .tree-item.folder.selected,
@@ -396,7 +416,7 @@
   box-shadow: var(--shadow-clay-inner), 3px 3px 10px rgba(22 163 74 / 0.1);
 }
 
-
+/* 选中指示条 */
 :root.clay-light .tree-item.file.selected .select-bar,
 :root.clay-light .tree-item.folder.selected .select-bar,
 :root.dark.clay-dark .tree-item.file.selected .select-bar,
@@ -409,31 +429,31 @@
   border-radius: 0 6px 6px 0;
 }
 
-
+/* 树项目 hover */
 :root.clay-light .tree-item:hover,
 :root.dark.clay-dark .tree-item:hover {
   box-shadow: var(--shadow-sm);
 }
 
-
+/* 面包屑按钮 */
 :root.clay-light .collapse-btn:hover,
 :root.dark.clay-dark .collapse-btn:hover {
   box-shadow: var(--shadow-sm);
 }
 
-
+/* 返回上级 */
 :root.clay-light .back-row:hover,
 :root.dark.clay-dark .back-row:hover {
   box-shadow: var(--shadow-sm);
 }
 
-
+/* 选中计数栏 */
 :root.clay-light .select-footer,
 :root.dark.clay-dark .select-footer {
   box-shadow: 0 -2px 6px rgba(22 163 74 / 0.06);
 }
 
-
+/* ── 工具卡片 (Workbench): 渐变 ── */
 :root.clay-light .tool-card,
 :root.dark.clay-dark .tool-card {
   border: 3px solid var(--color-border) !important;
@@ -455,33 +475,33 @@
   box-shadow: var(--shadow-press);
 }
 
-
+/* 工具图标 */
 :root.clay-light .tool-icon,
 :root.dark.clay-dark .tool-icon {
   border: 2px solid rgb(var(--color-accent-rgb) / 0.2);
   box-shadow: var(--shadow-clay-inner);
 }
 
-
+/* 全部工具弹窗中的工具项 */
 :root.clay-light .all-tool-item:hover,
 :root.dark.clay-dark .all-tool-item:hover {
   box-shadow: var(--shadow-sm);
 }
 
-
+/* ── 路径栏 ── */
 :root.clay-light .path-bar,
 :root.dark.clay-dark .path-bar {
   border-radius: 0 0 12px 12px;
   box-shadow: 0 2px 8px rgba(22 163 74 / 0.06);
 }
 
-
+/* ── 快速工具栏 ── */
 :root.clay-light .quick-tools,
 :root.dark.clay-dark .quick-tools {
   border-top: 2px solid var(--color-border);
 }
 
-
+/* ── 迷你播放器: 渐变 ── */
 :root.clay-light .mini-player,
 :root.dark.clay-dark .mini-player {
   border-radius: 16px 16px 0 0;
@@ -490,14 +510,16 @@
   box-shadow: var(--shadow-player);
 }
 
-
+/* ── 分页栏: 渐变 ── */
 :root.clay-light .table-footer,
 :root.dark.clay-dark .table-footer {
   border-top: 2px solid var(--color-border);
   background: var(--gradient-button) !important;
 }
 
+/* ── 编辑抽屉 (EditDrawer): 渐变 ── */
 
+/* 封面 */
 :root.clay-light .cover-box,
 :root.dark.clay-dark .cover-box {
   border: 3px solid var(--color-border) !important;
@@ -506,7 +528,7 @@
   box-shadow: var(--shadow-md);
 }
 
-
+/* 艺术家切换标签 */
 :root.clay-light .artist-tab,
 :root.dark.clay-dark .artist-tab {
   border: 3px solid var(--color-border);
@@ -522,7 +544,7 @@
   box-shadow: var(--shadow-clay-inner), 3px 3px 8px rgba(22 163 74 / 0.12);
 }
 
-
+/* 折叠面板 section header */
 :root.clay-light .edit-section .section-header,
 :root.dark.clay-dark .edit-section .section-header {
   border-radius: 10px;
@@ -533,13 +555,13 @@
   box-shadow: var(--shadow-sm);
 }
 
-
+/* section badge */
 :root.clay-light .section-badge,
 :root.dark.clay-dark .section-badge {
   box-shadow: 1px 1px 4px rgba(0 0 0 / 0.15);
 }
 
-
+/* ── Home 页: 渐变 ── */
 :root.clay-light .feature-card,
 :root.dark.clay-dark .feature-card {
   border: 3px solid var(--color-border);
@@ -555,7 +577,7 @@
   box-shadow: var(--shadow-lg);
 }
 
-
+/* ── TopNavBar: 渐变 ── */
 :root.clay-light .top-nav,
 :root.dark.clay-dark .top-nav {
   border-bottom: 3px solid var(--color-border);
@@ -563,13 +585,13 @@
   box-shadow: 0 2px 8px rgba(22 163 74 / 0.06);
 }
 
-
+/* ── 内容区: 渐变背景 ── */
 :root.clay-light .content,
 :root.dark.clay-dark .content {
   background: var(--gradient-page) !important;
 }
 
-
+/* ── 路径栏: 渐变 ── */
 :root.clay-light .path-bar,
 :root.dark.clay-dark .path-bar {
   border-radius: 0 0 12px 12px;
@@ -577,7 +599,7 @@
   box-shadow: 0 2px 8px rgba(22 163 74 / 0.06);
 }
 
-
+/* ── 快速工具栏: 渐变 ── */
 :root.clay-light .quick-tools,
 :root.dark.clay-dark .quick-tools {
   border-top: 2px solid var(--color-border);
@@ -585,12 +607,15 @@
 }
 
 
+/* ── 滚动条 ── */
 :root.clay-light ::-webkit-scrollbar-thumb,
 :root.dark.clay-dark ::-webkit-scrollbar-thumb {
   border-radius: 10px;
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   按压弹性动画（全局）
+   ═══════════════════════════════════════════════════════════════ */
 :root.clay-light button:active:not(:disabled),
 :root.dark.clay-dark button:active:not(:disabled) {
   transition: transform 0.1s ease !important;

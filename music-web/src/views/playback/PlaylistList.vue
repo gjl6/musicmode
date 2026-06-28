@@ -1,6 +1,6 @@
 <template>
   <div class="playlist-list-page">
-
+    <!-- ═══ 页头 ═══ -->
     <div class="page-header">
       <div class="header-left">
         <h1>{{ $t('playlist.title') }}</h1>
@@ -18,7 +18,7 @@
       </div>
     </div>
 
-
+    <!-- ═══ 工具栏 ═══ -->
     <div class="toolbar">
       <n-input
         v-model:value="searchQuery"
@@ -54,7 +54,7 @@
       </div>
     </div>
 
-
+    <!-- ═══ 歌单网格 ═══ -->
     <n-spin :show="library.loading" size="medium">
       <div v-if="filteredPlaylists.length" class="playlist-grid">
         <PlaylistCard
@@ -76,7 +76,7 @@
       />
     </n-spin>
 
-
+    <!-- ═══ 新建歌单对话框 ═══ -->
     <n-modal
       v-model:show="showCreate"
       :title="$t('playlist.create')"
@@ -85,7 +85,7 @@
       style="max-width:460px"
     >
       <div class="create-form">
-
+        <!-- 封面选择 -->
         <div class="cover-picker">
           <div class="cover-preview" @click="triggerCoverInput">
             <img v-if="coverPreview" :src="coverPreview" class="cover-img" />
@@ -147,6 +147,7 @@ const library = useLibraryStore()
 const player = usePlayerStore()
 const message = useMessage()
 
+// ═══ 状态 ═══
 
 const searchQuery = ref('')
 const sortBy = ref('updated')
@@ -160,20 +161,24 @@ const sortOptions = computed(() => [
 
 const playlists = computed(() => library.playlists)
 
+// ── 过滤 + 排序 ──
 
 const filteredPlaylists = computed(() => {
   let list = [...playlists.value]
 
-    if (searchQuery.value.trim()) {
+  // 搜索过滤
+  if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase()
     list = list.filter(pl => pl.name?.toLowerCase().includes(q))
   }
 
-    if (favFilter.value === 'starred') {
+  // 收藏过滤
+  if (favFilter.value === 'starred') {
     list = list.filter(pl => player.isPlaylistStarred(pl.id))
   }
 
-    list.sort((a, b) => {
+  // 排序
+  list.sort((a, b) => {
     switch (sortBy.value) {
       case 'name':
         return (a.name || '').localeCompare(b.name || '')
@@ -192,17 +197,20 @@ const totalSongs = computed(() =>
   filteredPlaylists.value.reduce((sum, pl) => sum + (pl.songCount || 0), 0)
 )
 
+// ═══ 生命周期 ═══
 
 onMounted(() => {
   library.loadPlaylists()
   player.loadFavoriteIds()
 })
 
+// ═══ 导航 ═══
 
 function goDetail(id) {
   router.push(`/player/playlists/${id}`)
 }
 
+// ═══ 播放 ═══
 
 async function handlePlay(pl) {
   if (!pl.id) return
@@ -213,6 +221,7 @@ async function handlePlay(pl) {
   }
 }
 
+// ═══ 收藏 ═══
 
 async function handleToggleFav(pl) {
   const id = pl?.id
@@ -228,6 +237,7 @@ async function handleToggleFav(pl) {
   }
 }
 
+// ═══ 创建歌单 ═══
 
 const showCreate = ref(false)
 const newPlName = ref('')
@@ -248,7 +258,8 @@ function onCoverFileChange(e) {
   const reader = new FileReader()
   reader.onload = (ev) => { coverPreview.value = ev.target?.result || '' }
   reader.readAsDataURL(file)
-    e.target.value = ''
+  // 重置 input 以便重复选择同一文件
+  e.target.value = ''
 }
 
 function clearCover() {
@@ -260,14 +271,16 @@ async function doCreate() {
   if (!newPlName.value.trim()) return
   creating.value = true
   try {
-        const resp = await subsonicCreatePlaylist(newPlName.value.trim())
+    // 1) 通过 Subsonic API 创建歌单
+    const resp = await subsonicCreatePlaylist(newPlName.value.trim())
     const pl = resp?.['subsonic-response']?.playlist
     const plId = pl?.id
 
-        if (plId && coverFile.value) {
+    // 2) 如果有封面图，上传
+    if (plId && coverFile.value) {
       try {
         await uploadPlaylistCover(plId, coverFile.value)
-      } catch {  }
+      } catch { /* 封面上传失败不影响创建 */ }
     }
 
     message.success('已创建')
@@ -281,6 +294,7 @@ async function doCreate() {
   finally { creating.value = false }
 }
 
+// ═══ M3U 导入 ═══
 
 function doImportM3u() {
   const input = document.createElement('input')
@@ -312,7 +326,7 @@ function doImportM3u() {
   padding: 24px 0;
 }
 
-
+/* ── 页头 ── */
 .page-header {
   display: flex;
   align-items: center;
@@ -348,7 +362,7 @@ function doImportM3u() {
   flex-shrink: 0;
 }
 
-
+/* ── 工具栏 ── */
 .toolbar {
   display: flex;
   align-items: center;
@@ -369,14 +383,14 @@ function doImportM3u() {
   gap: 8px;
 }
 
-
+/* ── 网格 ── */
 .playlist-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
 }
 
-
+/* ── 创建弹窗 ── */
 .create-form {
   display: flex;
   gap: 20px;

@@ -1,6 +1,6 @@
 <template>
   <aside v-if="visible" class="enrich-panel">
-
+    <!-- 顶部交互区 -->
     <div class="ep-top">
       <span class="ep-label">{{ t('enrich.labelSource') }}</span>
       <n-select
@@ -15,10 +15,10 @@
       </button>
     </div>
 
-
+    <!-- 错误提示 -->
     <div v-if="enrich.error.value" class="ep-error">{{ enrich.error.value }}</div>
 
-
+    <!-- 数据表格 -->
     <div v-if="enrich.results.value.length > 0" class="ep-scroll-area">
       <div class="ep-table-wrap" ref="vScrollRef">
         <table class="ep-table">
@@ -93,7 +93,7 @@
       </div>
     </div>
 
-
+    <!-- 空态 -->
     <div v-else-if="!enrich.loading.value && searched" class="ep-empty">
       {{ t('enrich.noResults') }}
     </div>
@@ -122,7 +122,7 @@ const enrich = useEnrich()
 const { joinSeparator } = useArtistConfig()
 const searched = ref(false)
 
-
+/** 带配置连接符的 artistNames */
 function artistStr(meta) {
   return artistNames(meta, joinSeparator.value || undefined)
 }
@@ -147,11 +147,13 @@ onMounted(() => {
   setupScrollSync()
 })
 
+// 搜索结果更新后重新绑定滚动同步（DOM 重建后 ref 生效）
 watch(() => enrich.results.value.length, async () => {
   await nextTick()
   setupScrollSync()
 })
 
+// 面板打开时延迟搜索，避免阻塞抽屉动画
 let _searchTimer = null
 watch(() => props.visible, (v) => {
   clearTimeout(_searchTimer)
@@ -166,6 +168,7 @@ function doSearch() {
   enrich.search()
 }
 
+// ── 行级数据（MusicMetadata 嵌套结构） ──
 
 function metaVal(row, group, field) {
   const fn = { song: songField, album: albumField, style: styleField, lyric: lyricField }[group]
@@ -181,6 +184,7 @@ function getCover(row) {
   return getCoverUrl(songField(row, 'coverPath'))
 }
 
+// ── 回填逻辑 ──
 
 function currentVal(path) {
   return path.split('.').reduce((o, k) => (o || {})[k], editStore.currentMeta)
@@ -205,7 +209,8 @@ function fillArtist(row) {
     fillField('artist.artistName', artistStr(row))
     return
   }
-    if (enrich.overwriteMode.value === 'overwrite' || !editStore.currentMeta.artists || editStore.currentMeta.artists.length === 0 || !editStore.currentMeta.artists[0].artistName) {
+  // 多艺术家：填充完整 artists 数组
+  if (enrich.overwriteMode.value === 'overwrite' || !editStore.currentMeta.artists || editStore.currentMeta.artists.length === 0 || !editStore.currentMeta.artists[0].artistName) {
     const mapped = row.artists.map(a => ({
       artistName: a.artistName || '', artistCover: a.artistCover || '',
       introduction: a.introduction || '', gender: a.gender ?? 0,
@@ -248,7 +253,8 @@ function fillCover(row) {
 }
 
 function fillAll(row) {
-    const hasArtists = row.artists && row.artists.length > 0
+  // 多艺术家：填充 artists 数组
+  const hasArtists = row.artists && row.artists.length > 0
   if (hasArtists) {
     if (enrich.overwriteMode.value === 'overwrite' || !editStore.currentMeta.artists || editStore.currentMeta.artists.length === 0 || !editStore.currentMeta.artists[0].artistName) {
       const mapped = row.artists.map(a => ({
@@ -262,15 +268,17 @@ function fillAll(row) {
     }
   }
 
-    for (const [path, key] of FIELD_MAP) {
-    if (path === 'artist.artistName' && hasArtists) continue
+  // 搜索结果的字段 (song.*)
+  for (const [path, key] of FIELD_MAP) {
+    if (path === 'artist.artistName' && hasArtists) continue  // 由上面的 artists 数组处理
     const val = metaVal(row, 'song', key) || metaVal(row, 'artist', key) || metaVal(row, 'album', key)
     if (val == null || val === '') continue
     const strVal = String(val)
     if (enrich.overwriteMode.value === 'fill' && !isEmpty(currentVal(path))) continue
     editStore.setField(path, strVal)
   }
-    for (const [path, key] of ALBUM_FIELD_MAP) {
+  // 专辑级字段 (album.*)
+  for (const [path, key] of ALBUM_FIELD_MAP) {
     if (path === 'artist.artistName' && hasArtists) continue
     const val = metaVal(row, 'song', key) || metaVal(row, 'album', key) || metaVal(row, 'style', key) || metaVal(row, 'artist', key)
     if (val == null || val === '') continue
@@ -278,13 +286,15 @@ function fillAll(row) {
     if (enrich.overwriteMode.value === 'fill' && !isEmpty(currentVal(path))) continue
     editStore.setField(path, strVal)
   }
-    const lyric = row.lyrics?.[0]?.content
+  // 歌词
+  const lyric = row.lyrics?.[0]?.content
   if (lyric) {
     if (enrich.overwriteMode.value === 'overwrite' || isEmpty(currentVal('lyric.content'))) {
       editStore.setField('lyric.content', enrich.cleanLyric(lyric))
     }
   }
-    const coverPath = row.songs?.[0]?.coverPath
+  // 封面
+  const coverPath = row.songs?.[0]?.coverPath
   if (coverPath) {
     if (enrich.overwriteMode.value === 'overwrite' || isEmpty(currentVal('song.coverPath'))) {
       editStore.setField('song.coverPath', coverPath)
@@ -303,7 +313,7 @@ function fillAll(row) {
   background: var(--ct-bg);
 }
 
-
+/* ── 顶部 ── */
 .ep-top {
   display: flex;
   align-items: center;
@@ -337,7 +347,7 @@ function fillAll(row) {
   flex-shrink: 0;
 }
 
-
+/* ── 滚动区域 ── */
 .ep-scroll-area {
   flex: 1;
   display: flex;
@@ -345,7 +355,7 @@ function fillAll(row) {
   min-height: 0;
 }
 
-
+/* ── 表格 ── */
 .ep-table-wrap {
   flex: 1;
   overflow-y: auto;
@@ -391,7 +401,7 @@ function fillAll(row) {
 .ep-table tr:hover td { background: var(--ct-bg-secondary); }
 .ep-table tr:hover td.col-action { background: var(--ct-bg-secondary); }
 
-
+/* 列宽 */
 .col-seq { width: 28px; text-align: center; }
 .col-cover { width: 40px; }
 .col-title { width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -421,7 +431,7 @@ function fillAll(row) {
   cursor: pointer;
 }
 
-
+/* 可点击单元格 */
 .clickable {
   cursor: pointer;
   text-decoration: underline;
@@ -431,7 +441,7 @@ function fillAll(row) {
 }
 .clickable:hover { color: var(--n-color-primary); }
 
-
+/* 封面 */
 .cover-thumb {
   width: 30px;
   height: 30px;
@@ -439,12 +449,12 @@ function fillAll(row) {
   object-fit: cover;
 }
 
-
+/* 简介省略 */
 .desc-text {
   display: block;
 }
 
-
+/* 歌词 */
 .lyric-indicator {
   color: var(--n-color-primary);
   cursor: pointer;
@@ -459,7 +469,7 @@ function fillAll(row) {
   overflow-y: auto;
 }
 
-
+/* 空态 */
 .ep-empty {
   flex: 1;
   display: flex;

@@ -68,32 +68,80 @@ public class SubsonicController {
                             HttpServletRequest request,
                             HttpServletResponse response) throws IOException {
         return switch (action) {
+            // System
             case "ping" -> subsonicService.ping();
             case "getLicense" -> subsonicService.getLicense();
+            case "getNowPlaying" -> subsonicService.getNowPlaying();
+            case "getOpenSubsonicExtensions" -> subsonicService.getOpenSubsonicExtensions();
+
+            // Browsing
             case "getMusicFolders" -> subsonicService.getMusicFolders();
             case "getIndexes" -> subsonicService.getIndexes(p);
             case "getArtists" -> subsonicService.getArtists(p);
             case "getMusicDirectory" -> subsonicService.getMusicDirectory(p);
             case "getArtist" -> subsonicService.getArtist(p);
+            case "getArtistInfo", "getArtistInfo2" -> subsonicService.getArtistInfo2(p);
+            case "getAlbumInfo", "getAlbumInfo2" -> subsonicService.getAlbumInfo2(p);
             case "getAlbum" -> subsonicService.getAlbum(p);
             case "getSong" -> subsonicService.getSong(p);
             case "getGenres" -> subsonicService.getGenres();
+
+            // Album Lists
             case "getAlbumList", "getAlbumList2" -> subsonicService.getAlbumList(p);
             case "getRandomSongs" -> subsonicService.getRandomSongs(p);
             case "getSongsByGenre" -> subsonicService.getSongsByGenre(p);
+            case "getSimilarSongs", "getSimilarSongs2" -> subsonicService.getSimilarSongs(p);
+            case "getTopSongs" -> subsonicService.getTopSongs(p);
             case "getSongs" -> subsonicService.getSongs(p);
             case "getSongLetters" -> subsonicService.getSongLetters();
+
+            // Searching
+            case "search" -> subsonicService.searchLegacy(p);
             case "search2", "search3" -> subsonicService.search(p);
+
+            // Playlists
             case "getPlaylists" -> subsonicService.getPlaylists(p);
             case "getPlaylist" -> subsonicService.getPlaylist(p);
             case "createPlaylist" -> subsonicService.createPlaylist(p, request);
             case "deletePlaylist" -> subsonicService.deletePlaylist(p);
             case "updatePlaylist" -> subsonicService.updatePlaylist(p, request);
+
+            // Media Retrieval
             case "getCoverArt" -> {
                 subsonicService.getCoverArt(p, response);
                 yield new ResponseSent();
             }
+            case "stream" -> {
+                subsonicService.stream(p, request, response);
+                yield new ResponseSent();
+            }
+            case "download" -> {
+                subsonicService.download(p, request, response);
+                yield new ResponseSent();
+            }
+            case "getAvatar" -> {
+                subsonicService.getAvatar(p, response);
+                yield new ResponseSent();
+            }
+
+            // User
+            case "getUser" -> subsonicService.getUser(p);
+            case "getUsers" -> subsonicService.getUsers(p);
+            case "changePassword" -> subsonicService.changePassword(p);
+
+            // Play Queue
+            case "getPlayQueue" -> subsonicService.getPlayQueue(p);
+            case "savePlayQueue" -> subsonicService.savePlayQueue(p, request);
+
+            // Library Scanning
+            case "getScanStatus" -> subsonicService.getScanStatus(p);
+            case "startScan" -> subsonicService.startScan(p);
+
+            // Lyrics
+            case "getLyrics" -> subsonicService.getLyrics(p);
             case "getLyricsBySongId" -> subsonicService.getLyricsBySongId(p);
+
+            // User Data
             case "scrobble" -> subsonicService.scrobble(p);
             case "star" -> subsonicService.star(p);
             case "unstar" -> subsonicService.unstar(p);
@@ -101,6 +149,7 @@ public class SubsonicController {
             case "getStarred2" -> subsonicService.getStarred2(p);
             case "setRating" -> subsonicService.setRating(p);
             case "reportPlayback" -> subsonicService.reportPlayback(p);
+
             default -> throw new IllegalArgumentException("不支持的端点: " + action);
         };
     }

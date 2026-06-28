@@ -1,6 +1,6 @@
 <template>
   <div class="replace-panel">
-
+    <!-- 目标字段 -->
     <div class="rp-section">
       <label>{{ t('replace.sourceField') }}</label>
       <n-select
@@ -11,7 +11,7 @@
       />
     </div>
 
-
+    <!-- 原始文本 -->
     <div class="rp-section">
       <div class="rp-section-header">
         <label>{{ t('replace.originalText') }}</label>
@@ -23,7 +23,7 @@
         @mouseup="onTextSelect"
       >{{ rep.sourceText.value || '—' }}</div>
 
-
+      <!-- 选中文字操作栏 -->
       <div  class="rp-selection-bar">
         <n-button size="tiny" type="error" @click="handleDelete">
           删除 "{{ selectedText }}"
@@ -48,7 +48,7 @@
       </div>
     </div>
 
-
+    <!-- 替换规则 -->
     <div class="rp-section">
       <div class="rp-section-header">
         <label>{{ t('split.rules') }}</label>
@@ -73,7 +73,7 @@
             @focus="() => { editingInputs[rule.id] = rep.toFormula(rule) }"
             @blur="() => { commitFormula(rule) }"
           />
-
+         
           <n-button
             size="tiny"
             text
@@ -85,7 +85,7 @@
       </div>
     </div>
 
-
+    <!-- 预览 + 应用 -->
     <div class="rp-section">
       <n-button size="small" type="primary" @click="rep.executePreview()">{{ t('replace.preview') }}</n-button>
 
@@ -122,6 +122,7 @@ onMounted(() => {
   rep.syncSourceText()
 })
 
+// ── 文本选中 → 规则生成 ──
 
 const sourceTextRef = ref(null)
 const selectedText = ref('')
@@ -130,6 +131,7 @@ const replacementText = ref('')
 const bracketPattern = ref(null)
 const selRange = ref({ start: 0, end: 0 })
 
+// 编辑态缓存：避免击键中间态被 toFormula 错误格式化
 const editingInputs = reactive({})
 
 function commitFormula(rule) {
@@ -144,7 +146,8 @@ function commitFormula(rule) {
 }
 
 function onTextSelect(e) {
-    if (e.target instanceof Element && e.target.closest('.rp-selection-bar')) return
+  // 点击操作栏内部不清除选区
+  if (e.target instanceof Element && e.target.closest('.rp-selection-bar')) return
 
   const sel = window.getSelection()
   const text = sel.toString()
@@ -232,7 +235,7 @@ function handleAddAfter() {
   gap: 4px;
 }
 
-
+/* rules */
 .rp-rule-list {
   display: flex;
   flex-direction: column;
@@ -255,7 +258,7 @@ function handleAddAfter() {
   min-width: 0;
 }
 
-
+/* source text */
 .rp-source-text {
   padding: 8px 10px;
   border: 1px solid var(--ct-border);
@@ -271,7 +274,7 @@ function handleAddAfter() {
   cursor: text;
 }
 
-
+/* selection action bar */
 .rp-selection-bar {
   display: flex;
   align-items: center;
@@ -283,7 +286,7 @@ function handleAddAfter() {
   border-radius: 6px;
 }
 
-
+/* preview */
 .rp-preview {
   display: flex;
   flex-direction: column;

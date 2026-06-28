@@ -14,7 +14,7 @@
 
     <groupId>com.gjl</groupId>
     <artifactId>music-mode</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
     <name>Music Mode - Parent</name>
 
@@ -26,13 +26,15 @@
     </modules>
 
     <properties>
+        <revision>1.1.8</revision>
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+        <!-- 内部模块版本 -->
+        <music-common.version>${revision}</music-common.version>
 
-        <music-common.version>${project.version}</music-common.version>
-
-
+        <!-- 第三方版本（从 music-server 提取） -->
         <mybatis-starter.version>3.0.4</mybatis-starter.version>
         <jaudiotagger.version>3.0.1</jaudiotagger.version>
         <opencc4j.version>1.8.1</opencc4j.version>
@@ -41,11 +43,12 @@
         <lombok.version>1.18.36</lombok.version>
         <jjwt.version>0.12.6</jjwt.version>
         <pinyin4j.version>2.5.1</pinyin4j.version>
+        <lucene.version>9.12.0</lucene.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-
+            <!-- 内部模块 -->
             <dependency>
                 <groupId>com.gjl</groupId>
                 <artifactId>music-common</artifactId>
@@ -54,17 +57,17 @@
             <dependency>
                 <groupId>com.gjl</groupId>
                 <artifactId>music-auth</artifactId>
-                <version>${project.version}</version>
+                <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>com.gjl</groupId>
                 <artifactId>music-editor</artifactId>
-                <version>${project.version}</version>
+                <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>com.gjl</groupId>
                 <artifactId>music-playback</artifactId>
-                <version>${project.version}</version>
+                <version>${revision}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -76,6 +79,7 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
+                        <encoding>UTF-8</encoding>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -86,7 +90,15 @@
                     </configuration>
                 </plugin>
 
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <configuration>
+                        <encoding>UTF-8</encoding>
+                    </configuration>
+                </plugin>
 
+                <!-- Spring Boot：只有应用模块引用，common 不引用 -->
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
@@ -107,7 +119,7 @@
                     </configuration>
                 </plugin>
 
-
+                <!-- 测试执行 -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>

@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="et-main">
-
+      <!-- 1. 顶部操作栏 -->
       <div class="et-topbar">
         <span class="et-title">{{ t('enrichTool.title') }}</span>
         <n-tag type="warning" size="small" :bordered="false">
@@ -13,7 +13,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 2. 标签源区 -->
       <div class="et-section">
         <div class="et-section-header">
           <span class="et-section-title">{{ t('enrichTool.tagSource') }}</span>
@@ -27,7 +27,7 @@
         />
       </div>
 
-
+      <!-- 3. 匹配模式区 -->
       <div class="et-section">
         <div class="et-section-header">
           <span class="et-section-title">{{ t('enrichTool.matchMode') }}</span>
@@ -46,7 +46,7 @@
         </div>
       </div>
 
-
+      <!-- 4. 合并策略区 -->
       <div class="et-section">
         <div class="et-section-header">
           <span class="et-section-title">{{ t('enrichTool.mergeScope') }}</span>
@@ -69,7 +69,7 @@
         </div>
       </div>
 
-
+      <!-- 5. 目标字段区 -->
       <div class="et-section">
         <div class="et-section-header">
           <span class="et-section-title">{{ t('enrichTool.targetFields') }}</span>
@@ -100,7 +100,7 @@
         </div>
       </div>
 
-
+      <!-- 6. 处理结果 -->
       <div class="et-section">
         <n-button
           type="primary"
@@ -111,14 +111,6 @@
         >
           {{ processing ? t('tool.processing') : t('tool.startProcessing') }}
         </n-button>
-
-        <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="et-result-alert">
-          <template #header>
-            <span v-if="result.success">{{ t('tool.success') }}</span>
-            <span v-else>{{ t('tool.failure') }}</span>
-          </template>
-          <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-        </n-alert>
 
         <n-alert v-if="error" type="error" class="et-result-alert">{{ error }}</n-alert>
       </div>
@@ -147,7 +139,6 @@ const { t } = useI18n()
 const message = useMessage()
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 const matchMode = ref('LOOSE')
 const matchModes = [
@@ -159,6 +150,7 @@ const matchModes = [
 const mergeScope = ref('REPLACE_ALL')
 const provider = ref([])
 
+// ── Provider 列表 ──
 
 const providerOptions = ref([])
 
@@ -176,6 +168,7 @@ async function loadProviderOptions() {
 
 onMounted(() => { loadProviderOptions() })
 
+// ── 字段选择 ──
 
 const ALL_FIELDS = [
   { value: 'song.title', labelKey: 'songTitle' },
@@ -226,11 +219,11 @@ const hasTargets = computed(
   () => props.selectedFiles.length > 0 || props.selectedFolders.length > 0,
 )
 
+// ── 提交 ──
 
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
@@ -244,12 +237,11 @@ async function handleSubmit() {
       },
     }
     const res = await runTool('qqEnrich', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')
@@ -268,7 +260,7 @@ async function handleSubmit() {
   overflow: hidden;
 }
 
-
+/* 左侧：文件/目录列表 */
 .et-files-col {
   width: 175px;
   flex-shrink: 0;
@@ -314,7 +306,7 @@ async function handleSubmit() {
   white-space: nowrap;
 }
 
-
+/* 右侧主内容 */
 .et-main {
   flex: 1;
   display: flex;
@@ -323,7 +315,7 @@ async function handleSubmit() {
   overflow-y: auto;
 }
 
-
+/* 1. 顶部操作栏 */
 .et-topbar {
   display: flex;
   align-items: center;
@@ -337,7 +329,7 @@ async function handleSubmit() {
   color: var(--ct-text);
 }
 
-
+/* section 通用 */
 .et-section {
   display: flex;
   flex-direction: column;
@@ -354,13 +346,13 @@ async function handleSubmit() {
   color: var(--ct-text);
 }
 
-
+/* radio 按钮行 */
 .et-radio-row {
   display: flex;
   gap: 8px;
 }
 
-
+/* 匹配模式卡片 */
 .et-mode-list {
   display: flex;
   gap: 8px;
@@ -391,7 +383,7 @@ async function handleSubmit() {
   margin-top: 2px;
 }
 
-
+/* 字段选择 */
 .et-fields-row {
   display: flex;
   flex-wrap: wrap;
@@ -402,7 +394,7 @@ async function handleSubmit() {
   font-size: 12px;
 }
 
-
+/* 结果 */
 .et-result-alert {
   margin-top: 4px;
 }

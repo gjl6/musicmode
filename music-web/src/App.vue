@@ -25,13 +25,16 @@ const app = useAppStore()
 const auth = useAuthStore()
 const { locale } = useI18n()
 
+// 初始同步 i18n locale 到 store（处理 localStorage/browser 检测的值）
 if (app.locale !== locale.value) {
   app.setLocale(locale.value)
 }
 
+// 全局 message（独立于 provider 树，axios 拦截器中使用）
 const { message: globalMsg } = createDiscreteApi(['message'])
 window.$message = globalMsg
 
+// 初始化认证状态：如果已有 token，拉取用户信息和权限
 onMounted(async () => {
   if (auth.isAuthenticated && !auth.user) {
     await auth.fetchMe()
@@ -46,6 +49,7 @@ const naiveDateLocale = computed(() =>
   app.locale === 'zh-CN' ? dateZhCN : dateEnUS
 )
 
+// store → i18n 联动
 watch(() => app.locale, (val) => {
   locale.value = val
 })

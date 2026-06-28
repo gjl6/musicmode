@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="rp-main">
-
+      <!-- 1. 顶部操作栏 -->
       <div class="rp-topbar">
         <span class="rp-title">{{ t('replace.title') }}</span>
         <n-tag type="warning" size="small" :bordered="false">
@@ -13,7 +13,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 2. 目标字段区 -->
       <div class="rp-section">
         <div class="rp-section-header">
           <span class="rp-section-title">{{ t('replace.targetFields') }}</span>
@@ -45,7 +45,7 @@
         <n-text depth="3" class="rp-hint">{{ t('replace.fieldsHint') }}</n-text>
       </div>
 
-
+      <!-- 3. 原始文本（操作栏） -->
       <div class="rp-section">
         <div class="rp-section-header">
           <span class="rp-section-title">{{ t('replace.originalText') }}</span>
@@ -60,7 +60,7 @@
           @blur="onTextBlur"
         ></div>
 
-
+        <!-- 选中文字操作栏 -->
         <div v-if="selectionActive" class="rp-selection-bar">
           <n-button size="tiny" type="error" @click="handleDelete">
             删除 "{{ selectedText }}"
@@ -85,7 +85,7 @@
         </div>
       </div>
 
-
+      <!-- 4. 替换规则区 -->
       <div class="rp-section">
         <div class="rp-section-header">
           <span class="rp-section-title">{{ t('split.rules') }}</span>
@@ -123,7 +123,7 @@
         </div>
       </div>
 
-
+      <!-- 5. 处理结果 -->
       <div class="rp-section">
         <n-button
           type="primary"
@@ -134,14 +134,6 @@
         >
           {{ processing ? t('tool.processing') : t('tool.startProcessing') }}
         </n-button>
-
-        <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="rp-result-alert">
-          <template #header>
-            <span v-if="result.success">{{ t('tool.success') }}</span>
-            <span v-else>{{ t('tool.failure') }}</span>
-          </template>
-          <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-        </n-alert>
 
         <n-alert v-if="error" type="error" class="rp-result-alert">{{ error }}</n-alert>
       </div>
@@ -169,7 +161,6 @@ const { t } = useI18n()
 const message = useMessage()
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
 const ALL_FIELDS = [
@@ -216,6 +207,7 @@ function addField(field) {
   selectValue.value = null
 }
 
+// ── 原始文本 / 操作栏 ──
 
 const sourceTextRef = ref(null)
 const selectedText = ref('')
@@ -252,9 +244,11 @@ function onTextSelect(e) {
 }
 
 function onTextBlur() {
-    setTimeout(() => {
+  // 延迟清除，让操作栏按钮有机会响应点击
+  setTimeout(() => {
     if (!sourceTextRef.value?.contains(document.activeElement)) {
-          }
+      // 不要在这里清除 selection，让按钮有机会处理
+    }
   }, 200)
 }
 
@@ -266,6 +260,7 @@ function dismissSelection() {
   window.getSelection().removeAllRanges()
 }
 
+// ── 括号检测 ──
 
 const BRACKET_PAIRS = [
   { open: '[', close: ']', label: '方括号', regex: '\\[.*?\\]' },
@@ -334,6 +329,7 @@ function addRuleFromSelection(sel) {
   return rule
 }
 
+// ── 编辑态缓存：避免击键中间态被 toFormula 错误格式化 ──
 const editingInputs = reactive({})
 
 function commitFormula(rule) {
@@ -342,7 +338,8 @@ function commitFormula(rule) {
     const p = parseFormula(raw)
     rule.find = p.find
     rule.replace = p.replace
-        rule.isRegex = FORMULA_FULL_RE.test(raw) || FORMULA_SIMPLE_RE.test(raw)
+    // 公式格式 (s/.../.../g 或 /.../g) 自动开启正则模式
+    rule.isRegex = FORMULA_FULL_RE.test(raw) || FORMULA_SIMPLE_RE.test(raw)
     console.log('[commitFormula] raw:', raw, '→ find:', rule.find, 'replace:', rule.replace, 'isRegex:', rule.isRegex)
     delete editingInputs[rule.id]
   } else {
@@ -350,6 +347,7 @@ function commitFormula(rule) {
   }
 }
 
+// ── 公式 ↔ find/replace 转换 ──
 function toFormula(rule) {
   if (!rule) return ''
   const f = rule.find || ''
@@ -399,6 +397,7 @@ function handleAddAfter() {
   dismissSelection()
 }
 
+// ── 规则管理 ──
 
 const STORAGE_KEY = 'music-replace-rules'
 
@@ -435,11 +434,11 @@ function removeRule(index) {
   rules.value.splice(index, 1)
 }
 
+// ── 提交 ──
 
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
@@ -451,12 +450,11 @@ async function handleSubmit() {
       },
     }
    const res = await runTool('replaceText', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')
@@ -475,7 +473,7 @@ async function handleSubmit() {
   overflow: hidden;
 }
 
-
+/* 左侧：文件/目录列表 */
 .rp-files-col {
   width: 175px;
   flex-shrink: 0;
@@ -521,7 +519,7 @@ async function handleSubmit() {
   white-space: nowrap;
 }
 
-
+/* 右侧主内容 */
 .rp-main {
   flex: 1;
   display: flex;
@@ -530,7 +528,7 @@ async function handleSubmit() {
   overflow-y: auto;
 }
 
-
+/* 1. 顶部操作栏 */
 .rp-topbar {
   display: flex;
   align-items: center;
@@ -544,7 +542,7 @@ async function handleSubmit() {
   color: var(--ct-text);
 }
 
-
+/* section 通用 */
 .rp-section {
   display: flex;
   flex-direction: column;
@@ -565,7 +563,7 @@ async function handleSubmit() {
   color: var(--ct-text-3);
 }
 
-
+/* 2. 目标字段 */
 .rp-fields-row {
   display: flex;
   flex-wrap: wrap;
@@ -579,7 +577,7 @@ async function handleSubmit() {
   font-size: 12px;
 }
 
-
+/* 3. 原始文本 */
 .rp-source-text {
   padding: 8px 10px;
   border: 1px solid var(--ct-border);
@@ -600,7 +598,7 @@ async function handleSubmit() {
   color: var(--ct-text-3);
 }
 
-
+/* 选中文字操作栏 */
 .rp-selection-bar {
   display: flex;
   align-items: center;
@@ -612,7 +610,7 @@ async function handleSubmit() {
   border-radius: 6px;
 }
 
-
+/* 4. 替换规则 */
 .rp-rule-list {
   display: flex;
   flex-direction: column;
@@ -628,7 +626,7 @@ async function handleSubmit() {
   min-width: 0;
 }
 
-
+/* 5. 结果 */
 .rp-result-alert {
   margin-top: 4px;
 }

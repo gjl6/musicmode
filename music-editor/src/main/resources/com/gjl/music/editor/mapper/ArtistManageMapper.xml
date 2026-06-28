@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.editor.mapper.ArtistManageMapper">
+
+    <!-- ══════════════════════════════════════════════════
+         艺术家搜索
+         ══════════════════════════════════════════════════ -->
+
+    <select id="searchArtists" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND artist_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                        AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                    OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                    OR COALESCE(sort_artist_name, artist_name) IS NULL)
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "albumCount"'>
+                ORDER BY album_count DESC, artist_name
+            </when>
+            <when test='sort == "songCount"'>
+                ORDER BY song_count DESC, artist_name
+            </when>
+            <otherwise>
+                ORDER BY COALESCE(sort_artist_name, artist_name)
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearchArtists" resultType="int">
+        SELECT COUNT(*) FROM artist
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND artist_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                        AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                    OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                    OR COALESCE(sort_artist_name, artist_name) IS NULL)
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         重复检测
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findDuplicateArtistNames" resultType="map" databaseId="h2">
+        SELECT LOWER(artist_name) AS "normName", COUNT(*) AS "cnt",
+               LISTAGG(CAST(id AS VARCHAR), ',') AS "ids"
+        FROM artist
+        GROUP BY LOWER(artist_name)
+        HAVING COUNT(*) > 1
+        ORDER BY "cnt" DESC
+    </select>
+
+    <select id="findDuplicateArtistNames" resultType="map" databaseId="mysql">
+        SELECT LOWER(artist_name) AS normName, COUNT(*) AS cnt,
+               GROUP_CONCAT(id SEPARATOR ',') AS ids
+        FROM artist
+        GROUP BY LOWER(artist_name)
+        HAVING COUNT(*) > 1
+        ORDER BY cnt DESC
+    </select>
+
+    <select id="findArtistsByNormalizedName" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist
+        WHERE LOWER(artist_name) = LOWER(#{normName})
+        ORDER BY song_count DESC, album_count DESC
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         合并操作
+         ══════════════════════════════════════════════════ -->
+
+    <update id="reassignSongArtists" databaseId="h2">
+        UPDATE song_artist
+        SET artist_id = #{targetId}
+        WHERE artist_id = #{sourceId}
+          AND song_id NOT IN (
+              SELECT song_id FROM song_artist WHERE artist_id = #{targetId}
+          )
+    </update>
+
+    <update id="reassignSongArtists" databaseId="mysql">
+        UPDATE song_artist
+        SET artist_id = #{targetId}
+        WHERE artist_id = #{sourceId}
+          AND song_id NOT IN (
+              SELECT song_id FROM (SELECT sa.song_id AS song_id FROM song_artist sa WHERE sa.artist_id = #{targetId}) tmp
+          )
+    </update>
+
+    <delete id="deleteConflictingSongArtists" databaseId="h2">
+        DELETE FROM song_artist
+        WHERE artist_id = #{sourceId}
+          AND song_id IN (
+              SELECT song_id FROM song_artist WHERE artist_id = #{targetId}
+          )
+    </delete>
+
+    <delete id="deleteConflictingSongArtists" databaseId="mysql">
+        DELETE FROM song_artist
+        WHERE artist_id = #{sourceId}
+          AND song_id IN (
+              SELECT song_id FROM (SELECT sa.song_id AS song_id FROM song_artist sa WHERE sa.artist_id = #{targetId}) tmp
+          )
+    </delete>
+
+    <update id="reassignAlbumArtist">
+        UPDATE album SET artist_id = #{targetId}, update_time = CURRENT_TIMESTAMP
+        WHERE artist_id = #{sourceId}
+    </update>
+
+    <delete id="deleteArtist">
+        DELETE FROM artist WHERE id = #{id}
+    </delete>
+
+    <!-- ══════════════════════════════════════════════════
+         Pipeline 扫描查询（Artist Scanner）
+         ══════════════════════════════════════════════════ -->
+
+    <sql id="artistFilterWhere">
+        <where>
+            <if test="letter != null and letter != '' and letter != 'all'">
+                <choose>
+                    <when test='letter == "0-9"'>
+                        AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                        AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+                    </when>
+                    <when test='letter == "#"'>
+                        AND (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                            OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                                AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                            OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                            OR COALESCE(sort_artist_name, artist_name) IS NULL)
+                    </when>
+                    <otherwise>
+                        AND COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND artist_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="minSongs != null">
+                AND song_count &gt;= #{minSongs}
+            </if>
+            <if test="maxSongs != null">
+                AND song_count &lt;= #{maxSongs}
+            </if>
+            <if test="style != null and style != ''">
+                AND id IN (
+                    SELECT DISTINCT sa.artist_id FROM song_artist sa
+                    JOIN song_style ss ON sa.song_id = ss.song_id
+                    JOIN style st ON ss.style_id = st.id
+                    WHERE st.style_name = #{style}
+                )
+            </if>
+            <if test="country != null and country != ''">
+                AND country = #{country}
+            </if>
+        </where>
+    </sql>
+
+    <select id="findAllArtistIds" resultType="long">
+        SELECT id FROM artist
+        <include refid="artistFilterWhere"/>
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+    <select id="findArtistIdsByLetter" resultType="long">
+        SELECT id FROM artist
+        <include refid="artistFilterWhere"/>
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+    <select id="findArtistIdsByKeyword" resultType="long">
+        SELECT id FROM artist
+        <include refid="artistFilterWhere"/>
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+    <select id="findIncompleteArtistIds" resultType="long">
+        SELECT id FROM artist
+        <include refid="artistFilterWhere"/>
+        AND (artist_cover IS NULL OR artist_cover = ''
+             OR introduction IS NULL OR introduction = ''
+             OR country IS NULL OR country = ''
+             OR gender IS NULL)
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+    <select id="findUnenrichedArtistIds" resultType="long">
+        SELECT id FROM artist
+        <include refid="artistFilterWhere"/>
+        AND enrich_source IS NULL
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+    <select id="findNonstandardArtistIds" resultType="long">
+        SELECT id FROM artist
+        <include refid="artistFilterWhere"/>
+        AND (
+            artist_name != REGEXP_REPLACE(artist_name, '[[:space:]]+', ' ')
+            OR artist_name LIKE '%''%'
+            OR artist_name LIKE '% feat.%'
+            OR artist_name LIKE '% ft.%'
+            OR artist_name LIKE '% Feat.%'
+            OR artist_name LIKE '% &amp; %'
+            OR artist_name LIKE '% + %'
+        )
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+    <select id="findNakedArtistIds" resultType="long">
+        SELECT id FROM artist
+        <include refid="artistFilterWhere"/>
+        AND (artist_cover IS NULL OR artist_cover = '')
+        AND (introduction IS NULL OR introduction = '')
+        AND (country IS NULL OR country = '')
+        AND (gender IS NULL)
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+    <select id="findDuplicateArtistIds" resultType="long">
+        SELECT id FROM artist
+        <include refid="artistFilterWhere"/>
+        AND LOWER(artist_name) IN (
+            SELECT LOWER(artist_name) FROM artist
+            GROUP BY LOWER(artist_name) HAVING COUNT(*) > 1
+        )
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+</mapper>

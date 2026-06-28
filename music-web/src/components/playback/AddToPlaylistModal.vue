@@ -7,7 +7,7 @@
     style="max-width: 420px"
     @update:show="(v) => emit('update:show', v)"
   >
-
+    <!-- 搜索/过滤 -->
     <div class="modal-search" v-if="playlists.length > 5">
       <n-input
         v-model:value="search"
@@ -19,7 +19,7 @@
       </n-input>
     </div>
 
-
+    <!-- 歌单列表 -->
     <div class="modal-list">
       <n-checkbox-group v-model:value="selected" v-if="filtered.length">
         <div
@@ -42,7 +42,7 @@
       />
     </div>
 
-
+    <!-- 新建歌单 -->
     <div class="modal-create">
       <n-input-group>
         <n-input
@@ -57,7 +57,7 @@
       </n-input-group>
     </div>
 
-
+    <!-- 操作栏 -->
     <template #footer>
       <div class="modal-footer">
         <span class="footer-hint" v-if="selected.length">
@@ -94,9 +94,9 @@ import { addSongsToPlaylist } from '@/api/playback/playlist.js'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-
+  /** 待添加的歌曲 ID 数组 */
   songIds: { type: Array, default: () => [] },
-
+  /** 单曲标题（单曲模式时显示） */
   songTitle: { type: String, default: '' },
 })
 
@@ -149,7 +149,8 @@ async function doCreate() {
   if (!name) return
   try {
     const resp = await subsonicCreatePlaylist(name, [])
-        await loadMyPlaylists()
+    // 创建成功后加入列表并选中
+    await loadMyPlaylists()
     const created = playlists.value.find(pl => pl.name === name)
     if (created) selected.value = [...selected.value, created.id]
     newName.value = ''

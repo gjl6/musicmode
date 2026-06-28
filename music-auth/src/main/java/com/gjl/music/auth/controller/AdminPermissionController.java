@@ -10,11 +10,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+/**
+ * 权限管理 REST API（管理员只读）。
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/permissions")
-@PreAuthorize("hasAuthority('user:manage')")
+@PreAuthorize("hasAuthority('user:write')")
 @RequiredArgsConstructor
 public class AdminPermissionController {
 

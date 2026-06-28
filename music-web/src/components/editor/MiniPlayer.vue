@@ -1,6 +1,6 @@
 <template>
   <div class="mini-player" :class="{ visible: player.hasTrack }">
-
+    <!-- 封面 -->
     <img
       v-if="coverUrl"
       :src="coverUrl"
@@ -11,13 +11,13 @@
       <n-icon :size="20"><MusicalNotesOutline /></n-icon>
     </div>
 
-
+    <!-- 曲目信息 -->
     <div class="player-track" @click="openEditor(player.currentFile)" :title="$t('edit.clickToEdit')">
       <span class="player-track-name">{{ displayTrackName }}</span>
       <span class="player-track-artist">{{ displayArtist }}</span>
     </div>
 
-
+    <!-- 播放控制 -->
     <div class="player-controls">
       <n-button size="tiny" text @click="player.togglePlay()">
         <template #icon>
@@ -29,15 +29,15 @@
       </n-button>
     </div>
 
-
+    <!-- 进度条 -->
     <div class="player-progress-bar" @click="seekProgress">
       <div class="player-progress-fill" :style="{ width: (player.progress * 100) + '%' }" />
     </div>
 
-
+    <!-- 时间 -->
     <span class="player-time">{{ formatTime(player.currentTime) }} / {{ formatTime(player.duration) }}</span>
 
-
+    <!-- 音量 -->
     <n-button size="tiny" text @click="player.toggleMute()" class="player-volume-btn">
       <template #icon>
         <n-icon :size="16">
@@ -47,7 +47,7 @@
       </template>
     </n-button>
 
-
+    <!-- 关闭 -->
     <n-button size="tiny" text @click="player.stop()" class="player-close-btn">
       <template #icon><n-icon :size="16"><CloseOutline /></n-icon></template>
     </n-button>

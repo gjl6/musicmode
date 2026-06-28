@@ -21,4 +21,8 @@ public class Album extends MetadataItem {
     private String sortAlbumName;
     private Integer artistId;
     private Integer songCount;
+    private String enrichSource;
+
+    /** 艺术家名称（联查 artist 表填充，不持久化到 album 表） */
+    private String artistName;
 }

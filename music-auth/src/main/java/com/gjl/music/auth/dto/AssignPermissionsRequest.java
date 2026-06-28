@@ -5,7 +5,9 @@ import lombok.Data;
 
 import java.util.List;
 
-
+/**
+ * 分配权限请求（给角色）。
+ */
 @Data
 public class AssignPermissionsRequest {
 

@@ -19,6 +19,6 @@ public interface UserStarredMapper {
     boolean isStarred(@Param("userId") Long userId, @Param("itemId") Long itemId,
                       @Param("itemType") String itemType);
 
-
+    /** 按 item 清理（级联删除用） */
     int deleteByItem(@Param("itemId") Long itemId, @Param("itemType") String itemType);
 }

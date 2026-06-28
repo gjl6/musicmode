@@ -9,7 +9,18 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 
-
+/**
+ * 解析器工厂 —— 根据文件扩展名创建对应的解析器并执行解析。
+ *
+ * <pre>
+ * ParserFactoryImpl (纯工厂)
+ *   ├── .mp3  → new Mp3Parser().parse(file)
+ *   ├── .flac → new FlacParser(coversDir).parse(file)
+ *   ├── .wav  → new WavParser().parse(file)
+ *   └── else  → new DefaultParser().parse(file)
+ * </pre>
+ * 格式专用解析器继承 {@link DefaultParser}，仅覆盖差异方法。
+ */
 @Component
 public class ParserFactoryImpl implements ParserFactory {
 
@@ -32,7 +43,14 @@ public class ParserFactoryImpl implements ParserFactory {
         return createParser(file).parse(file);
     }
 
+    @Override
+    public MusicMetadata parseLight(File file) throws MetadataParseException {
+        DefaultParser parser = createParser(file);
+        parser.setLightMode(true);
+        return parser.parse(file);
+    }
 
+    /** 根据扩展名创建解析器，注入通用配置 */
     protected DefaultParser createParser(File file) {
         DefaultParser parser = switch (AudioFileUtils.extension(file.toPath())) {
             case "mp3"  -> new Mp3Parser();
@@ -42,9 +60,11 @@ public class ParserFactoryImpl implements ParserFactory {
             case "m4a"  -> new Mp4Parser();
             default     -> new DefaultParser();
         };
-                parser.setCoversDir(coversDir);
+        // 注入封面缓存目录和音乐根目录
+        parser.setCoversDir(coversDir);
         parser.setMusicRootDir(musicRootDir);
-                String config = configService.getString(ARTIST_SPLIT_KEY, null);
+        // 注入艺术家分割配置
+        String config = configService.getString(ARTIST_SPLIT_KEY, null);
         if (config != null) {
             parser.setArtistSplitConfig(config);
         }

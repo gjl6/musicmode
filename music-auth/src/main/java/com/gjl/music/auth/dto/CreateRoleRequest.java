@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-
+/**
+ * 创建角色请求。
+ */
 @Data
 public class CreateRoleRequest {
 

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.ArtistMapper">
+
+    <!-- ══════════════════════════════════════════════════
+         Artist CRUD
+         ══════════════════════════════════════════════════ -->
+
+    <insert id="upsertArtist" databaseId="h2">
+        MERGE INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        KEY(artist_name)
+        VALUES (#{artistName}, #{artistCover}, #{introduction}, #{gender}, #{country}, #{sortArtistName}, #{albumCount}, #{songCount}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertArtist" databaseId="mysql">
+        INSERT INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        VALUES (#{artistName}, #{artistCover}, #{introduction}, #{gender}, #{country}, #{sortArtistName}, #{albumCount}, #{songCount}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            artist_cover    = VALUES(artist_cover),
+            introduction    = VALUES(introduction),
+            gender          = VALUES(gender),
+            country         = VALUES(country),
+            sort_artist_name = VALUES(sort_artist_name),
+            album_count     = VALUES(album_count),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectArtistIdByName" resultType="long">
+        SELECT id FROM artist WHERE artist_name = #{artistName}
+    </select>
+
+    <insert id="batchUpsertArtists" databaseId="h2">
+        MERGE INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        KEY(artist_name)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.artistName}, #{item.artistCover}, #{item.introduction}, #{item.gender}, #{item.country}, #{item.sortArtistName}, #{item.albumCount}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsertArtists" databaseId="mysql">
+        INSERT INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.artistName}, #{item.artistCover}, #{item.introduction}, #{item.gender}, #{item.country}, #{item.sortArtistName}, #{item.albumCount}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            artist_cover    = VALUES(artist_cover),
+            introduction    = VALUES(introduction),
+            gender          = VALUES(gender),
+            country         = VALUES(country),
+            sort_artist_name = VALUES(sort_artist_name),
+            album_count     = VALUES(album_count),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- INSERT-only：已存在则跳过，不覆盖字段。用于 Song 管道 -->
+    <insert id="batchInsertArtistsIgnoreExisting" databaseId="h2">
+        INSERT INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        SELECT s.artist_name, s.artist_cover, s.introduction, s.gender, s.country, s.sort_artist_name, 0, 0, CURRENT_TIMESTAMP
+        FROM (VALUES
+            <foreach collection="list" item="item" separator=",">
+                (#{item.artistName}, #{item.artistCover}, #{item.introduction}, #{item.gender}, #{item.country}, #{item.sortArtistName})
+            </foreach>
+        ) AS s(artist_name, artist_cover, introduction, gender, country, sort_artist_name)
+        LEFT JOIN artist t ON s.artist_name = t.artist_name
+        WHERE t.artist_name IS NULL
+    </insert>
+
+    <insert id="batchInsertArtistsIgnoreExisting" databaseId="mysql">
+        INSERT IGNORE INTO artist (artist_name, artist_cover, introduction, gender, country, sort_artist_name, album_count, song_count, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.artistName}, #{item.artistCover}, #{item.introduction}, #{item.gender}, #{item.country}, #{item.sortArtistName}, 0, 0, NOW())
+        </foreach>
+    </insert>
+
+    <select id="selectArtistIdsByNames" resultType="map">
+        SELECT artist_name, id FROM artist WHERE artist_name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+    <update id="updateArtist">
+        UPDATE artist
+        <set>
+            <if test="artistName != null">artist_name = #{artistName},</if>
+            <if test="introduction != null">introduction = #{introduction},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="country != null">country = #{country},</if>
+            <if test="artistCover != null">artist_cover = #{artistCover},</if>
+            <if test="enrichSource != null">enrich_source = #{enrichSource},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- ══════════════════════════════════════════════════
+         Artist 查询
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findArtistById" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist WHERE id = #{id}
+    </select>
+
+    <select id="findArtistsByIds" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findAllArtistIds" resultType="long">
+        SELECT id FROM artist ORDER BY id
+    </select>
+
+    <select id="countAllArtists" resultType="int">
+        SELECT COUNT(*) FROM artist
+    </select>
+
+    <select id="findArtistIdsUpdatedAfter" resultType="long">
+        SELECT id FROM artist WHERE update_time >= #{since} ORDER BY id
+    </select>
+
+    <select id="findAlbumsByArtistId" resultType="com.gjl.music.model.Album">
+        SELECT id, album_name AS albumName, album_type AS albumType,
+               album_cover AS albumCover, introduction, album_year AS albumYear,
+               company, language, artist_id AS artistId, song_count AS songCount,
+               create_time AS createTime, update_time AS updateTime
+        FROM album
+        WHERE artist_id = #{artistId}
+        ORDER BY album_year DESC NULLS LAST, album_name ASC
+    </select>
+
+</mapper>

@@ -9,10 +9,14 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.Map;
 
-
+/**
+ * 播放器状态 REST API。
+ *
+ * <p>客户端通过此 API 上报播放状态，并查询其他客户端的状态。
+ */
 @RestController
 @RequestMapping("/api/player/state")
-@PreAuthorize("hasAuthority('music:browse')")
+@PreAuthorize("hasAuthority('music:play')")
 public class PlayerStateController {
 
     private final PlayerStateSyncService syncService;
@@ -21,7 +25,9 @@ public class PlayerStateController {
         this.syncService = syncService;
     }
 
-
+    /**
+     * 上报播放状态（客户端定时发送）。
+     */
     @PostMapping
     public ResponseEntity<Void> report(@RequestBody PlayerState state, Principal principal) {
         state.setUsername(principal.getName());
@@ -29,7 +35,9 @@ public class PlayerStateController {
         return ResponseEntity.ok().build();
     }
 
-
+    /**
+     * 获取当前用户最后一次已知状态。
+     */
     @GetMapping
     public ResponseEntity<PlayerState> getLastState(Principal principal) {
         PlayerState state = syncService.getLastState(principal.getName());
@@ -45,7 +53,9 @@ public class PlayerStateController {
         return ResponseEntity.ok(state);
     }
 
-
+    /**
+     * 获取指定用户最后一次已知状态（跨设备）。
+     */
     @GetMapping("/{username}")
     public ResponseEntity<PlayerState> getStateByUsername(@PathVariable String username) {
         PlayerState state = syncService.getLastState(username);
@@ -55,7 +65,9 @@ public class PlayerStateController {
         return ResponseEntity.ok(state);
     }
 
-
+    /**
+     * 发送播放控制事件（play/pause/stop/seek）。
+     */
     @PostMapping("/control")
     public ResponseEntity<Void> control(@RequestBody Map<String, Object> body,
                                         Principal principal) {

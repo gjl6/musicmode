@@ -1,12 +1,25 @@
 <template>
   <div class="artist-list-page">
-
+    <!-- ═══ 页面头部 ═══ -->
     <div class="page-header">
       <div class="header-left">
         <h1>{{ $t('artist.title') }}</h1>
         <span class="header-count">{{ $t('artist.count', { count: library.artistTotal }) }}</span>
       </div>
       <div class="header-actions">
+        <n-input
+          v-model:value="searchText"
+          :placeholder="$t('player.searchPlaceholder')"
+          size="small"
+          clearable
+          round
+          style="width:180px"
+          @keyup.enter="doSearch"
+        >
+          <template #prefix>
+            <n-icon :size="16"><SearchOutline /></n-icon>
+          </template>
+        </n-input>
         <n-select
           v-model:value="sortType"
           :options="sortOptions"
@@ -19,7 +32,7 @@
       </div>
     </div>
 
-
+    <!-- ═══ 字母索引（仅 A-Z 排序时显示）═══ -->
     <div v-if="sortType === 'alphabetical' && letterChips.length" class="letter-bar">
       <button
         class="letter-chip"
@@ -37,7 +50,7 @@
     </div>
 
     <n-spin :show="library.loading" size="medium">
-
+      <!-- ═══ 网格视图 ═══ -->
       <div v-if="view === 'grid' && displayArtists.length" class="artist-grid">
         <ArtistCard
           v-for="artist in displayArtists"
@@ -51,7 +64,7 @@
         />
       </div>
 
-
+      <!-- ═══ 列表视图 ═══ -->
       <ArtistTable
         v-if="view === 'list' && displayArtists.length"
         :artists="displayArtists"
@@ -61,7 +74,7 @@
         @toggle-fav="toggleFav"
       />
 
-
+      <!-- ═══ 空状态 ═══ -->
       <n-empty
         v-if="!library.loading && !displayArtists.length"
         :description="$t('player.noData')"
@@ -70,7 +83,7 @@
       />
     </n-spin>
 
-
+    <!-- ═══ 分页（服务端分页）═══ -->
     <n-pagination
       v-if="library.artistTotal > 0"
       v-model:page="currentPage"
@@ -91,6 +104,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMessage } from 'naive-ui'
+import { SearchOutline } from '@vicons/ionicons5'
 import { useLibraryStore } from '@/store/playback/library.js'
 import { usePlayerStore } from '@/store/playback/player.js'
 import ArtistCard from '@/components/playback/ArtistCard.vue'
@@ -103,9 +117,18 @@ const message = useMessage()
 const library = useLibraryStore()
 const player = usePlayerStore()
 
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
+
 const view = ref('grid')
 const artists = computed(() => library.artists)
 
+// ═══ 显示数据（附加收藏状态）═══
 
 const displayArtists = computed(() =>
   artists.value.map(a => ({
@@ -114,6 +137,7 @@ const displayArtists = computed(() =>
   }))
 )
 
+// ═══ 排序（服务端）═══
 
 const sortType = ref('alphabetical')
 const sortOptions = computed(() => [
@@ -123,17 +147,19 @@ const sortOptions = computed(() => [
 ])
 
 function onSortChange() {
-    if (sortType.value !== 'alphabetical') {
+  // 离开字母排序时清除字母过滤
+  if (sortType.value !== 'alphabetical') {
     currentLetter.value = null
   }
   currentPage.value = 1
   doLoad()
 }
 
+// ═══ 字母索引（服务端过滤）═══
 
 const currentLetter = ref(null)
 
-
+/** 将后端统计数据转为前端字母 chip 列表 */
 const letterChips = computed(() => {
   const list = library.artistLetters
   if (!list.length) return []
@@ -159,6 +185,7 @@ function onLetterChange(letter) {
   doLoad()
 }
 
+// ═══ 分页（服务端）═══
 
 const currentPage = ref(1)
 const pageSize = ref(40)
@@ -172,6 +199,7 @@ function onPageSizeChange() {
   doLoad()
 }
 
+// ═══ 数据加载 ═══
 
 function doLoad() {
   const offset = (currentPage.value - 1) * pageSize.value
@@ -186,13 +214,15 @@ function doLoad() {
 onMounted(async () => {
   player.loadFavoriteIds()
   if (library.artistLetters.length === 0) {
-        library.loadArtists({ count: pageSize.value, offset: 0 })
+    // 首次加载：不带过滤，取字母统计
+    library.loadArtists({ count: pageSize.value, offset: 0 })
   }
   if (library.artists.length === 0) {
     doLoad()
   }
 })
 
+// ═══ 操作 ═══
 
 function goDetail(id) {
   router.push(`/player/artists/${id}`)
@@ -216,7 +246,9 @@ async function toggleFav(artist) {
 </script>
 
 <style scoped>
-
+/* ════════════════════════════════════════════════════
+   艺术家列表页 — 居中容器 + 服务端排序/过滤/分页 + 收藏 + 双视图
+   ════════════════════════════════════════════════════ */
 
 .artist-list-page {
   width: min(100% - var(--content-padding-x) * 2, var(--content-max-width));
@@ -224,7 +256,7 @@ async function toggleFav(artist) {
   padding: 24px 0;
 }
 
-
+/* ── 页头（对齐 AlbumList）── */
 .page-header {
   display: flex;
   align-items: center;
@@ -260,7 +292,7 @@ async function toggleFav(artist) {
   flex-shrink: 0;
 }
 
-
+/* ── 字母索引 ── */
 .letter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -301,14 +333,14 @@ async function toggleFav(artist) {
   cursor: default;
 }
 
-
+/* ── 艺术家网格（对齐 AlbumList）── */
 .artist-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
 }
 
-
+/* ── 分页 ── */
 .artist-pagination {
   margin-top: 16px;
   justify-content: flex-end;

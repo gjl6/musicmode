@@ -18,7 +18,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
+/**
+ * 从 DB 加载用户详情，Redis 缓存加速。
+ * <p>
+ * 缓存策略：先查 Redis → 未命中则查 DB → 写入 Redis。
+ * Redis 不可用时降级为直查 DB。
+ */
 @Slf4j
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -40,7 +45,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-                AuthCacheService.CachedUser cached = cache.getUser(username);
+        // 1. 查用户摘要（Redis → DB）
+        AuthCacheService.CachedUser cached = cache.getUser(username);
         Long userId;
         String password;
         int status;
@@ -59,7 +65,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             password = authUser.getPassword();
             status = authUser.getStatus() != null ? authUser.getStatus() : 1;
 
-                        cache.putUser(username,
+            // 写入缓存
+            cache.putUser(username,
                     new AuthCacheService.CachedUser(userId, username, password, status));
         }
 
@@ -67,21 +74,24 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException("用户已被禁用: " + username);
         }
 
-                List<String> roleCodes = cache.getRoles(userId);
+        // 2. 查角色（Redis → DB）
+        List<String> roleCodes = cache.getRoles(userId);
         if (roleCodes == null) {
             List<AuthRole> roles = authRoleMapper.selectByUserId(userId);
             roleCodes = roles.stream().map(AuthRole::getRoleCode).toList();
             cache.putRoles(userId, roleCodes);
         }
 
-                List<String> permCodes = cache.getPermissions(userId);
+        // 3. 查权限（Redis → DB）
+        List<String> permCodes = cache.getPermissions(userId);
         if (permCodes == null) {
             List<AuthPermission> perms = authPermissionMapper.selectByUserId(userId);
             permCodes = perms.stream().map(AuthPermission::getPermissionCode).toList();
             cache.putPermissions(userId, permCodes);
         }
 
-                Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+        // 4. 组装 GrantedAuthority
+        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
         for (String rc : roleCodes) {
             authorities.add(new SimpleGrantedAuthority(rc));
         }

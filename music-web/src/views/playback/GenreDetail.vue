@@ -1,6 +1,6 @@
 <template>
   <div class="genre-detail-page">
-
+    <!-- ═══ 面包屑导航 ═══ -->
     <div class="breadcrumb">
       <n-button text class="back-btn" @click="goBack">
         <template #icon><n-icon :size="18"><ChevronBackOutline /></n-icon></template>
@@ -9,10 +9,23 @@
       <span class="breadcrumb-link" @click="goGenres">{{ $t('genre.title') }}</span>
       <span class="breadcrumb-sep">/</span>
       <span class="breadcrumb-current">{{ genreName || '—' }}</span>
+      <n-input
+        v-model:value="searchText"
+        :placeholder="$t('player.searchPlaceholder')"
+        size="tiny"
+        clearable
+        round
+        style="width:160px;margin-left:auto"
+        @keyup.enter="doSearch"
+      >
+        <template #prefix>
+          <n-icon :size="14"><SearchOutline /></n-icon>
+        </template>
+      </n-input>
     </div>
 
     <n-spin :show="library.genreSongsLoading && !displaySongs.length" size="medium">
-
+      <!-- ═══ Hero ═══ -->
       <div class="detail-hero">
         <div class="hero-cover">
           <CoverArt
@@ -26,12 +39,12 @@
             <h1>{{ genreName || '—' }}</h1>
           </div>
 
-
+          <!-- 元数据标签 -->
           <div class="hero-meta">
             <span class="meta-tag count">{{ $t('genre.songCount', { count: library.genreDetail?.songCount ?? library.genreSongTotal }) }}</span>
           </div>
 
-
+          <!-- 描述 -->
           <div v-if="library.genreDetail?.description" class="hero-intro">
             <p :class="{ 'intro-clamped': !introExpanded }">{{ library.genreDetail.description }}</p>
             <button
@@ -41,7 +54,7 @@
             >{{ introExpanded ? '收起' : '展开' }}</button>
           </div>
 
-
+          <!-- 操作按钮 -->
           <n-space style="margin-top:12px">
             <n-button type="primary" size="small" @click="playAll">
               <n-icon :size="16"><PlayOutline /></n-icon>
@@ -59,9 +72,9 @@
         </div>
       </div>
 
-
+      <!-- ═══ 歌曲列表 ═══ -->
       <div class="detail-songs">
-
+        <!-- 排序 + 计数 -->
         <div class="tab-bar">
           <div class="tab-label">{{ $t('song.title') }} ({{ library.genreSongTotal }})</div>
           <n-select
@@ -74,7 +87,7 @@
           />
         </div>
 
-
+        <!-- 字母索引 -->
         <div v-if="songSort === 'alphabetical'" class="letter-bar">
           <button
             class="letter-chip"
@@ -123,7 +136,7 @@
       </div>
     </n-spin>
 
-
+    <!-- ═══ 添加到歌单弹窗 ═══ -->
     <AddToPlaylistModal
       :show="showAddModal"
       :song-ids="addSongIds"
@@ -131,7 +144,7 @@
       @added="onAddedToPlaylist"
     />
 
-
+    <!-- ═══ 编辑弹窗 ═══ -->
     <n-modal
       v-model:show="showEditModal"
       preset="card"
@@ -168,7 +181,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { PlayOutline, ShuffleOutline, ChevronBackOutline, CreateOutline } from '@vicons/ionicons5'
+import { PlayOutline, ShuffleOutline, ChevronBackOutline, CreateOutline, SearchOutline } from '@vicons/ionicons5'
 import { useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useLibraryStore } from '@/store/playback/library.js'
@@ -181,6 +194,15 @@ import AddToPlaylistModal from '@/components/playback/AddToPlaylistModal.vue'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
+
 const message = useMessage()
 const library = useLibraryStore()
 const player = usePlayerStore()
@@ -196,6 +218,7 @@ const coverUrl = computed(() => {
 
 const introExpanded = ref(false)
 
+// ═══ 编辑 ═══
 
 const showEditModal = ref(false)
 const saving = ref(false)
@@ -231,6 +254,7 @@ async function doSave() {
   }
 }
 
+// ═══ 字母索引 ═══
 
 const letterChips = (() => {
   const chips = []
@@ -239,6 +263,7 @@ const letterChips = (() => {
   return chips
 })()
 
+// ═══ 排序 ═══
 
 const songSort = ref('alphabetical')
 const songLetter = ref(null)
@@ -287,6 +312,7 @@ function onPageSizeChange() {
   loadSongs()
 }
 
+// ═══ 生命周期 ═══
 
 onMounted(async () => {
   try {
@@ -297,10 +323,12 @@ onMounted(async () => {
   }
 })
 
+// ═══ 导航 ═══
 
 function goBack() { router.back() }
 function goGenres() { router.push('/player/genres') }
 
+// ═══ 播放 ═══
 
 function playSong(song) {
   if (song.path) player.play(song)
@@ -330,6 +358,7 @@ function addToQueue(song) {
   if (song) player.addToQueue([song])
 }
 
+// ═══ 收藏 ═══
 
 async function toggleSongFav(song) {
   const id = song?.id
@@ -355,6 +384,7 @@ function onRateSong({ songId, rating }) {
   }
 }
 
+// ── 添加到歌单 ──
 
 const showAddModal = ref(false)
 const addSongIds = ref([])
@@ -365,7 +395,8 @@ function onAddToPlaylist(song) {
 }
 
 function onAddedToPlaylist() {
-  }
+  // 歌单数据可能已变更
+}
 </script>
 
 <style scoped>
@@ -375,7 +406,7 @@ function onAddedToPlaylist() {
   padding: 32px 0 48px;
 }
 
-
+/* ── 面包屑 ── */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -411,7 +442,7 @@ function onAddedToPlaylist() {
   white-space: nowrap;
 }
 
-
+/* ── Hero ── */
 .detail-hero {
   display: flex;
   gap: 32px;
@@ -447,7 +478,7 @@ function onAddedToPlaylist() {
   letter-spacing: -0.5px;
 }
 
-
+/* ── 元数据标签 ── */
 .hero-meta {
   display: flex;
   gap: 6px;
@@ -469,7 +500,7 @@ function onAddedToPlaylist() {
   background: rgb(var(--ct-accent-rgb) / 0.1);
 }
 
-
+/* ── 描述 ── */
 .hero-intro {
   margin-top: 8px;
   padding: 10px 14px;
@@ -507,12 +538,12 @@ function onAddedToPlaylist() {
   text-decoration: underline;
 }
 
-
+/* ── 歌曲列表 ── */
 .detail-songs {
   margin-top: 24px;
 }
 
-
+/* ── Tab/Sort Bar ── */
 .tab-bar {
   display: flex;
   align-items: center;
@@ -528,7 +559,7 @@ function onAddedToPlaylist() {
   color: var(--ct-text);
 }
 
-
+/* ── 字母索引 ── */
 .letter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -565,7 +596,7 @@ function onAddedToPlaylist() {
   color: #fff;
 }
 
-
+/* ── 分页 ── */
 .detail-pagination {
   margin-top: 16px;
   justify-content: flex-end;

@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
+/**
+ * 权限管理服务（只读，Redis 缓存 → DB）。
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -22,9 +24,12 @@ public class PermissionAdminService {
     private final AuthRoleMapper roleMapper;
     private final AuthCacheService cache;
 
-
+    /**
+     * 获取所有权限列表（Redis 缓存 → DB）。
+     */
     public List<PermissionResponse> getPermissions() {
-                var cached = cache.getAllPermissions();
+        // 先查 Redis 缓存
+        var cached = cache.getAllPermissions();
         if (cached != null) {
             return cached.stream()
                     .map(m -> PermissionResponse.builder()
@@ -37,7 +42,8 @@ public class PermissionAdminService {
                     .collect(Collectors.toList());
         }
 
-                List<AuthPermission> perms = permissionMapper.selectAll();
+        // DB 查询
+        List<AuthPermission> perms = permissionMapper.selectAll();
         List<PermissionResponse> result = perms.stream()
                 .map(p -> PermissionResponse.builder()
                         .id(p.getId())
@@ -48,7 +54,8 @@ public class PermissionAdminService {
                         .build())
                 .collect(Collectors.toList());
 
-                var metas = perms.stream()
+        // 回填缓存
+        var metas = perms.stream()
                 .map(p -> new AuthCacheService.PermissionMeta(
                         p.getId(), p.getPermissionCode(), p.getPermissionName(), p.getDescription()))
                 .toList();
@@ -57,9 +64,12 @@ public class PermissionAdminService {
         return result;
     }
 
-
+    /**
+     * 获取用户所有权限码。
+     */
     public List<String> getUserPermissionCodes(Long userId) {
-                var cached = cache.getPermissions(userId);
+        // Redis → DB
+        var cached = cache.getPermissions(userId);
         if (cached != null) {
             return cached;
         }
@@ -73,7 +83,9 @@ public class PermissionAdminService {
         return codes;
     }
 
-
+    /**
+     * 获取用户所有权限详情（含 code + name）。
+     */
     public List<PermissionResponse> getUserPermissionInfos(Long userId) {
         List<AuthPermission> perms = permissionMapper.selectByUserId(userId);
         return perms.stream()

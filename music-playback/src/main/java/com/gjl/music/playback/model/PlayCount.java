@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-
+/** 播放计数预聚合 — user+item+type 唯一 */
 @Data
 @Builder
 @NoArgsConstructor

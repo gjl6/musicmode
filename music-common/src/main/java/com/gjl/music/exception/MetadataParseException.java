@@ -1,6 +1,6 @@
 package com.gjl.music.exception;
 
-
+/** 元数据解析通用异常 */
 public class MetadataParseException extends RuntimeException {
     private String errorCode;
 

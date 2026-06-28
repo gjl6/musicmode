@@ -15,7 +15,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.stream.Collectors;
 
-
+/**
+ * JWT Token 工具 —— 签发、验证、解析。
+ *
+ * <h3>设计要点</h3>
+ * <ul>
+ *   <li>密钥和过期时间每次从 {@link ConfigService} 热读取，修改配置后立即生效</li>
+ *   <li>Access Token 包含 username + authorities</li>
+ *   <li>Refresh Token 只包含 username + type 标识</li>
+ * </ul>
+ */
 @Slf4j
 @Component
 public class JwtTokenProvider {
@@ -32,6 +41,7 @@ public class JwtTokenProvider {
         this.configService = configService;
     }
 
+    // ── Token 签发 ──
 
     public String createAccessToken(Authentication authentication, long version) {
         return createAccessToken(authentication.getName(),
@@ -86,6 +96,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    // ── Token 验证 ──
 
     public boolean validateToken(String token) {
         try {
@@ -106,6 +117,7 @@ public class JwtTokenProvider {
         }
     }
 
+    // ── Token 解析 ──
 
     public String getUsername(String token) {
         return parseClaims(token).getSubject();
@@ -123,7 +135,7 @@ public class JwtTokenProvider {
                 claims.getSubject(), token, auths);
     }
 
-
+    /** 从 token 中提取版本号（权限变更后用于检测旧 token） */
     public long getVersion(String token) {
         try {
             Claims claims = parseClaims(token);
@@ -135,6 +147,7 @@ public class JwtTokenProvider {
         }
     }
 
+    // ── 内部方法 ──
 
     private Claims parseClaims(String token) {
         return Jwts.parser()
@@ -150,7 +163,8 @@ public class JwtTokenProvider {
             throw new IllegalStateException("JWT secret is not configured");
         }
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-                if (keyBytes.length < 32) {
+        // 如果密钥长度不足，使用 SHA-256 派生 256-bit 密钥
+        if (keyBytes.length < 32) {
             try {
                 keyBytes = java.security.MessageDigest.getInstance("SHA-256").digest(keyBytes);
             } catch (java.security.NoSuchAlgorithmException e) {

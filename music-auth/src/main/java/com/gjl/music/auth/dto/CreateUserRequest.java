@@ -7,7 +7,9 @@ import lombok.Data;
 
 import java.util.List;
 
-
+/**
+ * 创建用户请求。
+ */
 @Data
 public class CreateUserRequest {
 
@@ -24,6 +26,6 @@ public class CreateUserRequest {
     @Email(message = "邮箱格式不正确")
     private String email;
 
-
+    /** 初始角色 ID 列表（可选，默认为 ROLE_USER） */
     private List<Long> roleIds;
 }

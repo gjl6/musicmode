@@ -13,7 +13,7 @@ public interface PlaylistMapper {
 
     Playlist findById(@Param("id") Long id);
 
-
+    /** 批量查询歌单 */
     List<Playlist> findByIds(@Param("ids") List<Long> ids);
 
     void insert(Playlist playlist);

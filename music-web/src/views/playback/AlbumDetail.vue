@@ -1,6 +1,6 @@
 <template>
   <div class="album-detail-page">
-
+    <!-- ═══ 面包屑导航 ═══ -->
     <div class="breadcrumb">
       <n-button text class="back-btn" @click="goBack">
         <template #icon><n-icon :size="18"><ChevronBackOutline /></n-icon></template>
@@ -14,11 +14,24 @@
       <span v-else class="breadcrumb-text">{{ album?.artist || '—' }}</span>
       <span class="breadcrumb-sep">/</span>
       <span class="breadcrumb-current">{{ album?.name || '—' }}</span>
+      <n-input
+        v-model:value="searchText"
+        :placeholder="$t('player.searchPlaceholder')"
+        size="tiny"
+        clearable
+        round
+        style="width:160px;margin-left:auto"
+        @keyup.enter="doSearch"
+      >
+        <template #prefix>
+          <n-icon :size="14"><SearchOutline /></n-icon>
+        </template>
+      </n-input>
     </div>
 
     <n-spin :show="!album" size="medium">
       <template v-if="album">
-
+        <!-- ═══ Hero ═══ -->
         <div class="detail-hero">
           <div class="hero-cover">
             <CoverArt
@@ -51,7 +64,7 @@
             >{{ album.artist || '—' }}</p>
             <p v-else class="hero-artist">{{ album.artist || '—' }}</p>
 
-
+            <!-- 元数据标签 -->
             <div class="hero-meta">
               <span v-if="album.genre" class="meta-tag genre">{{ album.genre }}</span>
               <span v-if="album.year > 0" class="meta-tag year">{{ album.year }}</span>
@@ -60,7 +73,7 @@
               <span class="meta-tag count">{{ $t('album.songCount', { count: album.songCount || 0 }) }}</span>
             </div>
 
-
+            <!-- 简介 -->
             <div v-if="album.introduction" class="hero-intro">
               <p :class="{ 'intro-clamped': !introExpanded }">{{ album.introduction }}</p>
               <button
@@ -70,7 +83,7 @@
               >{{ introExpanded ? '收起' : '展开' }}</button>
             </div>
 
-
+            <!-- 操作按钮 -->
             <n-space style="margin-top:12px">
               <n-button type="primary" size="small" @click="playAll">
                 <n-icon :size="16"><PlayOutline /></n-icon>
@@ -88,23 +101,38 @@
           </div>
         </div>
 
-
+        <!-- ═══ 歌曲列表 ═══ -->
         <div class="detail-songs">
-          <SongTable
-            v-if="albumSongsMapped.length"
-            :songs="albumSongsMapped"
-            @play="playSong"
-            @addToQueue="addToQueue"
-            @toggleFav="toggleSongFav"
-            @rate="onRateSong"
-            @addToPlaylist="onAddToPlaylist"
-          />
+          <div class="songs-header">
+            <span class="songs-header-title">歌曲 ({{ albumSongsMapped.length }})</span>
+            <ViewToggle v-model="songViewMode" />
+          </div>
+          <template v-if="albumSongsMapped.length">
+            <SongTable
+              v-if="songViewMode === 'list'"
+              :songs="albumSongsMapped"
+              @play="playSong"
+              @addToQueue="addToQueue"
+              @toggleFav="toggleSongFav"
+              @rate="onRateSong"
+              @addToPlaylist="onAddToPlaylist"
+            />
+            <SongGrid
+              v-else
+              :songs="albumSongsMapped"
+              @play="playSong"
+              @addToQueue="addToQueue"
+              @toggleFav="toggleSongFav"
+              @rate="onRateSong"
+              @addToPlaylist="onAddToPlaylist"
+            />
+          </template>
           <n-empty v-else :description="$t('player.noData')" size="small" style="margin-top:32px" />
         </div>
       </template>
     </n-spin>
 
-
+    <!-- ═══ 编辑弹窗 ═══ -->
     <n-modal
       v-model:show="showEditModal"
       preset="card"
@@ -148,7 +176,7 @@
       </template>
     </n-modal>
 
-
+    <!-- ═══ 添加到歌单弹窗 ═══ -->
     <AddToPlaylistModal
       :show="showAddModal"
       :song-ids="addSongIds"
@@ -161,7 +189,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { PlayOutline, ShuffleOutline, HeartOutline, Heart, CreateOutline, ChevronBackOutline } from '@vicons/ionicons5'
+import { PlayOutline, ShuffleOutline, HeartOutline, Heart, CreateOutline, ChevronBackOutline, SearchOutline } from '@vicons/ionicons5'
 import { useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useLibraryStore } from '@/store/playback/library.js'
@@ -170,11 +198,22 @@ import { subsonicGetCoverArtUrl } from '@/api/playback/subsonic.js'
 import { updateAlbum, getAlbum } from '@/api/playback/album.js'
 import CoverArt from '@/components/playback/CoverArt.vue'
 import SongTable from '@/components/playback/SongTable.vue'
+import SongGrid from '@/components/playback/SongGrid.vue'
+import ViewToggle from '@/components/playback/ViewToggle.vue'
 import AddToPlaylistModal from '@/components/playback/AddToPlaylistModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
+
 const message = useMessage()
 const library = useLibraryStore()
 const player = usePlayerStore()
@@ -189,7 +228,7 @@ const coverUrl = computed(() => {
 const albumSongsMapped = computed(() =>
   library.albumSongs.map(s => ({
     ...s,
-    artist: s.artist || album.value?.artist || '',
+    artist: s.displayArtist || s.artist || album.value?.artist || '',
     album: album.value?.name || '',
     coverArt: s.coverArt || album.value?.coverArt || album.value?.id,
     _starred: s.id != null ? player.isSongStarred(s.id) : false,
@@ -201,18 +240,27 @@ const isStarred = computed(() => {
   return id != null ? player.isAlbumStarred(id) : false
 })
 
-onMounted(() => {
-  const id = route.params.id
-  if (id) library.loadAlbum(id)
-  player.loadFavoriteIds()
+onMounted(() => loadAlbumData())
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId && newId !== oldId) loadAlbumData()
 })
 
+function loadAlbumData() {
+  const id = route.params.id
+  if (id) {
+    library.loadAlbum(id)
+    player.loadFavoriteIds()
+  }
+}
+
+// ═══ 导航 ═══
 
 function goBack() { router.back() }
 function goArtist(artistId) {
   if (artistId) router.push(`/player/artists/${artistId}`)
 }
 
+// ═══ 播放 ═══
 
 function playSong(song) {
   if (song.path) player.play(song)
@@ -235,6 +283,7 @@ function addToQueue(song) {
   if (song) player.addToQueue([song])
 }
 
+// ═══ 收藏 ═══
 
 async function toggleFav() {
   const id = album.value?.id
@@ -268,6 +317,7 @@ async function toggleSongFav(song) {
   }
 }
 
+// ═══ 评分 ═══
 
 function onRateSong({ songId, rating }) {
   const list = library.albumSongs
@@ -277,6 +327,7 @@ function onRateSong({ songId, rating }) {
   }
 }
 
+// ═══ 添加到歌单 ═══
 
 const showAddModal = ref(false)
 const addSongIds = ref([])
@@ -288,10 +339,12 @@ function onAddToPlaylist(song) {
 
 function onAddedToPlaylist() {}
 
+// ═══ 编辑 ═══
 
 const showEditModal = ref(false)
 const saving = ref(false)
 const introExpanded = ref(false)
+const songViewMode = ref('list')
 
 const genreOptions = [
   { label: '录音室专辑', value: 'ALBUM' },
@@ -347,7 +400,7 @@ async function doSave() {
   padding: 32px 0 48px;
 }
 
-
+/* ── 面包屑 ── */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -390,7 +443,7 @@ async function doSave() {
   white-space: nowrap;
 }
 
-
+/* ── Hero ── */
 .detail-hero {
   display: flex;
   gap: 32px;
@@ -446,7 +499,7 @@ async function doSave() {
   text-decoration: underline;
 }
 
-
+/* ── 元数据标签 ── */
 .hero-meta {
   display: flex;
   gap: 6px;
@@ -466,7 +519,7 @@ async function doSave() {
 .meta-tag.genre { color: var(--ct-accent); background: rgb(var(--ct-accent-rgb) / 0.1); }
 .meta-tag.year  { color: var(--ct-accent); background: rgb(var(--ct-accent-rgb) / 0.1); letter-spacing: 0.5px; }
 
-
+/* ── 简介 ── */
 .hero-intro {
   margin-top: 8px;
   padding: 10px 14px;
@@ -504,8 +557,21 @@ async function doSave() {
   text-decoration: underline;
 }
 
-
+/* ── 歌曲列表 ── */
 .detail-songs {
   margin-top: 24px;
+}
+
+.songs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.songs-header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ct-text);
 }
 </style>

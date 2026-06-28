@@ -24,13 +24,13 @@ import { NIcon } from 'naive-ui'
 import { subsonicSetRating } from '@/api/playback/subsonic.js'
 
 const props = defineProps({
-
+  /** 当前评分 0-5（0 表示未评分） */
   rating: { type: Number, default: 0 },
-
+  /** 歌曲 ID */
   songId: { type: [Number, String], default: null },
-
+  /** 只读模式（不显示为可点击按钮） */
   readonly: { type: Boolean, default: false },
-
+  /** 星星大小 */
   size: { type: Number, default: 16 },
 })
 
@@ -47,14 +47,15 @@ async function setRating(r) {
   if (props.readonly || loading.value) return
   if (!props.songId) return
   const prev = model.value
-    const newVal = r === prev ? 0 : r
+  // 点击同一颗星 = 取消评分（设为 0）
+  const newVal = r === prev ? 0 : r
   model.value = newVal
   loading.value = true
   try {
     await subsonicSetRating(props.songId, newVal)
     emit('rated', newVal)
   } catch {
-    model.value = prev
+    model.value = prev  // 失败回滚
   } finally {
     loading.value = false
   }

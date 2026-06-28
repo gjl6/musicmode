@@ -1,16 +1,20 @@
 package com.gjl.music.config;
 
 import com.gjl.music.module.Module;
-import com.gjl.music.pipeline.NodeHandler;
-import com.gjl.music.pipeline.PipelineFactory;
-import com.gjl.music.pipeline.template.TopologyBuilder;
+import com.gjl.music.infra.pipeline.NodeHandler;
+import com.gjl.music.infra.pipeline.PipelineFactory;
+import com.gjl.music.infra.pipeline.template.TopologyBuilder;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.*;
 
-
+/**
+ * 管道模块注册配置 —— 注册所有模板拓扑 + NodeHandler 到 PipelineFactory。
+ *
+ * <p>模块如同时实现 Module + NodeHandler，直接注册为 handler。
+ */
 @Slf4j
 @Configuration
 public class PipelineModuleConfig {
@@ -32,7 +36,7 @@ public class PipelineModuleConfig {
                 pipelineFactory.moduleNames().size(), pipelineFactory.templateNames().size());
     }
 
-
+    /** 注册实现 NodeHandler 的模块 */
     private void registerHandlers() {
         for (Module module : modules) {
             if (module instanceof NodeHandler handler) {
@@ -42,13 +46,16 @@ public class PipelineModuleConfig {
         }
     }
 
-
+    /** 注册所有管道模板 */
     private void registerTemplates() {
         pipelineFactory.registerTemplate("browse",
                 TopologyBuilder.sequential("filesystem"));
 
         pipelineFactory.registerTemplate("browse-parse",
-                TopologyBuilder.sequential("filesystem", "parser", "db-operator", "db-sync"));
+                TopologyBuilder.sequential("scanner", "parser", "db-operator", "db-sync"));
+
+        pipelineFactory.registerTemplate("import-collection",
+                TopologyBuilder.sequential("scanner", "import-to-db"));
 
         pipelineFactory.registerTemplate("parse",
                 TopologyBuilder.sequential("filesystem", "parser", "db-operator", "db-sync"),
@@ -122,6 +129,15 @@ public class PipelineModuleConfig {
 
         pipelineFactory.registerTemplate("artist-normalize",
                 TopologyBuilder.fanOut("artist-scanner", List.of(), List.of("artist-normalize")));
+
+        pipelineFactory.registerTemplate("album-merge",
+                TopologyBuilder.sequential("album-merge"));
+
+        pipelineFactory.registerTemplate("album-enrich",
+                TopologyBuilder.fanOut("album-scanner", List.of(), List.of("album-enrich")));
+
+        pipelineFactory.registerTemplate("album-normalize",
+                TopologyBuilder.fanOut("album-scanner", List.of(), List.of("album-normalize")));
 
         pipelineFactory.registerTemplate("delete",
                 TopologyBuilder.sequential("delete"));

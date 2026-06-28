@@ -9,7 +9,17 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+/**
+ * 双层并发限流器。
+ *
+ * <p>防止过多并发转码耗尽 CPU：
+ * <ul>
+ *   <li>全局 Semaphore：限制总并发转码数</li>
+ *   <li>每用户 AtomicInteger：限制单用户并发数</li>
+ *   <li>先检查 per-user，再检查 global</li>
+ *   <li>非阻塞：超出限制立即返回 false（调用方返回 HTTP 429）</li>
+ * </ul>
+ */
 @Slf4j
 @Service
 public class TranscodeLimiter {
@@ -26,9 +36,15 @@ public class TranscodeLimiter {
         this.maxPerUser = tc.getMaxConcurrentPerUser();
     }
 
-
+    /**
+     * 尝试获取转码许可。
+     *
+     * @param username 用户名
+     * @return true 表示获取成功，false 表示超出限制
+     */
     public boolean tryAcquire(String username) {
-                if (maxPerUser > 0) {
+        // 检查每用户限制
+        if (maxPerUser > 0) {
             AtomicInteger userCount = perUserCounts.computeIfAbsent(username,
                     k -> new AtomicInteger(0));
             int current = userCount.incrementAndGet();
@@ -39,9 +55,11 @@ public class TranscodeLimiter {
             }
         }
 
-                if (globalSemaphore != null) {
+        // 检查全局限制
+        if (globalSemaphore != null) {
             if (!globalSemaphore.tryAcquire()) {
-                                if (maxPerUser > 0) {
+                // 回滚 per-user 计数
+                if (maxPerUser > 0) {
                     perUserCounts.get(username).decrementAndGet();
                 }
                 log.debug("转码限流(global): 已达上限");
@@ -52,7 +70,11 @@ public class TranscodeLimiter {
         return true;
     }
 
-
+    /**
+     * 释放转码许可。
+     *
+     * @param username 用户名
+     */
     public void release(String username) {
         if (globalSemaphore != null) {
             globalSemaphore.release();

@@ -3,7 +3,7 @@
     <div class="hero">
       <h1 class="title">Music Pipeline</h1>
       <p class="subtitle">{{ t('home.subtitle') }}</p>
-      <n-button type="primary" size="large" @click="$router.push('/workbench')">
+      <n-button type="primary" size="large" @click="$router.push('/player')">
         {{ t('home.cta') }}
       </n-button>
     </div>

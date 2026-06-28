@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="lc-main">
-
+      <!-- 1. 顶部操作栏 -->
       <div class="lc-topbar">
         <span class="lc-title">{{ t('langConvert.title') }}</span>
         <n-tag type="warning" size="small" :bordered="false">
@@ -13,7 +13,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 2. 转换方向区 -->
       <div class="lc-section">
         <div class="lc-section-header">
           <span class="lc-section-title">{{ t('langConvert.direction') }}</span>
@@ -36,7 +36,7 @@
         </div>
       </div>
 
-
+      <!-- 3. 目标字段区 -->
       <div class="lc-section">
         <div class="lc-section-header">
           <span class="lc-section-title">{{ t('langConvert.targetFields') }}</span>
@@ -67,7 +67,7 @@
         </div>
       </div>
 
-
+      <!-- 4. 功能说明区 -->
       <div class="lc-section">
         <div class="lc-section-header">
           <span class="lc-section-title">{{ t('langConvert.featureDesc') }}</span>
@@ -81,7 +81,7 @@
         </n-alert>
       </div>
 
-
+      <!-- 5. 转换示例区 -->
       <div class="lc-section">
         <div class="lc-section-header">
           <span class="lc-section-title">{{ t('langConvert.examples') }}</span>
@@ -95,7 +95,7 @@
         </div>
       </div>
 
-
+      <!-- 6. 处理结果 -->
       <div class="lc-section">
         <n-button
           type="primary"
@@ -106,14 +106,6 @@
         >
           {{ processing ? t('tool.processing') : t('tool.startProcessing') }}
         </n-button>
-
-        <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="lc-result-alert">
-          <template #header>
-            <span v-if="result.success">{{ t('tool.success') }}</span>
-            <span v-else>{{ t('tool.failure') }}</span>
-          </template>
-          <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-        </n-alert>
 
         <n-alert v-if="error" type="error" class="lc-result-alert">{{ error }}</n-alert>
       </div>
@@ -141,10 +133,10 @@ const { t } = useI18n()
 const message = useMessage()
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 const direction = ref('toSimplified')
 
+// ── 字段选择 ──
 
 const ALL_FIELDS = [
   { value: 'song.title', labelKey: 'songTitle' },
@@ -211,7 +203,6 @@ const currentExamples = computed(() =>
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
@@ -223,12 +214,11 @@ async function handleSubmit() {
       },
     }
     const res = await runTool('langConvert', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')
@@ -247,7 +237,7 @@ async function handleSubmit() {
   overflow: hidden;
 }
 
-
+/* 左侧：文件/目录列表 */
 .lc-files-col {
   width: 175px;
   flex-shrink: 0;
@@ -293,7 +283,7 @@ async function handleSubmit() {
   white-space: nowrap;
 }
 
-
+/* 右侧主内容 */
 .lc-main {
   flex: 1;
   display: flex;
@@ -302,7 +292,7 @@ async function handleSubmit() {
   overflow-y: auto;
 }
 
-
+/* 1. 顶部操作栏 */
 .lc-topbar {
   display: flex;
   align-items: center;
@@ -316,7 +306,7 @@ async function handleSubmit() {
   color: var(--ct-text);
 }
 
-
+/* section 通用 */
 .lc-section {
   display: flex;
   flex-direction: column;
@@ -337,13 +327,13 @@ async function handleSubmit() {
   color: var(--ct-text-3);
 }
 
-
+/* 2. 转换方向 */
 .lc-direction-row {
   display: flex;
   gap: 8px;
 }
 
-
+/* 3. 功能说明 */
 .lc-feature-alert {
   --n-padding: 12px 16px;
 }
@@ -353,7 +343,7 @@ async function handleSubmit() {
   color: var(--ct-text-2);
 }
 
-
+/* 4. 转换示例 */
 .lc-examples {
   display: flex;
   flex-direction: column;
@@ -387,7 +377,7 @@ async function handleSubmit() {
   border-radius: 3px;
 }
 
-
+/* 5. 结果 */
 .lc-result-alert {
   margin-top: 4px;
 }

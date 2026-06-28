@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="cs-main">
-
+      <!-- 标题 -->
       <div class="cs-topbar">
         <span class="cs-title">{{ t('cueSplit.title') }}</span>
         <n-tag type="warning" size="small" :bordered="false">
@@ -13,12 +13,12 @@
         </n-tag>
       </div>
 
-
+      <!-- 功能说明 -->
       <n-alert type="info" :bordered="false" class="cs-desc">
         {{ t('cueSplit.desc') }}
       </n-alert>
 
-
+      <!-- 输出格式 -->
       <div class="cs-section">
         <div class="cs-section-header">
           <span class="cs-section-title">{{ t('cueSplit.outputFormat') }}</span>
@@ -40,7 +40,7 @@
         </n-radio-group>
       </div>
 
-
+      <!-- 选项 -->
       <div class="cs-section">
         <n-checkbox v-model:checked="writeTags">
           {{ t('cueSplit.writeTags') }}
@@ -55,7 +55,7 @@
         </n-text>
       </div>
 
-
+      <!-- 提交 -->
       <div class="cs-action">
         <n-button
           type="primary"
@@ -66,15 +66,6 @@
           {{ processing ? t('tool.processing') : t('tool.startProcessing') }}
         </n-button>
       </div>
-
-
-      <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="cs-result">
-        <template #header>
-          <span v-if="result.success">{{ t('tool.success') }}</span>
-          <span v-else>{{ t('tool.failure') }}</span>
-        </template>
-        <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-      </n-alert>
 
       <n-alert v-if="error" type="error" class="cs-result">
         {{ error }}
@@ -105,7 +96,6 @@ const outputFormat = ref('keep')
 const deleteSource = ref(false)
 const writeTags = ref(true)
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
 const totalCount = computed(() =>
@@ -115,7 +105,6 @@ const totalCount = computed(() =>
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
@@ -128,12 +117,11 @@ async function handleSubmit() {
       files: allTargets,
     }
     const res = await runTool('cueSplit', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')

@@ -7,7 +7,7 @@ function loadHidden() {
   try {
     const raw = localStorage.getItem(KEY_HIDDEN)
     if (raw) return new Set(JSON.parse(raw))
-  } catch {  }
+  } catch { /* ignore */ }
   return null
 }
 
@@ -15,7 +15,7 @@ function loadOrder() {
   try {
     const raw = localStorage.getItem(KEY_ORDER)
     if (raw) return JSON.parse(raw)
-  } catch {  }
+  } catch { /* ignore */ }
   return null
 }
 
@@ -39,17 +39,21 @@ export function useColumnPreferences(allColumns) {
     else localStorage.setItem(KEY_ORDER, JSON.stringify(val))
   }, { deep: true })
 
-    if (hiddenKeys.value === null) {
+  // 首次访问时初始化默认隐藏列
+  if (hiddenKeys.value === null) {
     hiddenKeys.value = new Set(cols().filter((c) => !c.defaultVisible).map((c) => c.key))
   }
 
-    function syncOrder(keys) {
+  // 列顺序：优先用已保存的，否则补齐新增列
+  function syncOrder(keys) {
     const saved = columnOrder.value || cols().map((c) => c.key)
     const merged = [...saved]
-        for (const k of keys) {
+    // 补齐新增列（不在已保存顺序中的列加到最后）
+    for (const k of keys) {
       if (!merged.includes(k)) merged.push(k)
     }
-        return merged.filter((k) => keys.includes(k))
+    // 移除已不存在的列
+    return merged.filter((k) => keys.includes(k))
   }
 
   const allKeys = cols().map((c) => c.key)
@@ -96,14 +100,16 @@ export function useColumnPreferences(allColumns) {
     hiddenKeys.value = new Set(cols().map((c) => c.key))
   }
 
-    const sortedVisibleColumns = () => {
+  // 按 columnOrder 排序的可见列
+  const sortedVisibleColumns = () => {
     const order = columnOrder.value
     const hidden = hiddenKeys.value
     const all = cols()
     return order.filter((k) => !hidden.has(k)).map((k) => all.find((c) => c.key === k)).filter(Boolean)
   }
 
-    const sortedHiddenColumns = () => {
+  // 按 columnOrder 排序的隐藏列
+  const sortedHiddenColumns = () => {
     const order = columnOrder.value
     const hidden = hiddenKeys.value
     const all = cols()

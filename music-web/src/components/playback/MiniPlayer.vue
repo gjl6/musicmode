@@ -6,33 +6,33 @@
     @mouseenter="isHovering = true"
     @mouseleave="isHovering = false"
   >
-
+    <!-- ── 顶部进度条（常驻）── -->
     <div class="bar-progress" @click="seekProgress">
       <div class="bar-progress-track">
         <div class="bar-progress-fill" :style="{ width: (player.progress * 100) + '%' }" />
       </div>
     </div>
 
-
+    <!-- ═══ 视图堆叠：歌词 / 控制栏交叉淡入淡出 ═══ -->
     <div class="bar-view-stack">
 
-
+      <!-- ── 歌词视图（歌词模式 + 未 hover）── -->
       <div
         class="bar-lyrics-view"
         :class="{ active: showLyrics && !isHovering && player.hasTrack }"
       >
-
+        <!-- 加载中 -->
         <div v-if="player.lyricsLoading" class="bar-lyrics-status">
           <n-spin :size="14" />
           <span>加载中...</span>
         </div>
 
-
+        <!-- 歌词 — 对角线错开，逐字变色 -->
         <div
           v-else-if="player.lyrics.length > 0"
           class="bar-lyrics-lines"
         >
-
+          <!-- 左上 -->
           <span class="bar-lyric-line is-top-left" :class="topLeftClass">
             <span
               v-for="(char, ci) in topLeftChars"
@@ -41,7 +41,7 @@
               :class="{ filled: isEvenIndex && ci < currentLineFilledCount }"
             >{{ char }}</span>
           </span>
-
+          <!-- 右下 -->
           <span class="bar-lyric-line is-bottom-right" :class="bottomRightClass">
             <span
               v-for="(char, ci) in bottomRightChars"
@@ -52,15 +52,20 @@
           </span>
         </div>
 
-
+        <!-- 暂无歌词 -->
         <span v-else class="bar-lyrics-none">暂无歌词</span>
       </div>
 
-
+      <!-- ── 控制视图（默认模式 / 歌词模式 hover）── -->
       <div class="bar-body" :class="{ active: !showLyrics || isHovering }">
-
+        <!-- 左侧：封面 + 曲目信息 -->
         <div class="bar-left">
-          <div class="bar-cover-wrap">
+          <div
+            class="bar-cover-wrap"
+            :class="{ clickable: player.current?.id }"
+            title="打开播放详情页"
+            @click="goFullscreen"
+          >
             <img
               v-if="coverUrl"
               :src="coverUrl"
@@ -72,20 +77,28 @@
           <div class="bar-track">
             <n-tooltip trigger="hover" :delay="500">
               <template #trigger>
-                <span class="bar-track-title">{{ player.displayTitle }}</span>
+                <span
+                  class="bar-track-title"
+                  :class="{ clickable: player.current?.id }"
+                  @click="goSongDetail"
+                >{{ player.displayTitle }}</span>
               </template>
               {{ player.displayTitle }}
             </n-tooltip>
             <n-tooltip trigger="hover" :delay="500">
               <template #trigger>
-                <span class="bar-track-artist">{{ player.displayArtist }}</span>
+                <span
+                  class="bar-track-artist"
+                  :class="{ clickable: player.current?.artistId }"
+                  @click="goArtistDetail"
+                >{{ player.displayArtist }}</span>
               </template>
               {{ player.displayArtist }}
             </n-tooltip>
           </div>
         </div>
 
-
+        <!-- 中间：播放控制 -->
         <div class="bar-center">
           <n-button text class="bar-btn bar-btn--skip" @click="player.playPrev()">
             <template #icon><n-icon :size="20"><PlaySkipBackOutline /></n-icon></template>
@@ -103,9 +116,9 @@
           </n-button>
         </div>
 
-
+        <!-- 右侧：功能区 -->
         <div class="bar-right">
-
+          <!-- 音量 -->
           <div class="bar-vol-wrap" ref="volWrapRef">
             <n-button text class="bar-btn" @click.stop="volPopShow = !volPopShow">
               <template #icon>
@@ -136,7 +149,7 @@
             </div>
           </div>
 
-
+          <!-- 收藏 -->
           <n-button text class="bar-btn" @click="player.toggleFavorite()">
             <template #icon>
               <n-icon :size="18" :color="player.isFavorited ? '#EF4444' : undefined">
@@ -146,7 +159,7 @@
             </template>
           </n-button>
 
-
+          <!-- 播放模式切换 -->
           <n-button text class="bar-btn" @click="player.togglePlayMode()">
             <template #icon>
               <span class="bar-mode-icon" :class="'bar-mode--' + player.playMode">
@@ -161,7 +174,7 @@
             </template>
           </n-button>
 
-
+          <!-- 歌词模式切换 -->
           <n-button
             text
             class="bar-btn"
@@ -171,24 +184,19 @@
             <template #icon><n-icon :size="18"><DocumentTextOutline /></n-icon></template>
           </n-button>
 
-
-          <n-button text class="bar-btn" @click="goFullscreen">
-            <template #icon><n-icon :size="18"><ExpandOutline /></n-icon></template>
-          </n-button>
-
-
+          <!-- 缩小 -->
           <n-button text class="bar-btn" @click="player.isMinimized = true">
             <template #icon><n-icon :size="18"><ChevronBackOutline /></n-icon></template>
           </n-button>
 
-
+          <!-- 关闭 -->
           <n-button text class="bar-btn bar-btn--close" @click="player.stop()">
             <template #icon><n-icon :size="18"><CloseOutline /></n-icon></template>
           </n-button>
         </div>
-      </div>
+      </div><!-- /bar-body -->
 
-    </div>
+    </div><!-- /bar-view-stack -->
   </div>
 </template>
 
@@ -206,7 +214,6 @@ import {
   ChevronBackOutline,
   CloseOutline,
   DocumentTextOutline,
-  ExpandOutline,
 } from '@vicons/ionicons5'
 import { usePlayerStore } from '@/store/playback/player.js'
 import { subsonicGetCoverArtUrl } from '@/api/playback/subsonic.js'
@@ -214,8 +221,10 @@ import { subsonicGetCoverArtUrl } from '@/api/playback/subsonic.js'
 const router = useRouter()
 const player = usePlayerStore()
 
+// ── Hover 状态 ──
 const isHovering = ref(false)
 
+// 停止播放时自动恢复完整模式、关闭歌词
 watch(() => player.hasTrack, (v) => {
   if (!v) {
     player.isMinimized = false
@@ -223,6 +232,7 @@ watch(() => player.hasTrack, (v) => {
   }
 })
 
+// ── 音量弹窗控制 ──
 const volPopShow = ref(false)
 const volWrapRef = ref(null)
 
@@ -253,6 +263,7 @@ onUnmounted(() => {
   stopSmoothTimer()
 })
 
+// ── 歌词模式 ──
 const showLyrics = ref(false)
 
 function toggleLyrics() {
@@ -262,14 +273,25 @@ function toggleLyrics() {
   }
 }
 
+function goSongDetail() {
+  const id = player.current?.id
+  if (id) router.push(`/player/songs/${id}`)
+}
+
+function goArtistDetail() {
+  const id = player.current?.artistId
+  if (id) router.push(`/player/artists/${id}`)
+}
+
 function goFullscreen() {
   router.push('/player/fullscreen')
 }
 
+// ── rAF 平滑时间驱动（60fps 插值，消除 4Hz timeupdate 卡顿）──
 const smoothTime = ref(0)
 
-let _lastTuTime = 0
-let _lastTuStamp = 0
+let _lastTuTime = 0       // 最近一次 timeupdate 的 player.currentTime
+let _lastTuStamp = 0      // 最近一次 timeupdate 的 performance.now()
 let _smoothRaf = null
 
 function startSmoothTimer() {
@@ -291,6 +313,7 @@ function stopSmoothTimer() {
   }
 }
 
+// 播放/暂停 → 启动/停止 rAF
 watch(() => player.isPlaying, (v) => {
   if (v) {
     _lastTuTime = player.currentTime
@@ -302,11 +325,13 @@ watch(() => player.isPlaying, (v) => {
   }
 })
 
+// timeupdate → 校准锚点
 watch(() => player.currentTime, (t) => {
   _lastTuTime = t
   _lastTuStamp = performance.now()
 })
 
+// 停止播放时重置
 watch(() => player.hasTrack, (v) => {
   if (!v) {
     stopSmoothTimer()
@@ -316,21 +341,21 @@ watch(() => player.hasTrack, (v) => {
   }
 })
 
-
+/** 同步歌词：当前行 */
 const currentLyricLine = computed(() => {
   const idx = player.currentLyricIndex
   if (idx >= 0 && idx < player.lyrics.length) return player.lyrics[idx]
   return player.lyrics.length > 0 ? player.lyrics[0] : null
 })
 
-
+/** 同步歌词：下一行 */
 const nextLyricLine = computed(() => {
   const idx = player.currentLyricIndex
   if (idx >= 0 && idx < player.lyrics.length - 1) return player.lyrics[idx + 1]
   return null
 })
 
-
+/** 纯文本歌词：按播放进度百分比映射到对应两行 */
 const plainLyricLines = computed(() => {
   const lines = player.lyrics
   if (lines.length === 0) return []
@@ -340,18 +365,19 @@ const plainLyricLines = computed(() => {
   return [lines[idx], lines[next]]
 })
 
-
+/** 统一：当前行文本 */
 const displayCurrentLine = computed(() => {
   if (player.lyricsSynced) return currentLyricLine.value?.value || ''
   return plainLyricLines.value[0]?.value || ''
 })
 
-
+/** 统一：后一行文本 */
 const displayNextLine = computed(() => {
   if (player.lyricsSynced) return nextLyricLine.value?.value || ''
   return plainLyricLines.value[1]?.value || ''
 })
 
+// ── 奇偶交替布局 ──
 const isEvenIndex = computed(() => player.currentLyricIndex % 2 === 0)
 
 const topLeftChars = computed(() =>
@@ -364,6 +390,7 @@ const bottomRightChars = computed(() =>
 const topLeftClass = computed(() => isEvenIndex.value ? 'is-active' : 'is-preview')
 const bottomRightClass = computed(() => isEvenIndex.value ? 'is-preview' : 'is-active')
 
+// ── 逐字填色：当前行已填色字数 ──
 const currentLineFilledCount = computed(() => {
   const current = currentLyricLine.value
   const next = nextLyricLine.value
@@ -378,7 +405,8 @@ const currentLineFilledCount = computed(() => {
     return Math.floor(progress * text.length)
   }
 
-    const idx = player.currentLyricIndex
+  // 纯文本：按歌曲总进度模拟
+  const idx = player.currentLyricIndex
   const total = player.lyrics.length
   if (total === 0) return 0
   const lineProgress = Math.max(0, Math.min(1,
@@ -387,11 +415,13 @@ const currentLineFilledCount = computed(() => {
   return Math.floor(lineProgress * text.length)
 })
 
+// ── 封面 URL ──
 const coverUrl = computed(() => {
   const artId = player.current?.coverArt || player.current?.albumId
   return artId ? subsonicGetCoverArtUrl(artId, 120) : null
 })
 
+// ── 进度条 seek ──
 function seekProgress(e) {
   const bar = e.currentTarget
   const rect = bar.getBoundingClientRect()
@@ -401,13 +431,16 @@ function seekProgress(e) {
 </script>
 
 <style scoped>
-
+/* ═══════════════════════════════════════════════════════════════
+   播放控制栏 — Claymorphism 粘土风格
+   双层视图：歌词 / 控制栏交叉淡入淡出
+   ═══════════════════════════════════════════════════════════════ */
 
 .playback-bar {
   position: fixed;
   bottom: 12px;
-  left: calc(200px + (100vw - 200px) / 2);
-  width: calc(100vw - 240px);
+  left: calc(200px + (100vw - 200px - var(--queue-panel-width, 0px)) / 2);
+  width: calc(100vw - 240px - var(--queue-panel-width, 0px));
   max-width: 820px;
   z-index: 50;
   display: flex;
@@ -425,7 +458,7 @@ function seekProgress(e) {
   transform: translateX(-50%) translateY(0);
 }
 
-
+/* ── 进度条（常驻）── */
 .bar-progress {
   cursor: pointer;
   padding: 0 16px;
@@ -449,14 +482,14 @@ function seekProgress(e) {
   transition: width 0.15s linear;
 }
 
-
+/* ═══════ 视图堆叠容器 ═══════ */
 .bar-view-stack {
   position: relative;
   height: 72px;
   flex-shrink: 0;
 }
 
-
+/* ═══════ 歌词视图 ═══════ */
 .bar-lyrics-view {
   position: absolute;
   inset: 0;
@@ -473,7 +506,7 @@ function seekProgress(e) {
   pointer-events: auto;
 }
 
-
+/* ── 对角线布局 ── */
 .bar-lyrics-lines {
   display: flex;
   flex-direction: column;
@@ -490,28 +523,28 @@ function seekProgress(e) {
   max-width: 100%;
 }
 
-
+/* 左上 */
 .bar-lyric-line.is-top-left {
   align-self: flex-start;
   text-align: left;
   padding-right: 40px;
 }
 
-
+/* 右下 — 首字对齐中间线 */
 .bar-lyric-line.is-bottom-right {
   margin-left: 50%;
   text-align: left;
   max-width: 50%;
 }
 
-
+/* ── 逐字 ── */
 .bar-lyric-char {
   font-size: 20px;
   transition: color 0.25s ease, font-weight 0.25s ease;
   letter-spacing: 1px;
 }
 
-
+/* 当前行（填色中）*/
 .bar-lyric-line.is-active .bar-lyric-char {
   color: var(--ct-text-3);
 }
@@ -520,13 +553,13 @@ function seekProgress(e) {
   font-weight: 700;
 }
 
-
+/* 预览行（静态淡色）*/
 .bar-lyric-line.is-preview .bar-lyric-char {
   color: var(--ct-text-3);
   opacity: 0.45;
 }
 
-
+/* 加载 / 空状态 */
 .bar-lyrics-status {
   display: flex;
   align-items: center;
@@ -539,7 +572,7 @@ function seekProgress(e) {
   color: var(--ct-text-3);
 }
 
-
+/* ═══════ 控制视图（bar-body）═══════ */
 .bar-body {
   position: absolute;
   inset: 0;
@@ -556,7 +589,7 @@ function seekProgress(e) {
   pointer-events: auto;
 }
 
-
+/* ═══════ 左侧：封面 + 信息 ═══════ */
 .bar-left {
   display: flex;
   align-items: center;
@@ -578,6 +611,14 @@ function seekProgress(e) {
   box-shadow: var(--effect-input-inner);
   overflow: hidden;
 }
+.bar-cover-wrap.clickable {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.bar-cover-wrap.clickable:hover {
+  transform: scale(1.08);
+  box-shadow: var(--effect-button-inner), var(--effect-button-outer);
+}
 .bar-cover {
   width: 100%;
   height: 100%;
@@ -598,6 +639,12 @@ function seekProgress(e) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.bar-track-title.clickable {
+  cursor: pointer;
+}
+.bar-track-title.clickable:hover {
+  color: var(--ct-accent);
+}
 .bar-track-artist {
   font-size: var(--text-xs);
   color: var(--ct-text-2);
@@ -605,8 +652,14 @@ function seekProgress(e) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.bar-track-artist.clickable {
+  cursor: pointer;
+}
+.bar-track-artist.clickable:hover {
+  color: var(--ct-accent);
+}
 
-
+/* ═══════ 中间：播放控制 ═══════ */
 .bar-center {
   flex: 1;
   display: flex;
@@ -616,7 +669,7 @@ function seekProgress(e) {
   min-width: 0;
 }
 
-
+/* 粘土按钮基础样式 */
 .bar-btn {
   color: var(--ct-text-2) !important;
   width: 40px;
@@ -643,14 +696,14 @@ function seekProgress(e) {
   color: var(--ct-accent) !important;
 }
 
-
+/* 歌词按钮激活态 */
 .bar-btn--active {
   color: var(--ct-accent) !important;
   background: var(--gradient-button, var(--ct-bg-secondary)) !important;
   box-shadow: var(--effect-button-inner), var(--effect-button-outer);
 }
 
-
+/* 播放键 — 粘土凸起圆形 */
 .bar-play-wrap {
   width: 48px;
   height: 48px;
@@ -685,7 +738,7 @@ function seekProgress(e) {
     inset -1px -1px 3px rgba(255 255 255 / 0.2) !important;
 }
 
-
+/* ═══════ 右侧：功能区 ═══════ */
 .bar-right {
   display: flex;
   align-items: center;
@@ -694,7 +747,7 @@ function seekProgress(e) {
   margin-right: 4px;
 }
 
-
+/* 音量按钮 + 下拉面板 */
 .bar-vol-wrap {
   position: relative;
 }
@@ -730,7 +783,7 @@ function seekProgress(e) {
   text-align: center;
 }
 
-
+/* 播放模式图标 + badge */
 .bar-mode-icon {
   position: relative;
   display: inline-flex;
@@ -753,7 +806,7 @@ function seekProgress(e) {
   color: var(--ct-accent);
 }
 
-
+/* 关闭按钮 hover 显红 */
 .bar-btn--close:hover {
   color: var(--color-destructive) !important;
   background: rgba(var(--color-destructive-rgb) / 0.08) !important;

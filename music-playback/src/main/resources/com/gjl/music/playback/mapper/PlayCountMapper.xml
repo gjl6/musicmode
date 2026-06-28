@@ -3,6 +3,9 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.gjl.music.playback.mapper.PlayCountMapper">
 
+    <!-- ══════════════════════════════════════════════════
+         MySQL: 单条 SQL 完成 upsert + 30s 去重
+         ══════════════════════════════════════════════════ -->
 
     <insert id="incPlayCount" databaseId="mysql">
         INSERT INTO play_count (user_id, item_id, item_type, play_count, last_played_at)
@@ -14,7 +17,7 @@
                                 NOW(), last_played_at)
     </insert>
 
-
+    <!-- H2: 单条 SQL upsert，去重全靠 Caffeine 层（30s TTL） -->
     <insert id="incPlayCount" databaseId="h2">
         INSERT INTO play_count (user_id, item_id, item_type, play_count, last_played_at)
         VALUES (#{userId}, #{itemId}, #{itemType}, 1, CURRENT_TIMESTAMP)
@@ -23,6 +26,9 @@
             last_played_at = CURRENT_TIMESTAMP
     </insert>
 
+    <!-- ══════════════════════════════════════════════════
+         查询
+         ══════════════════════════════════════════════════ -->
 
     <select id="batchGetSongCounts" resultType="java.util.HashMap">
         SELECT CAST(item_id AS SIGNED) AS itemId, play_count
@@ -38,9 +44,26 @@
         WHERE user_id = #{userId} AND item_id = #{itemId} AND item_type = #{itemType}
     </select>
 
+    <!-- ══════════════════════════════════════════════════
+         级联清理
+         ══════════════════════════════════════════════════ -->
 
     <delete id="deleteByItem">
         DELETE FROM play_count WHERE item_id = #{itemId} AND item_type = #{itemType}
     </delete>
+
+    <!-- ══════════════════════════════════════════════════
+         艺术家播放量聚合：song → artist，全局/按用户
+         ══════════════════════════════════════════════════ -->
+    <select id="getTopArtistIds" resultType="java.util.HashMap">
+        SELECT sa.artist_id AS "artistId", SUM(pc.play_count) AS "totalPlays"
+        FROM play_count pc
+        INNER JOIN song_artist sa ON pc.item_id = sa.song_id
+        WHERE pc.item_type = 'song'
+        <if test="userId != null">AND pc.user_id = #{userId}</if>
+        GROUP BY sa.artist_id
+        ORDER BY SUM(pc.play_count) DESC
+        LIMIT #{limit}
+    </select>
 
 </mapper>

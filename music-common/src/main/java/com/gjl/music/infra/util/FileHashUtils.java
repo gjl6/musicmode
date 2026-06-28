@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-
+/** 文件/字节/字符串的 SHA-256 哈希计算工具 */
 public class FileHashUtils {
 
     public static String getFileHash(Object input) {

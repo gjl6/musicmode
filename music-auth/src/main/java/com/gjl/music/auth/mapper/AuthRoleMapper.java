@@ -6,7 +6,9 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-
+/**
+ * 角色 Mapper。
+ */
 @Mapper
 public interface AuthRoleMapper {
 

@@ -1,6 +1,6 @@
 <template>
   <div class="split-panel" :class="{ 'tool-mode': mode === 'tool' }">
-
+    <!-- 工具模式：文件列表栏 -->
     <div v-if="mode === 'tool'" class="sp-files-col">
       <div class="sp-files-header">
         <template v-if="selectedFiles.length || selectedFolders.length">
@@ -20,7 +20,7 @@
       </div>
     </div>
 
-
+    <!-- 左侧：规则配置 -->
     <div class="sp-left">
       <div class="sp-section-header">
         <span class="sp-section-title">{{ t('split.rules') }}</span>
@@ -67,9 +67,9 @@
       </div>
     </div>
 
-
+    <!-- 右侧：预览 -->
     <div class="sp-right">
-
+      <!-- 当前规则编辑 -->
       <div v-if="activeRule" class="sp-rule-editor">
         <div class="sp-field">
           <label>{{ t('split.template') }}</label>
@@ -122,7 +122,7 @@
         </div>
       </div>
 
-
+      <!-- 填充模式 -->
       <div class="sp-fill-mode">
         <span class="sp-fill-mode-label">{{ t('split.fillMode') }}</span>
         <n-radio-group :value="split.fillMode.value" size="small" @update:value="v => split.fillMode.value = v">
@@ -131,7 +131,7 @@
         </n-radio-group>
       </div>
 
-
+      <!-- 预览测试 -->
       <div class="sp-preview-section">
         <div class="sp-section-header">
           <span class="sp-section-title">{{ t('split.preview') }}</span>
@@ -152,7 +152,7 @@
           @click="split.executePreview()"
         >{{ t('split.executePreview') }}</n-button>
 
-
+        <!-- 结果 -->
         <div v-if="split.previewError.value" class="sp-error">{{ split.previewError.value }}</div>
         <div v-else-if="split.previewResult.value" class="sp-result">
           <div v-if="!split.previewResult.value.matched" class="sp-no-match">{{ t('split.noMatch') }}</div>
@@ -176,7 +176,7 @@
           >{{ t('split.apply') }}</n-button>
         </div>
 
-
+        <!-- 工具模式：提交按钮 + 结果 -->
         <template v-if="mode === 'tool'">
           <n-button
             size="small"
@@ -185,14 +185,6 @@
             :disabled="!targetPath && selectedFiles.length === 0 && selectedFolders.length === 0"
             @click="handleSubmit"
           >{{ processing ? t('tool.processing') : t('tool.startProcessing') }}</n-button>
-
-          <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="sp-result-alert">
-            <template #header>
-              <span v-if="result.success">{{ t('tool.success') }}</span>
-              <span v-else>{{ t('tool.failure') }}</span>
-            </template>
-            <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-          </n-alert>
 
           <n-alert v-if="error" type="error" class="sp-result-alert">{{ error }}</n-alert>
         </template>
@@ -221,15 +213,14 @@ const { t, locale } = useI18n()
 const message = useMessage()
 const split = useSplit()
 
+// ── 工具模式：提交后端 ──
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const enabledRules = split.rules.value.filter(r => r.enabled)
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
@@ -239,12 +230,11 @@ async function handleSubmit() {
       files: allTargets,
     }
     const res = await runTool('split', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')
@@ -323,7 +313,7 @@ function updateGroup(idx, value) {
   gap: 12px;
 }
 
-
+/* tool mode: 文件列表栏 */
 .sp-files-col {
   width: 175px;
   flex-shrink: 0;
@@ -391,7 +381,7 @@ function updateGroup(idx, value) {
   gap: 16px;
 }
 
-
+/* section header */
 .sp-section-header {
   display: flex;
   align-items: center;
@@ -410,7 +400,7 @@ function updateGroup(idx, value) {
   gap: 4px;
 }
 
-
+/* rule list */
 .sp-rule-list {
   flex: 1;
   overflow-y: auto;
@@ -444,7 +434,7 @@ function updateGroup(idx, value) {
   min-width: 0;
 }
 
-
+/* rule editor */
 .sp-rule-editor {
   display: flex;
   flex-direction: column;
@@ -482,7 +472,7 @@ function updateGroup(idx, value) {
   text-align: right;
 }
 
-
+/* preview */
 .sp-preview-section {
   display: flex;
   flex-direction: column;
@@ -570,7 +560,7 @@ function updateGroup(idx, value) {
   white-space: nowrap;
 }
 
-
+/* tool mode */
 .sp-result-alert {
   margin-top: 8px;
 }

@@ -18,7 +18,22 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-
+/**
+ * 基于文件的 LRU 转码缓存。
+ *
+ * <h3>存储结构</h3>
+ * <pre>{@code
+ *   {cacheDir}/
+ *     00/
+ *       01/a1b2c3...d4.mp3    ← 缓存文件
+ *       02/...
+ *     01/
+ *       ...
+ * }</pre>
+ *
+ * <p>两级子目录分散存储，避免单目录文件数过多。
+ * 驱逐策略：按最后访问时间排序，最旧优先删除。</p>
+ */
 @Slf4j
 @Service
 public class FileBasedTranscodingCache implements TranscodingCache {
@@ -37,7 +52,8 @@ public class FileBasedTranscodingCache implements TranscodingCache {
     @PostConstruct
     void init() throws IOException {
         Files.createDirectories(cacheDir);
-                try (Stream<Path> files = Files.walk(cacheDir)) {
+        // 扫描已有缓存文件，重建索引和大小统计
+        try (Stream<Path> files = Files.walk(cacheDir)) {
             files.filter(Files::isRegularFile).forEach(f -> {
                 String name = f.getFileName().toString();
                 index.put(name, f);
@@ -52,16 +68,19 @@ public class FileBasedTranscodingCache implements TranscodingCache {
 
     @Override
     public Path getOrCompute(String cacheKey, Supplier<InputStream> transcoder) {
-                Path existing = index.get(cacheKey);
+        // 缓存命中
+        Path existing = index.get(cacheKey);
         if (existing != null && Files.exists(existing)) {
             try {
-                                Files.setLastModifiedTime(existing, java.nio.file.attribute.FileTime.fromMillis(
+                // 更新访问时间（用于 LRU）
+                Files.setLastModifiedTime(existing, java.nio.file.attribute.FileTime.fromMillis(
                         System.currentTimeMillis()));
             } catch (IOException ignored) {}
             return existing;
         }
 
-                Path dir = cacheDir.resolve(cacheKey.substring(0, Math.min(2, cacheKey.length())));
+        // 缓存未命中：转码并写入文件
+        Path dir = cacheDir.resolve(cacheKey.substring(0, Math.min(2, cacheKey.length())));
         Path outFile = dir.resolve(cacheKey);
 
         try {
@@ -74,13 +93,15 @@ public class FileBasedTranscodingCache implements TranscodingCache {
                 log.debug("转码缓存写入: key={}, size={}KB", cacheKey, written / 1024);
             }
 
-                        if (currentSize.get() > maxSizeBytes) {
-                evictToTarget(maxSizeBytes * 9 / 10);
+            // 检查是否超出容量
+            if (currentSize.get() > maxSizeBytes) {
+                evictToTarget(maxSizeBytes * 9 / 10); // 驱逐至 90%
             }
 
             return outFile;
         } catch (Exception e) {
-                        try { Files.deleteIfExists(outFile); } catch (IOException ignored) {}
+            // 清理失败文件
+            try { Files.deleteIfExists(outFile); } catch (IOException ignored) {}
             log.warn("转码缓存写入失败: key={}, error={}", cacheKey, e.getMessage());
             throw new RuntimeException("转码缓存写入失败", e);
         }
@@ -100,7 +121,8 @@ public class FileBasedTranscodingCache implements TranscodingCache {
     public void evictToTarget(long targetBytes) {
         if (currentSize.get() <= targetBytes) return;
 
-                try (Stream<Path> files = Files.walk(cacheDir)) {
+        // 按最后修改时间排序（最旧优先）
+        try (Stream<Path> files = Files.walk(cacheDir)) {
             files.filter(Files::isRegularFile)
                     .sorted(Comparator.comparingLong(f -> {
                         try {

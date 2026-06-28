@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.AlbumMapper">
+
+    <!-- ══════════════════════════════════════════════════
+         Album CRUD
+         ══════════════════════════════════════════════════ -->
+
+    <insert id="upsertAlbum" databaseId="h2">
+        MERGE INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        KEY(album_name)
+        VALUES (#{albumName}, #{albumType}, #{albumCover}, #{introduction}, #{albumYear}, #{company}, #{language}, #{sortAlbumName}, #{artistId}, #{songCount}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertAlbum" databaseId="mysql">
+        INSERT INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        VALUES (#{albumName}, #{albumType}, #{albumCover}, #{introduction}, #{albumYear}, #{company}, #{language}, #{sortAlbumName}, #{artistId}, #{songCount}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            album_type      = VALUES(album_type),
+            album_cover     = VALUES(album_cover),
+            introduction    = VALUES(introduction),
+            album_year      = VALUES(album_year),
+            company         = VALUES(company),
+            language        = VALUES(language),
+            sort_album_name = VALUES(sort_album_name),
+            artist_id       = VALUES(artist_id),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectAlbumIdByName" resultType="long">
+        SELECT id FROM album WHERE album_name = #{albumName}
+    </select>
+
+    <insert id="batchUpsertAlbums" databaseId="h2">
+        MERGE INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        KEY(album_name)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.albumName}, #{item.albumType}, #{item.albumCover}, #{item.introduction}, #{item.albumYear}, #{item.company}, #{item.language}, #{item.sortAlbumName}, #{item.artistId}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsertAlbums" databaseId="mysql">
+        INSERT INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.albumName}, #{item.albumType}, #{item.albumCover}, #{item.introduction}, #{item.albumYear}, #{item.company}, #{item.language}, #{item.sortAlbumName}, #{item.artistId}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            album_type      = VALUES(album_type),
+            album_cover     = VALUES(album_cover),
+            introduction    = VALUES(introduction),
+            album_year      = VALUES(album_year),
+            company         = VALUES(company),
+            language        = VALUES(language),
+            sort_album_name = VALUES(sort_album_name),
+            artist_id       = VALUES(artist_id),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- INSERT-only：已存在则跳过，不覆盖字段。用于 Song 管道 -->
+    <insert id="batchInsertAlbumsIgnoreExisting" databaseId="h2">
+        INSERT INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        SELECT s.album_name, s.album_type, s.album_cover, s.introduction, s.album_year, s.company, s.language, s.sort_album_name, s.artist_id, 0, CURRENT_TIMESTAMP
+        FROM (VALUES
+            <foreach collection="list" item="item" separator=",">
+                (#{item.albumName}, #{item.albumType}, #{item.albumCover}, #{item.introduction}, #{item.albumYear}, #{item.company}, #{item.language}, #{item.sortAlbumName}, #{item.artistId})
+            </foreach>
+        ) AS s(album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id)
+        LEFT JOIN album t ON s.album_name = t.album_name
+        WHERE t.album_name IS NULL
+    </insert>
+
+    <insert id="batchInsertAlbumsIgnoreExisting" databaseId="mysql">
+        INSERT IGNORE INTO album (album_name, album_type, album_cover, introduction, album_year, company, language, sort_album_name, artist_id, song_count, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.albumName}, #{item.albumType}, #{item.albumCover}, #{item.introduction}, #{item.albumYear}, #{item.company}, #{item.language}, #{item.sortAlbumName}, #{item.artistId}, 0, NOW())
+        </foreach>
+    </insert>
+
+    <select id="selectAlbumIdsByNames" resultType="map">
+        SELECT album_name, id FROM album WHERE album_name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+    <update id="updateAlbum">
+        UPDATE album
+        <set>
+            <if test="albumName != null">album_name = #{albumName},</if>
+            <if test="albumType != null">album_type = #{albumType},</if>
+            <if test="albumYear != null">album_year = #{albumYear},</if>
+            <if test="introduction != null">introduction = #{introduction},</if>
+            <if test="company != null">company = #{company},</if>
+            <if test="language != null">language = #{language},</if>
+            <if test="albumCover != null">album_cover = #{albumCover},</if>
+            <if test="enrichSource != null">enrich_source = #{enrichSource},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- ══════════════════════════════════════════════════
+         Album 查询
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findAlbumById" resultType="com.gjl.music.model.Album">
+        SELECT a.id, a.album_name AS albumName, a.album_type AS albumType,
+               a.album_cover AS albumCover, a.introduction, a.album_year AS albumYear,
+               a.company, a.language, a.artist_id AS artistId, a.song_count AS songCount,
+               a.create_time AS createTime, a.update_time AS updateTime,
+               ar.artist_name AS artistName
+        FROM album a
+        LEFT JOIN artist ar ON a.artist_id = ar.id
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findAlbumsByIds" resultType="com.gjl.music.model.Album">
+        SELECT a.id, a.album_name AS albumName, a.album_type AS albumType,
+               a.album_cover AS albumCover, a.introduction, a.album_year AS albumYear,
+               a.company, a.language, a.artist_id AS artistId, a.song_count AS songCount,
+               a.create_time AS createTime, a.update_time AS updateTime,
+               ar.artist_name AS artistName
+        FROM album a
+        LEFT JOIN artist ar ON a.artist_id = ar.id
+        WHERE a.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findAllAlbumIds" resultType="long">
+        SELECT id FROM album ORDER BY id
+    </select>
+
+    <select id="countAllAlbums" resultType="int">
+        SELECT COUNT(*) FROM album
+    </select>
+
+    <select id="findAlbumIdsUpdatedAfter" resultType="long">
+        SELECT id FROM album WHERE update_time >= #{since} ORDER BY id
+    </select>
+
+</mapper>

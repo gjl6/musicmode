@@ -1,9 +1,17 @@
 package com.gjl.music.playback.service.impl;
 
-import com.gjl.music.mapper.MusicMapper;
+import com.gjl.music.config.ConfigService;
+import com.gjl.music.dto.AlbumResult;
+import com.gjl.music.dto.ArtistRef;
+import com.gjl.music.dto.ArtistResult;
+import com.gjl.music.dto.SongResult;
+import com.gjl.music.mapper.ArtistMapper;
+import com.gjl.music.mapper.SongMapper;
 import com.gjl.music.model.Album;
 import com.gjl.music.model.Artist;
 import com.gjl.music.model.Song;
+import com.gjl.music.playback.mapper.BrowseMapper;
+import com.gjl.music.playback.mapper.PlayCountMapper;
 import com.gjl.music.playback.service.ArtistService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,27 +23,64 @@ import java.util.stream.Collectors;
 @Service
 public class ArtistServiceImpl implements ArtistService {
 
-    private final MusicMapper musicMapper;
+    private final ArtistMapper artistMapper;
+    private final BrowseMapper browseMapper;
+    private final SongMapper songMapper;
+    private final PlayCountMapper playCountMapper;
+    private final ConfigService configService;
 
-    public ArtistServiceImpl(MusicMapper musicMapper) {
-        this.musicMapper = musicMapper;
+    public ArtistServiceImpl(ArtistMapper artistMapper,
+                             BrowseMapper browseMapper,
+                             SongMapper songMapper,
+                             PlayCountMapper playCountMapper,
+                             ConfigService configService) {
+        this.artistMapper = artistMapper;
+        this.browseMapper = browseMapper;
+        this.songMapper = songMapper;
+        this.playCountMapper = playCountMapper;
+        this.configService = configService;
     }
 
     public Map<String, Object> getArtist(Long id) {
-        Artist artist = musicMapper.findArtistById(id);
+        Artist artist = artistMapper.findArtistById(id);
         if (artist == null) return null;
-        return Map.of("artist", toArtistMap(artist));
+        return Map.of("artist", toArtistResult(artist));
+    }
+
+    public Map<String, Object> getTopArtists(Long userId, int limit) {
+        limit = Math.min(limit, 100);
+        List<Map<String, Object>> rows = playCountMapper.getTopArtistIds(userId, limit);
+        if (rows.isEmpty()) return Map.of("artists", List.of(), "total", 0);
+
+        List<Long> artistIds = rows.stream()
+                .map(r -> ((Number) r.get("artistId")).longValue())
+                .toList();
+        List<Artist> artists = artistMapper.findArtistsByIds(artistIds);
+
+        // 按播放量排序（保持与聚合查询一致的顺序）
+        Map<Long, Integer> rankMap = rows.stream()
+                .collect(Collectors.toMap(
+                        r -> ((Number) r.get("artistId")).longValue(),
+                        r -> ((Number) r.get("totalPlays")).intValue()));
+        Comparator<Artist> byPlayCount = Comparator.comparingInt(
+                a -> rankMap.getOrDefault(Long.parseLong(a.getId()), 0));
+        List<ArtistResult> sorted = artists.stream()
+                .sorted(byPlayCount.reversed())
+                .map(this::toArtistResult)
+                .toList();
+
+        return Map.of("artists", sorted, "total", sorted.size());
     }
 
     public Map<String, Object> getArtistAlbums(Long id, String sort, String letter,
                                                 int limit, int offset, Long userId) {
         limit = Math.min(limit, 500);
-        List<Album> albums = musicMapper.findAlbumsByType(
+        List<Album> albums = browseMapper.findAlbumsByType(
                 sort, offset, limit, userId, letter, null, null, id);
-        int total = musicMapper.countAlbumsByLetter(letter, null, null, id);
+        int total = browseMapper.countAlbumsByLetter(letter, null, null, id);
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("albums", albums.stream().map(this::toAlbumMap).collect(Collectors.toList()));
+        result.put("albums", albums.stream().map(this::toAlbumResult).collect(Collectors.toList()));
         result.put("total", total);
         return result;
     }
@@ -43,69 +88,59 @@ public class ArtistServiceImpl implements ArtistService {
     public Map<String, Object> getArtistSongs(Long id, String letter, String sort,
                                                int limit, int offset, Long userId) {
         limit = Math.min(limit, 500);
-        List<Song> songs = musicMapper.findSongsPaginated(
+        List<Song> songs = browseMapper.findSongsPaginated(
                 offset, limit, letter, sort, userId, id);
-        int total = musicMapper.countSongs(letter, id);
+        int total = browseMapper.countSongs(letter, id);
+
+        Map<Long, List<ArtistRef>> artistMap = batchResolveArtists(songs);
+        String joinSep = getArtistJoinSeparator();
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("songs", songs.stream().map(this::toSongMap).collect(Collectors.toList()));
+        result.put("songs", songs.stream()
+                .map(s -> SongResult.enrichArtists(toSongResult(s), artistMap, joinSep))
+                .collect(Collectors.toList()));
         result.put("total", total);
         return result;
     }
 
     public Long resolveUserId(String username) {
         if (username == null) return null;
-        return musicMapper.findUserIdByUsername(username);
+        return browseMapper.findUserIdByUsername(username);
     }
 
+    // ── DTO 映射（public 供 SubsonicService 复用）──
 
-    public Map<String, Object> toArtistMap(Artist a) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", a.getId());
-        m.put("name", a.getArtistName() != null ? a.getArtistName() : "");
-        m.put("coverArt", "artist-" + a.getId());
-        m.put("albumCount", a.getAlbumCount() != null ? a.getAlbumCount() : 0);
-        m.put("songCount", a.getSongCount() != null ? a.getSongCount() : 0);
-        m.put("introduction", a.getIntroduction());
-        m.put("gender", a.getGender());
-        m.put("country", a.getCountry());
-        m.put("created", a.getCreateTime());
-        return m;
+    public ArtistResult toArtistResult(Artist a) {
+        return ArtistResult.fromArtist(a).toBuilder()
+                .coverArt("artist-" + a.getId())
+                .build();
     }
 
-    public Map<String, Object> toAlbumMap(Album a) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", a.getId());
-        m.put("name", a.getAlbumName() != null ? a.getAlbumName() : "");
-        m.put("coverArt", "album-" + a.getId());
-        m.put("songCount", a.getSongCount() != null ? a.getSongCount() : 0);
-        m.put("year", a.getAlbumYear() != null ? a.getAlbumYear() : 0);
-        m.put("genre", a.getAlbumType() != null ? a.getAlbumType().getDisplayName() : null);
-        return m;
+    public AlbumResult toAlbumResult(Album a) {
+        return AlbumResult.fromAlbum(a).toBuilder()
+                .coverArt("album-" + a.getId())
+                .genre(a.getAlbumType() != null ? a.getAlbumType().getDisplayName() : null)
+                .build();
     }
 
-    public Map<String, Object> toSongMap(Song s) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", s.getId());
-        m.put("title", s.getTitle());
-        m.put("artist", s.getArtistName());
-        m.put("album", s.getAlbumName());
-        m.put("albumId", s.getAlbumId() != null ? String.valueOf(s.getAlbumId()) : null);
-        m.put("track", s.getTrackNumber());
-        m.put("discNumber", s.getDiscNumber());
-        m.put("duration", s.getDuration());
-        m.put("year", s.getYear());
-        m.put("path", s.getFilePath());
-        m.put("suffix", s.getFileFormat());
-        m.put("bitRate", s.getBitrate());
-        m.put("size", s.getFileSize());
-        m.put("coverArt", "song-" + s.getId());
-        return m;
+    public SongResult toSongResult(Song s) {
+        return SongResult.fromSong(s).toBuilder()
+                .coverArt("song-" + s.getId())
+                .build();
     }
 
-    private static Integer toInt(Object val) {
-        if (val == null) return null;
-        if (val instanceof Number n) return n.intValue();
-        try { return Integer.parseInt(val.toString()); } catch (NumberFormatException e) { return null; }
+    // ── 批量艺术家 ──
+
+    private String getArtistJoinSeparator() {
+        return configService.getString("music.artist.join-separator", " & ");
+    }
+
+    private Map<Long, List<ArtistRef>> batchResolveArtists(List<Song> songs) {
+        if (songs == null || songs.isEmpty()) return Map.of();
+        List<Long> songIds = songs.stream()
+                .map(s -> Long.parseLong(s.getId()))
+                .distinct().toList();
+        return SongResult.groupArtistsBySongId(
+                songMapper.findSongArtistsBySongIds(songIds));
     }
 }

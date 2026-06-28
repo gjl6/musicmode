@@ -3,6 +3,9 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.gjl.music.playback.mapper.UserRatingMapper">
 
+    <!-- ══════════════════════════════════════════════════
+         MySQL upsert
+         ══════════════════════════════════════════════════ -->
 
     <insert id="upsert" databaseId="mysql">
         INSERT INTO user_rating (user_id, item_id, item_type, rating, rated_at)
@@ -12,6 +15,9 @@
             rated_at = NOW()
     </insert>
 
+    <!-- ══════════════════════════════════════════════════
+         H2 upsert
+         ══════════════════════════════════════════════════ -->
 
     <insert id="upsert" databaseId="h2">
         MERGE INTO user_rating (user_id, item_id, item_type, rating, rated_at)
@@ -19,6 +25,9 @@
         VALUES (#{userId}, #{itemId}, #{itemType}, #{rating}, CURRENT_TIMESTAMP)
     </insert>
 
+    <!-- ══════════════════════════════════════════════════
+         查询 / 删除
+         ══════════════════════════════════════════════════ -->
 
     <delete id="delete">
         DELETE FROM user_rating
@@ -46,7 +55,7 @@
         DELETE FROM user_rating WHERE item_id = #{itemId} AND item_type = #{itemType}
     </delete>
 
-
+    <!-- 批量获取用户评分 -->
     <select id="batchGetUserRatings" resultType="java.util.HashMap">
         SELECT CAST(item_id AS SIGNED) AS itemId, rating
         FROM user_rating

@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -17,6 +18,20 @@ public class ArtistController {
 
     public ArtistController(ArtistService artistService) {
         this.artistService = artistService;
+    }
+
+    /** 列表查询：支持 sort=mostPlayed 按全局播放量排序 */
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getArtists(
+            @RequestParam(defaultValue = "alphabetical") String sort,
+            @RequestParam(defaultValue = "12") int limit,
+            Principal principal) {
+        Long userId = artistService.resolveUserId(principal != null ? principal.getName() : null);
+        if ("mostPlayed".equals(sort)) {
+            return ResponseEntity.ok(artistService.getTopArtists(userId, limit));
+        }
+        // 其他 sort 类型暂不实现，返回空列表
+        return ResponseEntity.ok(Map.of("artists", List.of(), "total", 0));
     }
 
     @GetMapping("/{id}")

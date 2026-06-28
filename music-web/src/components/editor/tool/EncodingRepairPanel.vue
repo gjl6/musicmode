@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="er-main">
-
+      <!-- 1. 顶部操作栏 -->
       <div class="er-topbar">
         <span class="er-title">{{ t('encodingRepair.title') }}</span>
         <n-tag type="warning" size="small" :bordered="false">
@@ -13,7 +13,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 2. 功能说明区 -->
       <div class="er-section">
         <div class="er-section-header">
           <span class="er-section-title">{{ t('encodingRepair.featureDesc') }}</span>
@@ -27,7 +27,7 @@
         </n-alert>
       </div>
 
-
+      <!-- 3. 检测范围区 -->
       <div class="er-section">
         <div class="er-section-header">
           <span class="er-section-title">{{ t('encodingRepair.detectionScope') }}</span>
@@ -59,7 +59,7 @@
         <n-text depth="3" class="er-hint">{{ t('encodingRepair.fieldsHint') }}</n-text>
       </div>
 
-
+      <!-- 4. 常见问题与示例区 -->
       <div class="er-section">
         <div class="er-section-header">
           <span class="er-section-title">{{ t('encodingRepair.commonProblems') }}</span>
@@ -75,7 +75,7 @@
         </div>
       </div>
 
-
+      <!-- 5. 处理结果 -->
       <div class="er-section">
         <n-button
           type="primary"
@@ -86,14 +86,6 @@
         >
           {{ processing ? t('tool.processing') : t('tool.startProcessing') }}
         </n-button>
-
-        <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="er-result-alert">
-          <template #header>
-            <span v-if="result.success">{{ t('tool.success') }}</span>
-            <span v-else>{{ t('tool.failure') }}</span>
-          </template>
-          <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-        </n-alert>
 
         <n-alert v-if="error" type="error" class="er-result-alert">{{ error }}</n-alert>
       </div>
@@ -121,7 +113,6 @@ const { t } = useI18n()
 const message = useMessage()
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
 const ALL_FIELDS = [
@@ -184,7 +175,6 @@ function addField(field) {
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
@@ -195,12 +185,11 @@ async function handleSubmit() {
       },
     }
     const res = await runTool('encodingRepair', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')
@@ -213,7 +202,7 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-
+/* 右侧主内容 */
 .er-main {
   flex: 1;
   display: flex;
@@ -222,7 +211,7 @@ async function handleSubmit() {
   overflow-y: auto;
 }
 
-
+/* 1. 顶部操作栏 */
 .er-topbar {
   display: flex;
   align-items: center;
@@ -236,7 +225,7 @@ async function handleSubmit() {
   color: var(--ct-text);
 }
 
-
+/* section 通用 */
 .er-section {
   display: flex;
   flex-direction: column;
@@ -257,7 +246,7 @@ async function handleSubmit() {
   color: var(--ct-text-3);
 }
 
-
+/* 2. 功能说明 */
 .er-feature-alert {
   --n-padding: 12px 16px;
 }
@@ -267,7 +256,7 @@ async function handleSubmit() {
   color: var(--ct-text-2);
 }
 
-
+/* 3. 检测范围 */
 .er-fields-row {
   display: flex;
   flex-wrap: wrap;
@@ -281,7 +270,7 @@ async function handleSubmit() {
   font-size: 12px;
 }
 
-
+/* 4. 常见问题 */
 .er-examples {
   display: flex;
   flex-direction: column;
@@ -322,7 +311,7 @@ async function handleSubmit() {
   border-radius: 3px;
 }
 
-
+/* 5. 结果 */
 .er-result-alert {
   margin-top: 4px;
 }

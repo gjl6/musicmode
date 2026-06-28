@@ -7,7 +7,9 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-
+/**
+ * Redis 配置 — 仅启用 String 序列化，保持可读性以便调试。
+ */
 @Configuration
 @ConditionalOnClass({RedisConnectionFactory.class})
 public class RedisConfig {

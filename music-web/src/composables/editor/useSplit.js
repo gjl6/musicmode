@@ -7,6 +7,7 @@ function generateId() {
   return 'sr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)
 }
 
+// 中文/英文字段名 → 内部 field key 映射
 const FIELD_ALIASES = {
   '标题': 'title', 'title': 'title',
   '艺术家': 'artist', '歌手': 'artist', 'artist': 'artist',
@@ -22,40 +23,48 @@ const FIELD_ALIASES = {
   '专辑年份': 'albumyear', 'albumyear': 'albumyear',
 }
 
+// 正则特殊字符转义
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// 解析模板 "{标题} - {艺术家} - {专辑}" → { pattern, groups, name }
 function parseTemplate(template) {
   if (!template || !template.includes('{')) return null
   const groups = {}
   let groupIdx = 0
   const parts = []
   const seen = new Set()
-    const re = /\{([^}]+)\}|([^{]+)/g
+  // 匹配 {字段名} 或普通文本
+  const re = /\{([^}]+)\}|([^{]+)/g
   let m
   while ((m = re.exec(template)) !== null) {
     if (m[1] !== undefined) {
-            const rawName = m[1].trim()
+      // 占位符
+      const rawName = m[1].trim()
       const key = FIELD_ALIASES[rawName]
-      if (!key) return null
+      if (!key) return null  // 未知字段名
       groupIdx++
       groups[groupIdx] = key
       seen.add(rawName)
       parts.push('(.+?)')
     } else {
-            const sep = m[2]
+      // 普通分隔符：保留空格
+      const sep = m[2]
       if (!sep) continue
-            if (/^\s+$/.test(sep)) {
+      // 全部是空白 → 至少一个空白字符
+      if (/^\s+$/.test(sep)) {
         parts.push('\\s+')
       } else {
-                parts.push('\\s*' + escapeRegex(sep.trim()) + '\\s*')
+        // 允许两边有可选空白
+        parts.push('\\s*' + escapeRegex(sep.trim()) + '\\s*')
       }
     }
   }
   if (groupIdx === 0) return null
   const pattern = '^' + parts.join('') + '$'
-    const name = Array.from(seen).join(' - ')
+  // 自动生成规则名
+  const name = Array.from(seen).join(' - ')
   return { pattern, groups, name }
 }
 
@@ -90,7 +99,7 @@ function loadFillMode() {
     const v = localStorage.getItem(FILL_MODE_STORAGE_KEY)
     if (v === 'overwrite' || v === 'gapFill') return v
   } catch (_) {}
-  return 'gapFill'
+  return 'gapFill'  // 默认安全策略
 }
 
 function saveFillMode(v) {
@@ -101,20 +110,22 @@ export function useSplit() {
   const editStore = useEditStore()
   const rules = ref(loadRules())
   const activeRuleIndex = ref(0)
-  const fillMode = ref(loadFillMode())
+  const fillMode = ref(loadFillMode())  // 'overwrite' | 'gapFill'
   const sampleText = ref('')
-  const previewResult = ref(null)
+  const previewResult = ref(null)   // { matched: true, fields: { title: '...', ... } } | { matched: false }
   const previewError = ref(null)
 
   watch(rules, (v) => saveRules(v), { deep: true })
   watch(fillMode, (v) => saveFillMode(v))
 
-    function useCurrentFileName() {
+  // 自动填入当前编辑文件名
+  function useCurrentFileName() {
     const fn = editStore.currentMeta?.song?.fileName || editStore.editingFile?.fileName || editStore.editingFile?.name || ''
     if (fn) sampleText.value = fn
   }
 
-    function executePreview() {
+  // 执行预览
+  function executePreview() {
     previewError.value = null
     const rule = rules.value[activeRuleIndex.value]
     if (!rule || !sampleText.value) {
@@ -122,7 +133,8 @@ export function useSplit() {
       return
     }
     try {
-            let text = sampleText.value
+      // 去掉扩展名
+      let text = sampleText.value
       const dot = text.lastIndexOf('.')
       if (dot > 0) text = text.substring(0, dot)
 
@@ -147,7 +159,8 @@ export function useSplit() {
     }
   }
 
-    const FIELD_PATH_MAP = {
+  // 应用提取结果到编辑表单
+  const FIELD_PATH_MAP = {
     title: 'song.title',
     year: 'song.year',
     language: 'song.language',
@@ -170,7 +183,8 @@ export function useSplit() {
       const val = fields[key]
       if (val) {
         const cur = path.split('.').reduce((o, k) => (o || {})[k], editStore.currentMeta)
-                if (isOverwrite || cur == null || cur === '' || cur === 0) {
+        // overwrite 模式始终覆盖；gapFill 模式只填空字段
+        if (isOverwrite || cur == null || cur === '' || cur === 0) {
           if ((key === 'tracknumber' || key === 'discnumber') && !isNaN(parseInt(val, 10))) {
             editStore.setField(path, parseInt(val, 10))
           } else {
@@ -181,13 +195,15 @@ export function useSplit() {
     }
   }
 
-    function addRule() {
+  // 规则管理
+  function addRule() {
     const r = { id: generateId(), name: '新规则', template: '{标题}', pattern: '^(.+)$', groups: { 1: 'title' }, enabled: true, notes: '' }
     rules.value.push(r)
     activeRuleIndex.value = rules.value.length - 1
   }
 
-    function setTemplate(index, template) {
+  // 设置模板：自动解析生成 pattern 和 groups
+  function setTemplate(index, template) {
     const rule = rules.value[index]
     if (!rule) return false
     rule.template = template

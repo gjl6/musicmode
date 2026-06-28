@@ -1,5 +1,5 @@
 <template>
-
+  <!-- 通用 ToolDialog -->
   <ToolDialog
     v-model:visible="toolDialogVisible"
     :tool-key="currentToolKey"
@@ -8,7 +8,7 @@
     @done="onDone"
   />
 
-
+  <!-- 各专用面板 -->
   <n-modal :show="dedupVisible" preset="card" :title="$t('workbench.tools.dedup')"
     style="max-width: 840px; width: 840px" :mask-closable="true"
     @update:show="v => dedupVisible = v">
@@ -96,6 +96,14 @@
       :selected-files="target.files" :selected-folders="target.folders"
       @done="deleteVisible = false; onDone()" />
   </n-modal>
+
+  <n-modal :show="importCollectionVisible" preset="card" :title="$t('importCollection.title')"
+    style="max-width: 600px; width: 600px" :mask-closable="true"
+    @update:show="v => importCollectionVisible = v">
+    <ImportCollectionPanel :target-path="target.path"
+      :selected-files="target.files" :selected-folders="target.folders"
+      @done="importCollectionVisible = false; onDone()" />
+  </n-modal>
 </template>
 
 <script setup>
@@ -105,6 +113,7 @@ import { useMessage } from 'naive-ui'
 import { useToolTarget } from '@/composables/editor/useToolTarget.js'
 import ToolDialog from '@/components/editor/tool/ToolDialog.vue'
 
+// 异步加载面板组件
 const DedupPanel = defineAsyncComponent(() => import('@/components/editor/tool/DedupPanel.vue'))
 const SplitPanel = defineAsyncComponent(() => import('@/components/editor/metadata/SplitPanel.vue'))
 const ReplaceTextPanel = defineAsyncComponent(() => import('@/components/editor/tool/ReplaceTextPanel.vue'))
@@ -116,12 +125,14 @@ const FormatConvertPanel = defineAsyncComponent(() => import('@/components/edito
 const CueSplitPanel = defineAsyncComponent(() => import('@/components/editor/tool/CueSplitPanel.vue'))
 const OrganizePanel = defineAsyncComponent(() => import('@/components/editor/tool/OrganizePanel.vue'))
 const DeletePanel = defineAsyncComponent(() => import('@/components/editor/tool/DeletePanel.vue'))
+const ImportCollectionPanel = defineAsyncComponent(() => import('@/components/editor/tool/ImportCollectionPanel.vue'))
 
 const emit = defineEmits(['done'])
 const { t } = useI18n()
 const message = useMessage()
 const { toolTarget: target } = useToolTarget()
 
+// ── 工具配置表：一个 key 对应一个模态框 ──
 const TOOL_REGISTRY = {
   split:          { visible: ref(false), checkSelection: true },
   encodingRepair: { visible: ref(false), checkSelection: true },
@@ -134,12 +145,14 @@ const TOOL_REGISTRY = {
   cueSplit:       { visible: ref(false), checkSelection: true },
   organize:       { visible: ref(false), checkSelection: true },
   deleteFiles:    { visible: ref(false), checkSelection: false },
+  importCollection: { visible: ref(false), checkSelection: true },
 }
 
+// 导出各工具的 visible ref（模板中 v-model 使用）
 const {
   split: s, encodingRepair: er, replaceText: rt, langConvert: lc,
   qqEnrich: qe, batchWrite: bw, dedup: dd, formatConvert: fc,
-  cueSplit: cs, organize: og, deleteFiles: df,
+  cueSplit: cs, organize: og, deleteFiles: df, importCollection: ic,
 } = TOOL_REGISTRY
 
 const splitToolVisible = s.visible
@@ -153,7 +166,9 @@ const formatConvertVisible = fc.visible
 const cueSplitVisible = cs.visible
 const organizeVisible = og.visible
 const deleteVisible = df.visible
+const importCollectionVisible = ic.visible
 
+// 通用 ToolDialog
 const toolDialogVisible = ref(false)
 const currentToolKey = ref('')
 const currentToolLabel = ref('')
@@ -169,8 +184,8 @@ const ALL_TOOLS = [
   { key: 'formatConvert',  label: () => t('workbench.tools.formatConvert'),  desc: () => t('workbench.tools.formatConvertDesc') },
   { key: 'cueSplit',       label: () => t('workbench.tools.cueSplit'),       desc: () => t('workbench.tools.cueSplitDesc') },
   { key: 'batchWrite',     label: () => t('workbench.tools.batchWrite'),     desc: () => t('workbench.tools.batchWriteDesc') },
-  { key: 'organize',       label: () => t('workbench.tools.organize'),       desc: () => t('workbench.tools.organizeDesc') },
-  { key: 'deleteFiles',    label: () => t('workbench.tools.deleteFiles'),    desc: () => t('workbench.tools.deleteFilesDesc') },
+  { key: 'organize',         label: () => t('workbench.tools.organize'),         desc: () => t('workbench.tools.organizeDesc') },
+  { key: 'deleteFiles',      label: () => t('workbench.tools.deleteFiles'),      desc: () => t('workbench.tools.deleteFilesDesc') },
 ]
 
 function getToolList() {
@@ -179,9 +194,9 @@ function getToolList() {
 
 function open(toolKey) {
   const entry = TOOL_REGISTRY[toolKey]
-  if (!entry) return
 
-    if (entry.visible !== undefined) {
+  // 如果工具注册了专用面板，走专用面板路径
+  if (entry) {
     if (entry.checkSelection) {
       const t = target.value
       if (t.files.length === 0 && t.folders.length === 0) {
@@ -193,7 +208,8 @@ function open(toolKey) {
     return
   }
 
-    const tool = ALL_TOOLS.find(t => t.key === toolKey)
+  // 否则走通用 ToolDialog（适用于 importCollection 等简单工具）
+  const tool = ALL_TOOLS.find(t => t.key === toolKey)
   if (!tool) return
   currentToolKey.value = tool.key
   currentToolLabel.value = tool.label()

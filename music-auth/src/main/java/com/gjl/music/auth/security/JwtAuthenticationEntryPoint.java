@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-
+/**
+ * 认证失败处理器 —— 返回统一格式 401。
+ */
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 

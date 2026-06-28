@@ -16,11 +16,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * 角色管理 REST API（管理员）。
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/roles")
-@PreAuthorize("hasAuthority('user:manage')")
+@PreAuthorize("hasAuthority('user:write')")
 @RequiredArgsConstructor
 public class AdminRoleController {
 
@@ -28,6 +30,7 @@ public class AdminRoleController {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthUserMapper authUserMapper;
 
+    // ── 查询 ──
 
     @GetMapping
     public ResponseEntity<?> list() {
@@ -44,6 +47,7 @@ public class AdminRoleController {
         return ResponseEntity.ok(role);
     }
 
+    // ── 创建 ──
 
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody CreateRoleRequest req,
@@ -57,6 +61,7 @@ public class AdminRoleController {
         }
     }
 
+    // ── 更新 ──
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id,
@@ -74,6 +79,7 @@ public class AdminRoleController {
         }
     }
 
+    // ── 删除 ──
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id,
@@ -87,6 +93,7 @@ public class AdminRoleController {
         }
     }
 
+    // ── 权限分配 ──
 
     @PutMapping("/{id}/permissions")
     public ResponseEntity<?> assignPermissions(@PathVariable Long id,
@@ -101,6 +108,7 @@ public class AdminRoleController {
         }
     }
 
+    // ── 辅助 ──
 
     private Long resolveUserId(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

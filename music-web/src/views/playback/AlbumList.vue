@@ -1,12 +1,25 @@
 <template>
   <div class="album-list-page">
-
+    <!-- ═══ 页面头部 ═══ -->
     <div class="page-header">
       <div class="header-left">
         <h1>{{ $t('album.title') }}</h1>
         <span class="header-count">{{ $t('album.count', { count: library.albumTotal }) }}</span>
       </div>
       <div class="header-actions">
+        <n-input
+          v-model:value="searchText"
+          :placeholder="$t('player.searchPlaceholder')"
+          size="small"
+          clearable
+          round
+          style="width:180px"
+          @keyup.enter="doSearch"
+        >
+          <template #prefix>
+            <n-icon :size="16"><SearchOutline /></n-icon>
+          </template>
+        </n-input>
         <n-select
           v-model:value="sortType"
           :options="sortOptions"
@@ -19,7 +32,7 @@
       </div>
     </div>
 
-
+    <!-- ═══ 字母索引（仅 A-Z 排序时显示）═══ -->
     <div v-if="sortType === 'alphabetical' && letterChips.length" class="letter-bar">
       <button
         class="letter-chip"
@@ -37,7 +50,7 @@
     </div>
 
     <n-spin :show="library.loading" size="medium">
-
+      <!-- ═══ 网格视图 ═══ -->
       <div v-if="view === 'grid' && displayAlbums.length" class="album-grid">
         <AlbumCard
           v-for="album in displayAlbums"
@@ -52,7 +65,7 @@
         />
       </div>
 
-
+      <!-- ═══ 列表视图 ═══ -->
       <AlbumTable
         v-if="view === 'list' && displayAlbums.length"
         :albums="displayAlbums"
@@ -64,7 +77,7 @@
         @toggle-fav="toggleFav"
       />
 
-
+      <!-- ═══ 空状态 ═══ -->
       <n-empty
         v-if="!library.loading && !displayAlbums.length"
         :description="$t('player.noData')"
@@ -73,7 +86,7 @@
       />
     </n-spin>
 
-
+    <!-- ═══ 分页（服务端分页）═══ -->
     <n-pagination
       v-if="library.albumTotal > 0"
       v-model:page="currentPage"
@@ -94,6 +107,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMessage } from 'naive-ui'
+import { SearchOutline } from '@vicons/ionicons5'
 import { useLibraryStore } from '@/store/playback/library.js'
 import { usePlayerStore } from '@/store/playback/player.js'
 import { subsonicGetCoverArtUrl } from '@/api/playback/subsonic.js'
@@ -108,11 +122,20 @@ const message = useMessage()
 const library = useLibraryStore()
 const player = usePlayerStore()
 
+// ═══ 状态 ═══
 
 const view = computed({
   get: () => library.currentView,
   set: (v) => { library.setView(v) },
 })
+
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
 
 const currentPage = ref(1)
 const currentLetter = ref(null)
@@ -131,6 +154,7 @@ const sortOptions = computed(() => [
   { label: t('album.recentlyPlayed'), value: 'recent' },
 ])
 
+// ═══ 计算属性 ═══
 
 const albums = computed(() => library.albums)
 
@@ -141,7 +165,7 @@ const displayAlbums = computed(() =>
   }))
 )
 
-
+/** 将后端统计数据转为前端字母 chip 列表 */
 const letterChips = computed(() => {
   const list = library.albumLetters
   if (!list.length) return []
@@ -161,6 +185,7 @@ const letterChips = computed(() => {
   return result
 })
 
+// ═══ 数据加载 ═══
 
 onMounted(async () => {
   player.loadFavoriteIds()
@@ -182,7 +207,8 @@ function doLoad() {
 
 function onSortChange() {
   currentPage.value = 1
-    if (sortType.value !== 'alphabetical') {
+  // 非字母排序时清除字母过滤
+  if (sortType.value !== 'alphabetical') {
     currentLetter.value = null
   }
   doLoad()
@@ -204,6 +230,7 @@ function onPageSizeChange() {
   doLoad()
 }
 
+// ═══ 操作 ═══
 
 function getCoverUrl(album) {
   const artId = album.coverArt || album.id
@@ -248,7 +275,9 @@ function goDetail(id) {
 </script>
 
 <style scoped>
-
+/* ════════════════════════════════════════════════════
+   专辑列表页 — 字母索引 + 服务端分页 + 双视图
+   ════════════════════════════════════════════════════ */
 
 .album-list-page {
   width: min(100% - var(--content-padding-x) * 2, var(--content-max-width));
@@ -256,7 +285,7 @@ function goDetail(id) {
   padding: 24px 0;
 }
 
-
+/* ── 页头 ── */
 .page-header {
   display: flex;
   align-items: center;
@@ -292,7 +321,7 @@ function goDetail(id) {
   flex-shrink: 0;
 }
 
-
+/* ── 字母索引 ── */
 .letter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -333,14 +362,17 @@ function goDetail(id) {
   cursor: default;
 }
 
-
+/* ── 专辑网格 ── */
 .album-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
 }
 
+/* ── 专辑列表（使用 n-data-table，粘土风格）── */
+/* AlbumTable 自带列标题、对齐、hover 效果 */
 
+/* ── 分页 ── */
 .album-pagination {
   margin-top: 16px;
   justify-content: flex-end;

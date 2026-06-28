@@ -71,7 +71,7 @@ const coverUrl = computed(() => {
   transform: scale(0.98);
 }
 
-
+/* ── 封面区 ── */
 .genre-card-cover {
   position: relative;
   aspect-ratio: 1;
@@ -82,7 +82,7 @@ const coverUrl = computed(() => {
   overflow: hidden;
 }
 
-
+/* hover 悬浮层 */
 .genre-card-overlay {
   position: absolute;
   inset: 0;
@@ -98,7 +98,7 @@ const coverUrl = computed(() => {
   opacity: 1;
 }
 
-
+/* 播放按钮 */
 .card-play-btn {
   background: rgba(255, 255, 255, 0.92) !important;
   color: var(--ct-accent) !important;
@@ -111,7 +111,7 @@ const coverUrl = computed(() => {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-
+/* ── 信息区 ── */
 .genre-card-body {
   display: flex;
   flex-direction: column;
@@ -130,7 +130,7 @@ const coverUrl = computed(() => {
   line-height: 1.4;
 }
 
-
+/* ── 元信息 ── */
 .genre-card-meta {
   display: flex;
   align-items: center;

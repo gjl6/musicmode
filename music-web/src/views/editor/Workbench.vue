@@ -3,13 +3,13 @@
     <Sidebar />
     <EditDrawer />
     <main class="content">
-
+      <!-- 快速工具条 -->
       <ToolBar @tool-click="handleToolClick" />
 
-
+      <!-- 路径栏 + 列管理 -->
       <PathBar :prefs="prefs" @play-selected="handlePlaySelected" @edit-selected="openEditor(fileStore.selectedFiles[0])" />
 
-
+      <!-- 空状态引导 -->
       <div v-if="!fileStore.currentPath" class="placeholder">
         <div class="placeholder-inner">
           <n-icon :size="40" color="var(--ct-text-2)"><MusicalNotesOutline /></n-icon>
@@ -18,7 +18,7 @@
         </div>
       </div>
 
-
+      <!-- 表格区 -->
       <template v-if="fileStore.currentPath">
         <div class="table-body">
           <n-spin :show="fileStore.metadataLoading" size="medium">
@@ -26,12 +26,10 @@
               :columns="visibleColumns"
               :data="fileStore.pageFiles"
               :row-key="(row) => row.id"
-              :checked-row-keys="[...fileStore.selectedIds]"
-              :row-props="(row) => ({ style: 'cursor: pointer', onClick: () => handleRowClick(row) })"
+              :row-props="(row) => ({ class: fileStore.selectedIds.has(row.id) ? 'row-selected' : '', style: 'cursor: pointer', onClick: () => handleRowClick(row) })"
               :bordered="false"
               :single-line="false"
               size="small"
-              @update:checked-row-keys="onCheckedChange"
             />
           </n-spin>
           <n-empty
@@ -41,7 +39,7 @@
           />
         </div>
 
-
+        <!-- 分页 -->
         <div v-if="fileStore.totalFiles > 0" class="table-footer">
           <n-pagination
             size="small"
@@ -57,11 +55,11 @@
         </div>
       </template>
 
-
+      <!-- 迷你播放器 -->
       <MiniPlayer />
     </main>
 
-
+    <!-- 工具模态框容器 -->
     <ToolModals ref="toolModalsRef" @done="onToolDone" />
   </div>
 </template>
@@ -95,6 +93,7 @@ const { openEditor } = useEditAction()
 
 const toolModalsRef = ref(null)
 
+// ── 工具点击 → 委托给 ToolModals ──
 function handleToolClick(toolKey) {
   toolModalsRef.value?.open(toolKey)
 }
@@ -103,6 +102,7 @@ function onToolDone() {
   if (fileStore.currentPath) fileStore.loadPage(fileStore.currentPage)
 }
 
+// ── 格式化工具 ──
 function formatDuration(seconds) {
   if (seconds == null || seconds === '' || isNaN(seconds) || seconds === 0) return '—'
   const s = Number(seconds)
@@ -129,7 +129,14 @@ function dash(v) {
   return String(v)
 }
 
+// ── 列定义 ──
 const allColumns = computed(() => [
+  { key: 'hasCover', title: t('workbench.cols.hasCover'), width: 52, defaultVisible: true, align: 'center',
+    render: (r) => {
+      const src = getCoverUrl(songField(r.meta, 'coverPath'))
+      if (!src) return h('span', { class: 'cell-dash' }, '—')
+      return h('img', { src, class: 'cover-thumb' })
+    }},
   { key: 'name', title: t('workbench.cols.name'), width: 200, defaultVisible: true, ellipsis: { tooltip: true } },
   { key: 'title', title: t('workbench.cols.title'), width: 200, defaultVisible: true, ellipsis: { tooltip: true }, render: (r) => dash(songField(r.meta, 'title')) },
   { key: 'artist', title: t('workbench.cols.artist'), width: 150, defaultVisible: true, ellipsis: { tooltip: true }, render: (r) => dash(artistNames(r.meta, joinSeparator.value || undefined)) },
@@ -140,12 +147,6 @@ const allColumns = computed(() => [
   { key: 'genre', title: t('workbench.cols.genre'), width: 120, defaultVisible: true, render: (r) => dash(styleField(r.meta, 'styleName')) },
   { key: 'trackNumber', title: t('workbench.cols.trackNumber'), width: 80, defaultVisible: true, align: 'center', render: (r) => dash(songField(r.meta, 'trackNumber')) },
   { key: 'bitrate', title: t('workbench.cols.bitrate'), width: 80, defaultVisible: true, align: 'center', render: (r) => songField(r.meta, 'bitrate') ? songField(r.meta, 'bitrate') + ' kbps' : '—' },
-  { key: 'hasCover', title: t('workbench.cols.hasCover'), width: 52, defaultVisible: true, align: 'center',
-    render: (r) => {
-      const src = getCoverUrl(songField(r.meta, 'coverPath'))
-      if (!src) return h('span', { class: 'cell-dash' }, '—')
-      return h('img', { src, class: 'cover-thumb' })
-    }},
   { key: 'size', title: t('workbench.cols.size'), width: 90, defaultVisible: false, align: 'right', render: (r) => formatFileSize(r.size) },
   { key: 'modifiedTime', title: t('workbench.cols.modifiedTime'), width: 150, defaultVisible: false, render: (r) => dash(r.modifiedTime) },
   { key: 'path', title: t('workbench.cols.path'), width: 200, defaultVisible: false, ellipsis: { tooltip: true }, render: (r) => dash(r.path) },
@@ -174,6 +175,7 @@ const allColumns = computed(() => [
 const prefs = useColumnPreferences(allColumns)
 const visibleColumns = computed(() => prefs.sortedVisibleColumns())
 
+// ── 行选择（单击选中/双击编辑） ──
 const clickTimer = ref(null)
 
 function handleRowClick(row) {
@@ -188,16 +190,17 @@ function handleRowClick(row) {
   clickTimer.value = { rowId: row.id, timer: setTimeout(() => { clickTimer.value = null }, 300) }
 }
 
-function onCheckedChange(keys) { fileStore.setSelectedIds(keys) }
-
+// ── 播放 ──
 function handlePlaySelected() {
   const files = fileStore.selectedFiles
   if (files.length === 1) player.play(files[0])
 }
 
+// ── 分页 ──
 function onPageChange(page) { fileStore.loadPage(page) }
 function onPageSizeChange(size) { fileStore.pageSize = size; fileStore.loadPage(1) }
 
+// ── 目录变化 → 自动加载 ──
 watch(() => fileStore.currentPath, (path) => {
   if (path) fileStore.loadPage(1)
 })
@@ -220,13 +223,13 @@ watch(() => fileStore.currentPath, (path) => {
   color: var(--ct-text); min-width: 0;
 }
 
-
+/* ── 空状态 ── */
 .placeholder { flex: 1; display: flex; align-items: center; justify-content: center; }
 .placeholder-inner { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px; }
 .placeholder-title { font-size: 14px; font-weight: 500; color: var(--ct-text); margin: 0; letter-spacing: 0.02em; }
 .placeholder-hint { font-size: 12px; color: var(--ct-text-2); margin: 0; letter-spacing: 0.02em; }
 
-
+/* ── 表格 ── */
 .table-body { flex: 1; overflow: auto; }
 .table-body :deep(.n-data-table) {
   --n-td-color: transparent; --n-th-color: transparent; --n-merged-th-color: transparent;
@@ -244,9 +247,20 @@ watch(() => fileStore.currentPath, (path) => {
   font-size: 12.5px; letter-spacing: 0.01em;
   padding: 7px 12px !important; border-bottom: none !important;
 }
-.table-body :deep(.n-data-table-tr) { transition: background 0.1s; }
-.table-body :deep(.n-data-table-tr:hover td) { background: var(--sb-bg-hover) !important; }
-.table-body :deep(.n-data-table-tr.n-data-table-tr--checked td) { background: rgb(var(--ct-accent-rgb) / 0.1) !important; }
+.table-body :deep(.n-data-table-tr:hover td) {
+  background: rgb(var(--ct-accent-rgb) / 0.28) !important;
+  box-shadow: none !important;
+}
+/* 选中行 — 左侧指示条 + 品牌色背景 */
+.table-body :deep(.row-selected td) {
+  background: rgb(var(--ct-accent-rgb) / 0.22) !important;
+}
+.table-body :deep(.row-selected td:first-child) {
+  box-shadow: inset 3px 0 0 var(--color-accent) !important;
+}
+.table-body :deep(.row-selected:hover td) {
+  background: rgb(var(--ct-accent-rgb) / 0.28) !important;
+}
 .table-body :deep(.n-data-table-wrapper) { border: none !important; }
 .table-body::-webkit-scrollbar { width: 6px; height: 6px; }
 .table-body::-webkit-scrollbar-track { background: transparent; }
@@ -254,7 +268,7 @@ watch(() => fileStore.currentPath, (path) => {
 .table-body:hover::-webkit-scrollbar-thumb { background: var(--sb-scrollbar); }
 .table-body::-webkit-scrollbar-corner { background: transparent; }
 
-
+/* ── 分页 ── */
 .table-footer {
   display: flex; justify-content: flex-end;
   padding: 6px 12px; flex-shrink: 0;
@@ -262,7 +276,7 @@ watch(() => fileStore.currentPath, (path) => {
   background: var(--gradient-button, var(--ct-bg-secondary));
 }
 
-
+/* ── 歌词 ── */
 .cell-lyrics {
   display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
@@ -270,7 +284,7 @@ watch(() => fileStore.currentPath, (path) => {
 }
 :deep(.cell-dash) { color: var(--ct-text-2); font-style: italic; }
 
-
+/* 状态点 */
 .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
 .status-dot.ok { background: var(--n-color-success); }
 .status-dot.miss { background: var(--n-color-warning); }

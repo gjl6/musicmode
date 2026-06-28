@@ -4,7 +4,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
+/**
+ * 监控处理步骤 —— 对应 steps_json 中的单个步骤定义。
+ *
+ * <pre>
+ * { "name": "enrich", "config": { "provider": "qqmusic", "matchMode": "LOOSE" } }
+ * </pre>
+ */
 public class WatchStep {
 
     private String name;

@@ -1,6 +1,6 @@
 package com.gjl.music.exception;
 
-
+/** 元数据提取过程中发生的异常 */
 public class MetadataExtractException extends MetadataParseException {
 
     public enum ExtractErrorType {

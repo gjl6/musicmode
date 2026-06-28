@@ -1,6 +1,6 @@
 <template>
   <div class="anp-root">
-
+    <!-- 处理范围 -->
     <div class="anp-section">
       <div class="anp-section-title">{{ $t('artistManager.toolNormalizeScope') }}</div>
       <n-radio-group v-model:value="scope" size="small">
@@ -13,13 +13,13 @@
       </n-radio-group>
     </div>
 
-
+    <!-- 说明 -->
     <div class="anp-hint">
       <n-icon :size="16"><InformationCircleOutline /></n-icon>
       <span>规范化艺术家名称格式：移除多余空格、统一大小写、清理特殊字符（如 feat. / & 等分隔符标准化）。将在后台通过管道处理，不跳转页面。</span>
     </div>
 
-
+    <!-- 提交 -->
     <div class="anp-footer">
       <n-button type="primary" size="small" :loading="submitting" @click="doSubmit">
         {{ $t('artistManager.submitPipeline') }}

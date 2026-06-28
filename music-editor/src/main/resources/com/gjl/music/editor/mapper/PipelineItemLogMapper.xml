@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.editor.mapper.PipelineItemLogMapper">
+
+    <insert id="batchInsert" databaseId="h2">
+        INSERT INTO pipeline_item_log (pipeline_id, item_key, status, error_node, error_msg, create_time)
+        VALUES
+        <foreach collection="list" item="item" separator=", ">
+            (#{item.pipelineId}, #{item.itemKey}, #{item.status},
+             #{item.errorNode}, #{item.errorMsg}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchInsert" databaseId="mysql">
+        INSERT INTO pipeline_item_log (pipeline_id, item_key, status, error_node, error_msg, create_time)
+        VALUES
+        <foreach collection="list" item="item" separator=", ">
+            (#{item.pipelineId}, #{item.itemKey}, #{item.status},
+             #{item.errorNode}, #{item.errorMsg}, NOW())
+        </foreach>
+    </insert>
+
+    <select id="selectSuccessKeys" resultType="string">
+        SELECT DISTINCT item_key FROM pipeline_item_log
+        WHERE pipeline_id = #{pipelineId}
+          AND status = 'SUCCESS'
+    </select>
+
+    <select id="selectByPipeline" resultType="com.gjl.music.model.PipelineItemLog">
+        SELECT id, pipeline_id AS pipelineId, item_key AS itemKey,
+               status, error_node AS errorNode, error_msg AS errorMsg,
+               create_time AS createTime
+        FROM pipeline_item_log
+        WHERE pipeline_id = #{pipelineId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="selectPage" resultType="com.gjl.music.model.PipelineItemLog">
+        SELECT id, pipeline_id AS pipelineId, item_key AS itemKey,
+               status, error_node AS errorNode, error_msg AS errorMsg,
+               create_time AS createTime
+        FROM pipeline_item_log
+        WHERE pipeline_id = #{pipelineId}
+          AND status = #{status}
+        ORDER BY id DESC
+        <if test="limit > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <select id="countByPipelineStatus" resultType="int">
+        SELECT COUNT(*) FROM pipeline_item_log
+        WHERE pipeline_id = #{pipelineId}
+          AND status = #{status}
+    </select>
+
+    <delete id="deleteByPipeline">
+        DELETE FROM pipeline_item_log WHERE pipeline_id = #{pipelineId}
+    </delete>
+
+    <delete id="deleteExpired">
+        DELETE FROM pipeline_item_log
+        WHERE pipeline_id IN (
+            SELECT id FROM pipeline_task
+            WHERE state IN ('COMPLETED', 'FAILED', 'CANCELLED')
+              AND create_time &lt; #{before}
+        )
+    </delete>
+
+</mapper>

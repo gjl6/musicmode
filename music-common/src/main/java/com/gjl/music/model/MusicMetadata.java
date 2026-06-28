@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
+/** 单文件音乐元数据聚合体 —— 包含歌曲、专辑、艺术家、歌词、风格的集合 */
 @Getter
 @Setter
 @NoArgsConstructor

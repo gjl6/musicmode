@@ -1,6 +1,6 @@
 <template>
   <div class="artist-manager">
-
+    <!-- ═══ 左侧边栏 ═══ -->
     <ArtistSidebar
       :letter="letter"
       :select-mode="selectMode"
@@ -18,29 +18,12 @@
       @query="doQuery"
     />
 
-
+    <!-- ═══ 主内容区 ═══ -->
     <main class="am-main">
+      <!-- 批量工具条 -->
+      <ToolBar :tools="batchTools" @tool-click="openTool" />
 
-      <div class="am-batch-tools">
-        <div class="am-tools-row">
-          <div
-            v-for="tool in batchTools"
-            :key="tool.key"
-            class="am-tool-card"
-            @click="openTool(tool.key)"
-          >
-            <div class="am-tool-icon">
-              <n-icon :size="18"><component :is="tool.icon" /></n-icon>
-            </div>
-            <div class="am-tool-info">
-              <span class="am-tool-name">{{ tool.label }}</span>
-              <span class="am-tool-desc">{{ tool.desc }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
+      <!-- 表格工具栏 -->
       <div class="am-table-toolbar">
         <div class="am-tt-left">
           <n-button
@@ -86,7 +69,7 @@
         </div>
       </div>
 
-
+      <!-- 表格 -->
       <n-spin :show="loading" size="medium">
         <n-data-table
           :columns="visibleColumns"
@@ -105,7 +88,7 @@
         </div>
       </n-spin>
 
-
+      <!-- 底栏 -->
       <div class="am-footer">
         <div class="am-footer-left">
           <transition name="fade">
@@ -134,7 +117,7 @@
       </div>
     </main>
 
-
+    <!-- ═══ 编辑抽屉 ═══ -->
     <ArtistEditDrawer
       ref="editDrawerRef"
       :artist="editingArtist"
@@ -142,7 +125,7 @@
       @close="onDrawerClosed"
     />
 
-
+    <!-- ═══ 工具弹窗 ═══ -->
     <n-modal
       v-model:show="enrichVisible"
       preset="card"
@@ -211,10 +194,12 @@ import ArtistEnrichPanel from '@/components/editor/artist/ArtistEnrichPanel.vue'
 import ArtistNormalizePanel from '@/components/editor/artist/ArtistNormalizePanel.vue'
 import ArtistMergePanel from '@/components/editor/artist/ArtistMergePanel.vue'
 import ArtistEditDrawer from '@/components/editor/artist/ArtistEditDrawer.vue'
+import ToolBar from '@/components/editor/layout/ToolBar.vue'
 
 const { t } = useI18n()
 const message = useMessage()
 
+// ── 过滤状态 ──
 const selectMode = ref('all')
 const letter = ref(null)
 const keyword = ref('')
@@ -222,6 +207,7 @@ const filterMinSongs = ref(null)
 const filterMaxSongs = ref(null)
 const filterCountry = ref('')
 
+// ── 批量工具 ──
 const batchTools = computed(() => [
   {
     key: 'artistEnrich',
@@ -243,6 +229,7 @@ const batchTools = computed(() => [
   },
 ])
 
+// ── 数据 ──
 const artists = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -260,6 +247,7 @@ const currentSelection = computed(() => {
   return sel
 })
 
+// ── 查询 ──
 function buildQueryParams() {
   const params = {
     mode: selectMode.value,
@@ -290,10 +278,12 @@ async function doQuery() {
   }
 }
 
+// ── 全局搜索（独立） ──
 function onGlobalSearch(val) {
   keyword.value = val
   page.value = 1
-    if (val) {
+  // 全局搜索用简单模式，不叠加过滤
+  if (val) {
     selectMode.value = 'all'
     letter.value = null
     filterMinSongs.value = null
@@ -312,6 +302,7 @@ function onCheckedChange(keys) {
   selectedIds.value = keys
 }
 
+// ── 编辑抽屉 ──
 const editDrawerRef = ref(null)
 const editingArtist = ref({
   id: null, name: '', gender: null, country: '', introduction: '', coverArt: '', enrichSource: '',
@@ -334,8 +325,10 @@ function onArtistSaved() {
 }
 
 function onDrawerClosed() {
-  }
+  // no-op
+}
 
+// ── 工具弹窗 ──
 const enrichVisible = ref(false)
 const normalizeVisible = ref(false)
 const mergeVisible = ref(false)
@@ -367,8 +360,10 @@ function onMergeDone() {
   doQuery()
 }
 
+// ── GENDER 映射 ──
 const GENDER_MAP = { 0: '其他', 1: '男', 2: '女', 3: '组合' }
 
+// ── 列定义 ──
 const allColumnDefs = [
   { key: 'coverArt',  title: '封面',       width: 52,  align: 'center', defaultVisible: true },
   { key: 'name',      title: '名称',       width: 140, ellipsis: { tooltip: true }, defaultVisible: true },
@@ -379,12 +374,13 @@ const allColumnDefs = [
   { key: 'country',   title: '国家/地区',  width: 72,  ellipsis: { tooltip: true }, defaultVisible: true },
 ]
 
+// ── 列可见性 localStorage ──
 const STORAGE_KEY = 'music-web-artist-hidden-cols'
 function loadHiddenCols() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return new Set(JSON.parse(raw))
-  } catch {  }
+  } catch { /* ignore */ }
   return new Set(allColumnDefs.filter(c => !c.defaultVisible).map(c => c.key))
 }
 const hiddenCols = ref(loadHiddenCols())
@@ -444,7 +440,7 @@ function renderCell(colKey, row) {
 }
 
 const visibleColumns = computed(() => {
-  const cols = [h('div', { style: 'display:none' })]
+  const cols = [h('div', { style: 'display:none' })] // 占位，让 map 顺序正确
   const result = [
     { type: 'selection', width: 40 },
   ]
@@ -460,6 +456,7 @@ const visibleColumns = computed(() => {
   return result
 })
 
+// ── 行双击 ──
 function rowProps(row) {
   return {
     style: 'cursor: pointer',
@@ -467,6 +464,7 @@ function rowProps(row) {
   }
 }
 
+// ── 生命周期 ──
 onMounted(() => {
   doQuery()
 })
@@ -478,7 +476,7 @@ onMounted(() => {
   height: 100%;
 }
 
-
+/* ── 主内容区 ── */
 .am-main {
   flex: 1;
   min-width: 0;
@@ -489,86 +487,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-
-.am-batch-tools {
-  flex-shrink: 0;
-}
-
-.am-tools-row {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-
-.am-tools-row::-webkit-scrollbar { height: 3px; }
-.am-tools-row::-webkit-scrollbar-track { background: transparent; }
-.am-tools-row::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
-.am-tools-row:hover::-webkit-scrollbar-thumb { background: var(--sb-scrollbar); }
-
-.am-tool-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--ct-card-bg);
-  border: 1px solid var(--ct-border);
-  cursor: pointer;
-  transition: all 0.15s;
-  flex: 0 0 auto;
-  min-width: 130px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
-}
-
-.am-tool-card:hover {
-  background: var(--ct-card-hover);
-  border-color: rgb(var(--ct-accent-rgb) / 0.3);
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.08);
-}
-
-.am-tool-card:active { transform: scale(0.98); }
-
-.am-tool-icon {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background: rgb(var(--ct-accent-rgb) / 0.08);
-  color: rgb(var(--ct-accent-rgb));
-  border: 1px solid rgb(var(--ct-accent-rgb) / 0.2);
-}
-
-.am-tool-card:hover .am-tool-icon { background: rgb(var(--ct-accent-rgb) / 0.15); }
-
-.am-tool-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.am-tool-name {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--ct-text);
-  line-height: 1.3;
-}
-
-.am-tool-desc {
-  font-size: 10px;
-  color: var(--ct-text-2);
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-
+/* ── 表格工具栏 ── */
 .am-table-toolbar {
   display: flex;
   align-items: center;
@@ -583,7 +502,7 @@ onMounted(() => {
   gap: 6px;
 }
 
-
+/* ── 列 popover ── */
 .am-col-popover {
   width: 200px;
   max-height: 300px;
@@ -614,7 +533,7 @@ onMounted(() => {
   color: var(--ct-text-3);
 }
 
-
+/* ── 表格 ── */
 .am-table {
   flex: 1;
   min-height: 0;
@@ -644,7 +563,7 @@ onMounted(() => {
   color: var(--ct-text-3);
 }
 
-
+/* ── 底栏 ── */
 .am-footer {
   display: flex;
   align-items: center;

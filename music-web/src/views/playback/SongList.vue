@@ -1,12 +1,25 @@
 <template>
   <div class="song-list-page">
-
+    <!-- ═══ 页面头部 ═══ -->
     <div class="page-header">
       <div class="header-left">
         <h1>{{ $t('song.title') }}</h1>
         <span class="header-count">{{ $t('song.count', { count: library.songTotal }) }}</span>
       </div>
       <div class="header-actions">
+        <n-input
+          v-model:value="searchText"
+          :placeholder="$t('player.searchPlaceholder')"
+          size="small"
+          clearable
+          round
+          style="width:180px"
+          @keyup.enter="doSearch"
+        >
+          <template #prefix>
+            <n-icon :size="16"><SearchOutline /></n-icon>
+          </template>
+        </n-input>
         <n-select
           v-model:value="sortType"
           :options="sortOptions"
@@ -19,7 +32,7 @@
       </div>
     </div>
 
-
+    <!-- ═══ 字母索引（仅 A-Z 排序时显示）═══ -->
     <div v-if="sortType === 'alphabetical' && letterChips.length" class="letter-bar">
       <button
         class="letter-chip"
@@ -37,71 +50,20 @@
     </div>
 
     <n-spin :show="library.loading" size="medium">
-
+      <!-- ═══ 网格视图 ═══ -->
       <div v-if="view === 'grid' && displaySongs.length" class="song-grid">
-        <div
+        <SongCard
           v-for="song in displaySongs"
           :key="song.id"
-          class="song-card"
-          @click="goDetail(song.id)"
-        >
-          <div class="song-card-cover">
-            <img
-              v-if="getCoverUrl(song)"
-              :src="getCoverUrl(song)"
-              class="song-card-img"
-              :alt="song.title || ''"
-            />
-            <n-icon v-else :size="36" color="var(--ct-text-3)">
-              <MusicalNotesOutline />
-            </n-icon>
-            <div class="song-card-overlay">
-              <n-button
-                circle
-                class="card-play-btn"
-                size="large"
-                @click.stop="playSong(song)"
-              >
-                <template #icon>
-                  <n-icon :size="24"><PlayOutline /></n-icon>
-                </template>
-              </n-button>
-              <n-button
-                circle
-                class="card-fav-btn"
-                size="tiny"
-                :type="song._starred ? 'error' : 'tertiary'"
-                @click.stop="toggleFav(song)"
-              >
-                <template #icon>
-                  <n-icon :size="15" :color="song._starred ? '#EF4444' : undefined">
-                    <Heart v-if="song._starred" />
-                    <HeartOutline v-else />
-                  </n-icon>
-                </template>
-              </n-button>
-            </div>
-          </div>
-          <div class="song-card-body">
-            <span class="song-card-title" :title="song.title">{{ song.title || '—' }}</span>
-            <span class="song-card-artist" :title="song.artist">{{ song.artist || '—' }}</span>
-            <StarRatingComp
-              :rating="Number(song.userRating) || 0"
-              :song-id="song.id"
-              :size="13"
-              @rated="(val) => onRateSong({ songId: Number(song.id), rating: val })"
-              @click.stop
-            />
-          </div>
-          <div class="song-card-meta">
-            <span v-if="song.suffix" class="song-card-format">{{ song.suffix.toUpperCase() }}</span>
-            <span class="song-card-duration">{{ formatDuration(song.duration) }}</span>
-            <span v-if="song.bitRate" class="song-card-bitrate">{{ song.bitRate }} kbps</span>
-          </div>
-        </div>
+          :song="song"
+          :starred="song._starred"
+          @play="playSong(song)"
+          @toggle-fav="toggleFav(song)"
+          @rate="onRateSong"
+        />
       </div>
 
-
+      <!-- ═══ 表格视图 ═══ -->
       <SongTable
         v-else-if="view === 'list' && displaySongs.length"
         :songs="displaySongs"
@@ -113,7 +75,7 @@
         @add-to-playlist="onAddToPlaylist"
       />
 
-
+      <!-- ═══ 空状态 ═══ -->
       <n-empty
         v-if="!library.loading && !displaySongs.length"
         :description="$t('player.noData')"
@@ -122,7 +84,7 @@
       />
     </n-spin>
 
-
+    <!-- ═══ 添加到歌单弹窗 ═══ -->
     <AddToPlaylistModal
       :show="showAddModal"
       :song-ids="addSongIds"
@@ -130,7 +92,7 @@
       @added="onAddedToPlaylist"
     />
 
-
+    <!-- ═══ 分页 ═══ -->
     <n-pagination
       v-if="library.songTotal > 0"
       v-model:page="currentPage"
@@ -150,14 +112,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { PlayOutline, MusicalNotesOutline, HeartOutline, Heart } from '@vicons/ionicons5'
+import { SearchOutline } from '@vicons/ionicons5'
 import { useMessage } from 'naive-ui'
 import { useLibraryStore } from '@/store/playback/library.js'
 import { usePlayerStore } from '@/store/playback/player.js'
-import { subsonicGetCoverArtUrl } from '@/api/playback/subsonic.js'
+import SongCard from '@/components/playback/SongCard.vue'
 import SongTable from '@/components/playback/SongTable.vue'
 import ViewToggle from '@/components/playback/ViewToggle.vue'
-import StarRatingComp from '@/components/playback/StarRating.vue'
 import AddToPlaylistModal from '@/components/playback/AddToPlaylistModal.vue'
 
 const { t } = useI18n()
@@ -166,6 +127,15 @@ const message = useMessage()
 const library = useLibraryStore()
 const player = usePlayerStore()
 
+// ═══ 状态 ═══
+
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
 
 const view = computed({
   get: () => library.currentView,
@@ -173,6 +143,7 @@ const view = computed({
 })
 const pageSize = ref(24)
 
+// 分页/筛选状态托管在 library store 中（跨导航保持）
 const currentPage = computed({
   get: () => library.songPage,
   set: (v) => { library.songPage = v },
@@ -192,10 +163,11 @@ const sortOptions = computed(() => [
   { label: t('song.sortByName'), value: 'alphabetical' },
 ])
 
+// ═══ 计算属性 ═══
 
 const songs = computed(() => library.songs)
 
-
+/** 将收藏状态直接合入歌曲数据，确保 data 变化驱动 table 重渲染 */
 const displaySongs = computed(() => {
   const fav = player.favoriteIds
   return songs.value.map(s => ({
@@ -204,7 +176,7 @@ const displaySongs = computed(() => {
   }))
 })
 
-
+/** 将后端统计数据转为前端字母 chip 列表（A-Z, 0-9, #） */
 const letterChips = computed(() => {
   const map = new Map()
   for (const L of library.songLetters) {
@@ -212,7 +184,8 @@ const letterChips = computed(() => {
     const cnt = L.cnt || L.CNT || Object.values(L)[1] || 0
     map.set(String(letter), Number(cnt))
   }
-    const result = []
+  // 按顺序排列：A-Z, 0-9, #
+  const result = []
   for (let c = 65; c <= 90; c++) {
     const letter = String.fromCharCode(c)
     result.push({ letter, cnt: map.get(letter) || 0 })
@@ -222,13 +195,16 @@ const letterChips = computed(() => {
   return result
 })
 
+// ═══ 数据加载 ═══
 
 onMounted(async () => {
   await library.loadSongLetters()
-    if (library.songs.length === 0) {
+  // 仅在首次进入时加载（store 中有数据说明之前已加载过，保持原状态）
+  if (library.songs.length === 0) {
     doLoad()
   }
-    player.loadFavoriteIds()
+  // 加载已收藏歌曲 ID 列表
+  player.loadFavoriteIds()
 })
 
 function doLoad() {
@@ -261,18 +237,7 @@ function onPageSizeChange() {
   doLoad()
 }
 
-
-function getCoverUrl(song) {
-  const artId = song.coverArt || song.albumId || song.id
-  return artId ? subsonicGetCoverArtUrl(artId, 160) : ''
-}
-
-function formatDuration(s) {
-  if (!s || !isFinite(s)) return '—'
-  const m = Math.floor(s / 60)
-  const sec = Math.floor(s % 60)
-  return `${m}:${String(sec).padStart(2, '0')}`
-}
+// ═══ 操作 ═══
 
 function playSong(song) {
   if (song?.id || song?.path) player.play(song)
@@ -280,14 +245,6 @@ function playSong(song) {
 
 function addToQueue(song) {
   if (song) player.addToQueue([song])
-}
-
-function goDetail(id) {
-  if (id) router.push(`/player/songs/${id}`)
-}
-
-function isFavorited(id) {
-  return player.isSongStarred(id)
 }
 
 async function toggleFav(song) {
@@ -306,7 +263,7 @@ async function toggleFav(song) {
   }
 }
 
-
+/** 评分变更后更新本地 songs 中的 userRating，保持 UI 即时响应 */
 function onRateSong({ songId, rating }) {
   const list = library.songs
   const idx = list.findIndex(s => Number(s.id) === songId)
@@ -315,6 +272,7 @@ function onRateSong({ songId, rating }) {
   }
 }
 
+// ── 添加到歌单 ──
 
 const showAddModal = ref(false)
 const addSongIds = ref([])
@@ -325,11 +283,14 @@ function onAddToPlaylist(song) {
 }
 
 function onAddedToPlaylist() {
-  }
+  // 歌单数据可能已变更（新增或添加了歌曲），无需额外操作
+}
 </script>
 
 <style scoped>
-
+/* ════════════════════════════════════════════════════
+   歌曲列表页 — 字母索引 + 服务端分页 + 双视图
+   ════════════════════════════════════════════════════ */
 
 .song-list-page {
   width: min(100% - var(--content-padding-x) * 2, var(--content-max-width));
@@ -337,7 +298,7 @@ function onAddedToPlaylist() {
   padding: 24px 0;
 }
 
-
+/* ── 页头 ── */
 .page-header {
   display: flex;
   align-items: center;
@@ -373,7 +334,7 @@ function onAddedToPlaylist() {
   flex-shrink: 0;
 }
 
-
+/* ── 字母索引 ── */
 .letter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -414,156 +375,14 @@ function onAddedToPlaylist() {
   cursor: default;
 }
 
-
+/* ── 歌曲网格 ── */
 .song-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
 }
 
-
-.song-card {
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--radius-md, 10px);
-  background: var(--gradient-card);
-  border: var(--border-width-default, 1px) solid var(--ct-border);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.song-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.song-card:active {
-  transform: scale(0.98);
-}
-
-
-.song-card-cover {
-  position: relative;
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ct-bg-secondary);
-  overflow: hidden;
-}
-
-.song-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.song-card-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.song-card:hover .song-card-overlay {
-  opacity: 1;
-}
-
-
-.card-play-btn {
-  background: rgba(255, 255, 255, 0.92) !important;
-  color: var(--ct-accent) !important;
-  border: none !important;
-  width: 46px !important;
-  height: 46px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.card-play-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-}
-
-
-.card-fav-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, 0.85) !important;
-  border: none !important;
-  backdrop-filter: blur(4px);
-  transition: transform 0.15s;
-}
-.card-fav-btn:hover {
-  transform: scale(1.12);
-}
-
-
-.song-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px 4px;
-  min-width: 0;
-}
-
-.song-card-title {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--ct-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.song-card-artist {
-  font-size: var(--text-xs);
-  color: var(--ct-text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-
-.song-card-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px 12px 10px;
-  gap: 6px;
-}
-
-.song-card-format {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
-  color: var(--ct-accent);
-  background: rgb(var(--ct-accent-rgb) / 0.1);
-  letter-spacing: 0.5px;
-}
-
-.song-card-duration {
-  font-size: var(--text-xs);
-  color: var(--ct-text-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.song-card-bitrate {
-  font-size: 11px;
-  color: var(--ct-text-3);
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--ct-bg-secondary);
-}
-
-
+/* ── 分页 ── */
 .song-pagination {
   margin-top: 16px;
   justify-content: flex-end;

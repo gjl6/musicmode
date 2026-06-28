@@ -1,6 +1,6 @@
 <template>
   <div class="lyrics-panel" :class="{ 'lyrics-panel--visible': visible, 'lyrics-panel--empty': isEmpty }">
-
+    <!-- Header -->
     <div class="lyrics-header">
       <span class="lyrics-header-title">歌词</span>
       <n-button text class="lyrics-close" @click="$emit('close')">
@@ -8,19 +8,19 @@
       </n-button>
     </div>
 
-
+    <!-- Loading -->
     <div v-if="player.lyricsLoading" class="lyrics-status">
       <n-spin :size="20" />
       <span>加载中...</span>
     </div>
 
-
+    <!-- Empty -->
     <div v-else-if="isEmpty" class="lyrics-status">
       <n-icon :size="24" color="var(--ct-text-3)"><MusicalNotesOutline /></n-icon>
       <span>暂无歌词</span>
     </div>
 
-
+    <!-- Synced LRC lyrics -->
     <div
       v-else-if="player.lyricsSynced"
       ref="scrollRef"
@@ -42,7 +42,7 @@
       </div>
     </div>
 
-
+    <!-- Plain text lyrics -->
     <div v-else class="lyrics-plain">
       <div
         v-for="(line, i) in player.lyrics"
@@ -69,6 +69,7 @@ const isEmpty = computed(() =>
   !player.lyricsLoading && player.lyrics.length === 0
 )
 
+// ── 同步滚动 ──
 const scrollRef = ref(null)
 
 watch(
@@ -86,7 +87,9 @@ watch(
 </script>
 
 <style scoped>
-
+/* ═══════════════════════════════════════════════════════════════
+   歌词面板 — Claymorphism 粘土风格
+   ═══════════════════════════════════════════════════════════════ */
 
 .lyrics-panel {
   display: flex;
@@ -107,7 +110,7 @@ watch(
   max-height: 80px;
 }
 
-
+/* ── Header ── */
 .lyrics-header {
   display: flex;
   align-items: center;
@@ -129,7 +132,7 @@ watch(
   color: var(--ct-text) !important;
 }
 
-
+/* ── Status（loading / empty）── */
 .lyrics-status {
   display: flex;
   flex-direction: column;
@@ -141,7 +144,7 @@ watch(
   color: var(--ct-text-3);
 }
 
-
+/* ═══════ 同步滚动容器 ═══════ */
 .lyrics-scroll {
   flex: 1;
   overflow-y: auto;
@@ -170,14 +173,14 @@ watch(
   padding: 40px 0;
 }
 
-
+/* ═══════ 静态文本容器 ═══════ */
 .lyrics-plain {
   flex: 1;
   overflow-y: auto;
   padding: 12px 20px 20px;
 }
 
-
+/* ═══════ 歌词行 ═══════ */
 .lyrics-line {
   padding: 5px 20px;
   font-size: var(--text-md);
@@ -189,12 +192,12 @@ watch(
   white-space: pre-wrap;
 }
 
-
+/* 已播放行 */
 .lyrics-line--past {
   color: var(--ct-text-2);
 }
 
-
+/* 当前行 — 粘土凸起高亮 */
 .lyrics-line--active {
   color: var(--ct-accent);
   font-size: calc(var(--text-md) + 2px);
@@ -209,7 +212,7 @@ watch(
   margin: 2px 0;
 }
 
-
+/* 静态歌词行 */
 .lyrics-line--static {
   color: var(--ct-text);
   text-align: left;

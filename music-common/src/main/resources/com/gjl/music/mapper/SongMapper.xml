@@ -1,0 +1,595 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.SongMapper">
+
+    <!-- ══════════════════════════════════════════════════
+         Song CRUD
+         ══════════════════════════════════════════════════ -->
+
+    <insert id="upsertSong" databaseId="h2">
+        MERGE INTO song AS t
+        USING (VALUES (
+            #{song.title}, #{song.filePath}, #{song.fileName}, #{song.fileFormat}, #{song.fileSize}, #{song.fileHash},
+            #{song.fingerprint}, #{song.duration}, #{song.coverPath}, #{song.year}, #{song.bitrate}, #{song.sampleRate},
+            #{song.channels}, #{song.bitsPerSample}, #{song.language}, #{albumId}, #{song.trackNumber},
+            #{song.discNumber}, #{song.trackGain}, #{song.trackPeak}, #{song.composer}, #{song.lyricist},
+            #{song.arranger}, #{song.producer}, #{song.extraTags}, #{song.sortTitle}, #{song.fileMtime}
+        )) AS s(title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id, track_number,
+               disc_number, track_gain, track_peak, composer, lyricist,
+               arranger, producer, extra_tags, sort_title, file_mtime)
+        ON t.file_path = s.file_path
+        WHEN MATCHED THEN UPDATE SET
+            title = CASE WHEN s.title IS NOT NULL THEN s.title ELSE t.title END,
+            file_name = CASE WHEN s.file_name IS NOT NULL THEN s.file_name ELSE t.file_name END,
+            file_format = CASE WHEN s.file_format IS NOT NULL THEN s.file_format ELSE t.file_format END,
+            file_size = CASE WHEN s.file_size IS NOT NULL THEN s.file_size ELSE t.file_size END,
+            file_hash = CASE WHEN s.file_hash IS NOT NULL THEN s.file_hash ELSE t.file_hash END,
+            fingerprint = CASE WHEN s.fingerprint IS NOT NULL THEN s.fingerprint ELSE t.fingerprint END,
+            duration = CASE WHEN s.duration IS NOT NULL THEN s.duration ELSE t.duration END,
+            cover_path = CASE WHEN s.cover_path IS NOT NULL THEN s.cover_path ELSE t.cover_path END,
+            "year" = CASE WHEN s."year" IS NOT NULL THEN s."year" ELSE t."year" END,
+            bitrate = CASE WHEN s.bitrate IS NOT NULL THEN s.bitrate ELSE t.bitrate END,
+            sample_rate = CASE WHEN s.sample_rate IS NOT NULL THEN s.sample_rate ELSE t.sample_rate END,
+            channels = CASE WHEN s.channels IS NOT NULL THEN s.channels ELSE t.channels END,
+            bits_per_sample = CASE WHEN s.bits_per_sample IS NOT NULL THEN s.bits_per_sample ELSE t.bits_per_sample END,
+            language = CASE WHEN s.language IS NOT NULL THEN s.language ELSE t.language END,
+            album_id = CASE WHEN s.album_id IS NOT NULL THEN s.album_id ELSE t.album_id END,
+            track_number = CASE WHEN s.track_number IS NOT NULL THEN s.track_number ELSE t.track_number END,
+            disc_number = CASE WHEN s.disc_number IS NOT NULL THEN s.disc_number ELSE t.disc_number END,
+            track_gain = CASE WHEN s.track_gain IS NOT NULL THEN s.track_gain ELSE t.track_gain END,
+            track_peak = CASE WHEN s.track_peak IS NOT NULL THEN s.track_peak ELSE t.track_peak END,
+            composer = CASE WHEN s.composer IS NOT NULL THEN s.composer ELSE t.composer END,
+            lyricist = CASE WHEN s.lyricist IS NOT NULL THEN s.lyricist ELSE t.lyricist END,
+            arranger = CASE WHEN s.arranger IS NOT NULL THEN s.arranger ELSE t.arranger END,
+            producer = CASE WHEN s.producer IS NOT NULL THEN s.producer ELSE t.producer END,
+            extra_tags = CASE WHEN s.extra_tags IS NOT NULL THEN s.extra_tags ELSE t.extra_tags END,
+            sort_title = CASE WHEN s.sort_title IS NOT NULL THEN s.sort_title ELSE t.sort_title END,
+            file_mtime = CASE WHEN s.file_mtime IS NOT NULL THEN s.file_mtime ELSE t.file_mtime END,
+            update_time = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN INSERT (title, file_path, file_name, file_format, file_size, file_hash,
+            fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+            channels, bits_per_sample, language, album_id, track_number,
+            disc_number, track_gain, track_peak, composer, lyricist,
+            arranger, producer, extra_tags, sort_title, file_mtime, update_time)
+            VALUES (s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+            s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+            s.channels, s.bits_per_sample, s.language, s.album_id, s.track_number,
+            s.disc_number, s.track_gain, s.track_peak, s.composer, s.lyricist,
+            s.arranger, s.producer, s.extra_tags, s.sort_title, s.file_mtime, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertSong" databaseId="mysql">
+        INSERT INTO song (title, file_path, file_name, file_format, file_size, file_hash,
+                          fingerprint, duration, cover_path, `year`, bitrate, sample_rate,
+                          channels, bits_per_sample, language, album_id, track_number,
+                          disc_number, track_gain, track_peak, composer, lyricist,
+                          arranger, producer, extra_tags, sort_title, file_mtime, update_time)
+        VALUES (#{song.title}, #{song.filePath}, #{song.fileName}, #{song.fileFormat}, #{song.fileSize}, #{song.fileHash},
+                #{song.fingerprint}, #{song.duration}, #{song.coverPath}, #{song.year}, #{song.bitrate}, #{song.sampleRate},
+                #{song.channels}, #{song.bitsPerSample}, #{song.language}, #{albumId}, #{song.trackNumber},
+                #{song.discNumber}, #{song.trackGain}, #{song.trackPeak}, #{song.composer}, #{song.lyricist},
+                #{song.arranger}, #{song.producer}, #{song.extraTags}, #{song.sortTitle}, #{song.fileMtime}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            title           = IF(VALUES(title)           IS NOT NULL, VALUES(title),           title),
+            file_path       = VALUES(file_path),
+            file_name       = IF(VALUES(file_name)       IS NOT NULL, VALUES(file_name),       file_name),
+            file_format     = IF(VALUES(file_format)     IS NOT NULL, VALUES(file_format),     file_format),
+            file_size       = IF(VALUES(file_size)       IS NOT NULL, VALUES(file_size),       file_size),
+            file_hash       = IF(VALUES(file_hash)       IS NOT NULL, VALUES(file_hash),       file_hash),
+            fingerprint     = IF(VALUES(fingerprint)     IS NOT NULL, VALUES(fingerprint),     fingerprint),
+            duration        = IF(VALUES(duration)        IS NOT NULL, VALUES(duration),        duration),
+            cover_path      = IF(VALUES(cover_path)      IS NOT NULL, VALUES(cover_path),      cover_path),
+            `year`          = IF(VALUES(`year`)          IS NOT NULL, VALUES(`year`),          `year`),
+            bitrate         = IF(VALUES(bitrate)         IS NOT NULL, VALUES(bitrate),         bitrate),
+            sample_rate     = IF(VALUES(sample_rate)     IS NOT NULL, VALUES(sample_rate),     sample_rate),
+            channels        = IF(VALUES(channels)        IS NOT NULL, VALUES(channels),        channels),
+            bits_per_sample = IF(VALUES(bits_per_sample) IS NOT NULL, VALUES(bits_per_sample), bits_per_sample),
+            language        = IF(VALUES(language)        IS NOT NULL, VALUES(language),        language),
+            album_id        = IF(VALUES(album_id)        IS NOT NULL, VALUES(album_id),        album_id),
+            track_number    = IF(VALUES(track_number)    IS NOT NULL, VALUES(track_number),    track_number),
+            disc_number     = IF(VALUES(disc_number)     IS NOT NULL, VALUES(disc_number),     disc_number),
+            track_gain      = IF(VALUES(track_gain)      IS NOT NULL, VALUES(track_gain),      track_gain),
+            track_peak      = IF(VALUES(track_peak)      IS NOT NULL, VALUES(track_peak),      track_peak),
+            composer        = IF(VALUES(composer)        IS NOT NULL, VALUES(composer),        composer),
+            lyricist        = IF(VALUES(lyricist)        IS NOT NULL, VALUES(lyricist),        lyricist),
+            arranger        = IF(VALUES(arranger)        IS NOT NULL, VALUES(arranger),        arranger),
+            producer        = IF(VALUES(producer)        IS NOT NULL, VALUES(producer),        producer),
+            extra_tags      = IF(VALUES(extra_tags)      IS NOT NULL, VALUES(extra_tags),      extra_tags),
+            sort_title      = IF(VALUES(sort_title)      IS NOT NULL, VALUES(sort_title),      sort_title),
+            file_mtime      = IF(VALUES(file_mtime)      IS NOT NULL, VALUES(file_mtime),      file_mtime),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectSongIdByFilePath" resultType="long">
+        SELECT id FROM song WHERE file_path = #{filePath}
+    </select>
+
+    <insert id="batchUpsertSongs" databaseId="h2">
+        MERGE INTO song AS t
+        USING (VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.title}, #{item.filePath}, #{item.fileName}, #{item.fileFormat}, #{item.fileSize}, #{item.fileHash},
+             #{item.fingerprint}, #{item.duration}, #{item.coverPath}, #{item.year}, #{item.bitrate}, #{item.sampleRate},
+             #{item.channels}, #{item.bitsPerSample}, #{item.language}, #{item.albumId}, #{item.trackNumber},
+             #{item.discNumber}, #{item.trackGain}, #{item.trackPeak}, #{item.composer}, #{item.lyricist},
+             #{item.arranger}, #{item.producer}, #{item.extraTags}, #{item.sortTitle}, #{item.fileMtime})
+        </foreach>
+        ) AS s(title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id, track_number,
+               disc_number, track_gain, track_peak, composer, lyricist,
+               arranger, producer, extra_tags, sort_title, file_mtime)
+        ON t.file_path = s.file_path
+        WHEN MATCHED THEN UPDATE SET
+            title = CASE WHEN s.title IS NOT NULL THEN s.title ELSE t.title END,
+            file_name = CASE WHEN s.file_name IS NOT NULL THEN s.file_name ELSE t.file_name END,
+            file_format = CASE WHEN s.file_format IS NOT NULL THEN s.file_format ELSE t.file_format END,
+            file_size = CASE WHEN s.file_size IS NOT NULL THEN s.file_size ELSE t.file_size END,
+            file_hash = CASE WHEN s.file_hash IS NOT NULL THEN s.file_hash ELSE t.file_hash END,
+            fingerprint = CASE WHEN s.fingerprint IS NOT NULL THEN s.fingerprint ELSE t.fingerprint END,
+            duration = CASE WHEN s.duration IS NOT NULL THEN s.duration ELSE t.duration END,
+            cover_path = CASE WHEN s.cover_path IS NOT NULL THEN s.cover_path ELSE t.cover_path END,
+            "year" = CASE WHEN s."year" IS NOT NULL THEN s."year" ELSE t."year" END,
+            bitrate = CASE WHEN s.bitrate IS NOT NULL THEN s.bitrate ELSE t.bitrate END,
+            sample_rate = CASE WHEN s.sample_rate IS NOT NULL THEN s.sample_rate ELSE t.sample_rate END,
+            channels = CASE WHEN s.channels IS NOT NULL THEN s.channels ELSE t.channels END,
+            bits_per_sample = CASE WHEN s.bits_per_sample IS NOT NULL THEN s.bits_per_sample ELSE t.bits_per_sample END,
+            language = CASE WHEN s.language IS NOT NULL THEN s.language ELSE t.language END,
+            album_id = CASE WHEN s.album_id IS NOT NULL THEN s.album_id ELSE t.album_id END,
+            track_number = CASE WHEN s.track_number IS NOT NULL THEN s.track_number ELSE t.track_number END,
+            disc_number = CASE WHEN s.disc_number IS NOT NULL THEN s.disc_number ELSE t.disc_number END,
+            track_gain = CASE WHEN s.track_gain IS NOT NULL THEN s.track_gain ELSE t.track_gain END,
+            track_peak = CASE WHEN s.track_peak IS NOT NULL THEN s.track_peak ELSE t.track_peak END,
+            composer = CASE WHEN s.composer IS NOT NULL THEN s.composer ELSE t.composer END,
+            lyricist = CASE WHEN s.lyricist IS NOT NULL THEN s.lyricist ELSE t.lyricist END,
+            arranger = CASE WHEN s.arranger IS NOT NULL THEN s.arranger ELSE t.arranger END,
+            producer = CASE WHEN s.producer IS NOT NULL THEN s.producer ELSE t.producer END,
+            extra_tags = CASE WHEN s.extra_tags IS NOT NULL THEN s.extra_tags ELSE t.extra_tags END,
+            sort_title = CASE WHEN s.sort_title IS NOT NULL THEN s.sort_title ELSE t.sort_title END,
+            file_mtime = CASE WHEN s.file_mtime IS NOT NULL THEN s.file_mtime ELSE t.file_mtime END,
+            update_time = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN INSERT (title, file_path, file_name, file_format, file_size, file_hash,
+            fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+            channels, bits_per_sample, language, album_id, track_number,
+            disc_number, track_gain, track_peak, composer, lyricist,
+            arranger, producer, extra_tags, sort_title, file_mtime, update_time)
+            VALUES (s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+            s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+            s.channels, s.bits_per_sample, s.language, s.album_id, s.track_number,
+            s.disc_number, s.track_gain, s.track_peak, s.composer, s.lyricist,
+            s.arranger, s.producer, s.extra_tags, s.sort_title, s.file_mtime, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="batchUpsertSongs" databaseId="mysql">
+        INSERT INTO song (title, file_path, file_name, file_format, file_size, file_hash,
+                          fingerprint, duration, cover_path, `year`, bitrate, sample_rate,
+                          channels, bits_per_sample, language, album_id, track_number,
+                          disc_number, track_gain, track_peak, composer, lyricist,
+                          arranger, producer, extra_tags, sort_title, file_mtime, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.title}, #{item.filePath}, #{item.fileName}, #{item.fileFormat}, #{item.fileSize}, #{item.fileHash},
+             #{item.fingerprint}, #{item.duration}, #{item.coverPath}, #{item.year}, #{item.bitrate}, #{item.sampleRate},
+             #{item.channels}, #{item.bitsPerSample}, #{item.language}, #{item.albumId}, #{item.trackNumber},
+             #{item.discNumber}, #{item.trackGain}, #{item.trackPeak}, #{item.composer}, #{item.lyricist},
+             #{item.arranger}, #{item.producer}, #{item.extraTags}, #{item.sortTitle}, #{item.fileMtime}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            title           = IF(VALUES(title)           IS NOT NULL, VALUES(title),           title),
+            file_path       = VALUES(file_path),
+            file_name       = IF(VALUES(file_name)       IS NOT NULL, VALUES(file_name),       file_name),
+            file_format     = IF(VALUES(file_format)     IS NOT NULL, VALUES(file_format),     file_format),
+            file_size       = IF(VALUES(file_size)       IS NOT NULL, VALUES(file_size),       file_size),
+            file_hash       = IF(VALUES(file_hash)       IS NOT NULL, VALUES(file_hash),       file_hash),
+            fingerprint     = IF(VALUES(fingerprint)     IS NOT NULL, VALUES(fingerprint),     fingerprint),
+            duration        = IF(VALUES(duration)        IS NOT NULL, VALUES(duration),        duration),
+            cover_path      = IF(VALUES(cover_path)      IS NOT NULL, VALUES(cover_path),      cover_path),
+            `year`          = IF(VALUES(`year`)          IS NOT NULL, VALUES(`year`),          `year`),
+            bitrate         = IF(VALUES(bitrate)         IS NOT NULL, VALUES(bitrate),         bitrate),
+            sample_rate     = IF(VALUES(sample_rate)     IS NOT NULL, VALUES(sample_rate),     sample_rate),
+            channels        = IF(VALUES(channels)        IS NOT NULL, VALUES(channels),        channels),
+            bits_per_sample = IF(VALUES(bits_per_sample) IS NOT NULL, VALUES(bits_per_sample), bits_per_sample),
+            language        = IF(VALUES(language)        IS NOT NULL, VALUES(language),        language),
+            album_id        = IF(VALUES(album_id)        IS NOT NULL, VALUES(album_id),        album_id),
+            track_number    = IF(VALUES(track_number)    IS NOT NULL, VALUES(track_number),    track_number),
+            disc_number     = IF(VALUES(disc_number)     IS NOT NULL, VALUES(disc_number),     disc_number),
+            track_gain      = IF(VALUES(track_gain)      IS NOT NULL, VALUES(track_gain),      track_gain),
+            track_peak      = IF(VALUES(track_peak)      IS NOT NULL, VALUES(track_peak),      track_peak),
+            composer        = IF(VALUES(composer)        IS NOT NULL, VALUES(composer),        composer),
+            lyricist        = IF(VALUES(lyricist)        IS NOT NULL, VALUES(lyricist),        lyricist),
+            arranger        = IF(VALUES(arranger)        IS NOT NULL, VALUES(arranger),        arranger),
+            producer        = IF(VALUES(producer)        IS NOT NULL, VALUES(producer),        producer),
+            extra_tags      = IF(VALUES(extra_tags)      IS NOT NULL, VALUES(extra_tags),      extra_tags),
+            sort_title      = IF(VALUES(sort_title)      IS NOT NULL, VALUES(sort_title),      sort_title),
+            file_mtime      = IF(VALUES(file_mtime)      IS NOT NULL, VALUES(file_mtime),      file_mtime),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectSongIdsByFilePaths" resultType="map">
+        SELECT file_path, id FROM song WHERE file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         Relationships
+         ══════════════════════════════════════════════════ -->
+
+    <insert id="insertSongArtist" databaseId="h2">
+        MERGE INTO song_artist (song_id, artist_id, sort_order) KEY(song_id, artist_id) VALUES (#{songId}, #{artistId}, #{sortOrder})
+    </insert>
+
+    <insert id="insertSongArtist" databaseId="mysql">
+        INSERT INTO song_artist (song_id, artist_id, sort_order) VALUES (#{songId}, #{artistId}, #{sortOrder})
+        ON DUPLICATE KEY UPDATE sort_order = VALUES(sort_order)
+    </insert>
+
+    <insert id="insertSongStyle" databaseId="h2">
+        MERGE INTO song_style (song_id, style_id) KEY(song_id, style_id) VALUES (#{songId}, #{styleId})
+    </insert>
+
+    <insert id="insertSongStyle" databaseId="mysql">
+        INSERT IGNORE INTO song_style (song_id, style_id) VALUES (#{songId}, #{styleId})
+    </insert>
+
+    <insert id="batchInsertSongArtists" databaseId="h2">
+        MERGE INTO song_artist (song_id, artist_id, sort_order) KEY(song_id, artist_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.songId}, #{item.artistId}, #{item.sortOrder})
+        </foreach>
+    </insert>
+
+    <insert id="batchInsertSongArtists" databaseId="mysql">
+        INSERT INTO song_artist (song_id, artist_id, sort_order) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.songId}, #{item.artistId}, #{item.sortOrder})
+        </foreach>
+        ON DUPLICATE KEY UPDATE sort_order = VALUES(sort_order)
+    </insert>
+
+    <insert id="batchInsertSongStyles" databaseId="h2">
+        MERGE INTO song_style (song_id, style_id) KEY(song_id, style_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.songId}, #{item.styleId})
+        </foreach>
+    </insert>
+
+    <insert id="batchInsertSongStyles" databaseId="mysql">
+        INSERT IGNORE INTO song_style (song_id, style_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.songId}, #{item.styleId})
+        </foreach>
+    </insert>
+
+    <!-- ══════════════════════════════════════════════════
+         Song Result Map + ID 查询
+         ══════════════════════════════════════════════════ -->
+
+    <resultMap id="songResultMap" type="com.gjl.music.model.Song">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="file_path" property="filePath"/>
+        <result column="file_name" property="fileName"/>
+        <result column="file_format" property="fileFormat"/>
+        <result column="file_size" property="fileSize"/>
+        <result column="file_hash" property="fileHash"/>
+        <result column="fingerprint" property="fingerprint"/>
+        <result column="duration" property="duration"/>
+        <result column="cover_path" property="coverPath"/>
+        <result column="year" property="year"/>
+        <result column="bitrate" property="bitrate"/>
+        <result column="sample_rate" property="sampleRate"/>
+        <result column="channels" property="channels"/>
+        <result column="bits_per_sample" property="bitsPerSample"/>
+        <result column="language" property="language"/>
+        <result column="album_id" property="albumId"/>
+        <result column="track_number" property="trackNumber"/>
+        <result column="disc_number" property="discNumber"/>
+        <result column="track_gain" property="trackGain"/>
+        <result column="track_peak" property="trackPeak"/>
+        <result column="composer" property="composer"/>
+        <result column="lyricist" property="lyricist"/>
+        <result column="arranger" property="arranger"/>
+        <result column="producer" property="producer"/>
+        <result column="extra_tags" property="extraTags"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="sort_title" property="sortTitle"/>
+        <result column="artist_name" property="artistName"/>
+        <result column="album_name" property="albumName"/>
+        <result column="artist_id" property="artistId"/>
+    </resultMap>
+
+    <select id="findSongById" resultMap="songResultMap">
+        SELECT s.id, s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+               s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id,
+               a.artist_name,
+               al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.id = #{id}
+        ORDER BY sa.sort_order
+        LIMIT 1
+    </select>
+
+    <select id="findSongByFilePath" resultMap="songResultMap">
+        SELECT id, title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id,
+               track_number, disc_number, track_gain, track_peak,
+               composer, lyricist, arranger, producer, extra_tags,
+               create_time, update_time
+        FROM song WHERE file_path = #{filePath}
+    </select>
+
+    <select id="findSongsByIds" resultMap="songResultMap">
+        SELECT s.id, s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+               s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findSongsByAlbumIds" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.album_id IN
+        <foreach collection="albumIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY s.album_id, s.disc_number ASC NULLS FIRST, s.track_number ASC NULLS FIRST
+    </select>
+
+    <select id="findSongsByAlbumId" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.album_id = #{albumId}
+        ORDER BY s.disc_number ASC NULLS FIRST, s.track_number ASC NULLS FIRST
+    </select>
+
+    <select id="findSongsByArtistId" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        INNER JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE sa.artist_id = #{artistId}
+        ORDER BY s.album_id, s.disc_number ASC NULLS FIRST, s.track_number ASC NULLS FIRST
+    </select>
+
+    <select id="findAllSongIds" resultType="long">
+        SELECT id FROM song ORDER BY id
+    </select>
+
+    <select id="countAllSongs" resultType="int">
+        SELECT COUNT(*) FROM song
+    </select>
+
+    <select id="findSongIdsUpdatedAfter" resultType="long">
+        SELECT id FROM song WHERE update_time >= #{since} ORDER BY id
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         关联查询
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findFirstArtistIdBySongId" resultType="java.lang.Integer">
+        SELECT sa.artist_id FROM song_artist sa
+        WHERE sa.song_id = #{songId}
+        ORDER BY sa.sort_order
+        LIMIT 1
+    </select>
+
+    <select id="findFirstGenreBySongId" resultType="string">
+        SELECT st.style_name FROM song_style ss
+        JOIN style st ON ss.style_id = st.id
+        WHERE ss.song_id = #{songId}
+        ORDER BY ss.song_id, ss.style_id
+        LIMIT 1
+    </select>
+
+    <select id="findGenresBySongIds" resultType="map">
+        SELECT ss.song_id AS songId, st.style_name AS styleName
+        FROM song_style ss
+        JOIN style st ON ss.style_id = st.id
+        WHERE ss.song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY ss.song_id, ss.style_id
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         批量艺术家查询（全部艺术家，不限于主艺术家）
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findSongArtistsBySongIds" resultType="map">
+        SELECT sa.song_id   AS songId,
+               sa.artist_id AS artistId,
+               sa.sort_order AS sortOrder,
+               a.artist_name AS artistName
+        FROM song_artist sa
+        JOIN artist a ON sa.artist_id = a.id
+        WHERE sa.song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY sa.song_id, sa.sort_order
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         Cover Art Fallback 查询
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findFirstSongCoverByAlbumId" resultType="string">
+        SELECT cover_path FROM song
+        WHERE album_id = #{albumId} AND cover_path IS NOT NULL AND cover_path != ''
+        ORDER BY track_number ASC, disc_number ASC
+        LIMIT 1
+    </select>
+
+    <select id="findFirstAlbumCoverByArtistId" resultType="string">
+        SELECT album_cover FROM album
+        WHERE artist_id = #{artistId} AND album_cover IS NOT NULL AND album_cover != ''
+        ORDER BY album_year DESC
+        LIMIT 1
+    </select>
+
+    <select id="findFirstSongCoverByArtistId" resultType="string">
+        SELECT s.cover_path FROM song s
+        JOIN song_artist sa ON s.id = sa.song_id
+        WHERE sa.artist_id = #{artistId} AND s.cover_path IS NOT NULL AND s.cover_path != ''
+        ORDER BY s.create_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         冗余计数刷新（写入路径调用）
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findAlbumIdsBySongIds" resultType="long">
+        SELECT DISTINCT album_id FROM song
+        WHERE id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND album_id IS NOT NULL
+    </select>
+
+    <select id="findArtistIdsBySongIds" resultType="long">
+        SELECT DISTINCT artist_id FROM song_artist
+        WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findStyleIdsBySongIds" resultType="long">
+        SELECT DISTINCT style_id FROM song_style
+        WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="updateAlbumSongCounts">
+        UPDATE album SET song_count = (
+            SELECT COUNT(*) FROM song WHERE song.album_id = album.id
+        ), update_time = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="albumIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateArtistAlbumCounts">
+        UPDATE artist SET album_count = (
+            SELECT COUNT(*) FROM album WHERE album.artist_id = artist.id
+        ), update_time = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="artistIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateArtistSongCounts">
+        UPDATE artist SET song_count = (
+            SELECT COUNT(*) FROM song s
+            INNER JOIN song_artist sa ON s.id = sa.song_id
+            WHERE sa.artist_id = artist.id
+        ), update_time = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="artistIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateStyleSongCounts">
+        UPDATE style SET song_count = (
+            SELECT COUNT(*) FROM song_style WHERE song_style.style_id = style.id
+        ), update_time = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="styleIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="findSongIdsByStyleId" resultType="long">
+        SELECT song_id FROM song_style WHERE style_id = #{styleId}
+    </select>
+
+    <select id="findSongsByPathPrefix" resultMap="songResultMap">
+        SELECT s.id, s.title, s.file_path, s.file_name, s.file_format, s.file_size, s.file_hash,
+               s.fingerprint, s.duration, s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.file_path LIKE CONCAT(#{prefix}, '/%')
+        ORDER BY s.file_path
+    </select>
+
+    <!-- 查指定专辑的第一个风格名称（Subsonic getAlbum genre 字段） -->
+    <select id="findFirstGenreByAlbumId" resultType="string">
+        SELECT st.style_name FROM style st
+        INNER JOIN song_style ss ON st.id = ss.style_id
+        INNER JOIN song s ON ss.song_id = s.id
+        WHERE s.album_id = #{albumId}
+        ORDER BY st.song_count DESC
+        LIMIT 1
+    </select>
+
+</mapper>

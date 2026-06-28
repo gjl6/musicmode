@@ -1,26 +1,47 @@
 <template>
   <div class="song-detail-page">
-
+    <!-- ═══ 面包屑导航 ═══ -->
     <div class="breadcrumb">
       <n-button text class="back-btn" @click="goBack">
         <template #icon><n-icon :size="18"><ChevronBackOutline /></n-icon></template>
       </n-button>
       <span class="breadcrumb-sep">/</span>
+      <span v-if="song?.artists && song.artists.length > 1" class="breadcrumb-text">
+        <span
+          v-for="(a, i) in song.artists"
+          :key="a.id"
+          class="breadcrumb-link"
+          @click="goArtist(a.id)"
+        >{{ a.name }}<span v-if="i < song.artists.length - 1"> / </span></span>
+      </span>
       <span
-        v-if="song?.artistId"
+        v-else-if="song?.artistId"
         class="breadcrumb-link"
         @click="goArtist(song.artistId)"
-      >{{ song.artist || '—' }}</span>
-      <span v-else class="breadcrumb-text">{{ song?.artist || '—' }}</span>
+      >{{ displayArtist }}</span>
+      <span v-else class="breadcrumb-text">{{ displayArtist }}</span>
       <span class="breadcrumb-sep">/</span>
       <span class="breadcrumb-current">{{ song?.title || '—' }}</span>
+      <n-input
+        v-model:value="searchText"
+        :placeholder="$t('player.searchPlaceholder')"
+        size="tiny"
+        clearable
+        round
+        style="width:160px;margin-left:auto"
+        @keyup.enter="doSearch"
+      >
+        <template #prefix>
+          <n-icon :size="14"><SearchOutline /></n-icon>
+        </template>
+      </n-input>
     </div>
 
     <n-spin :show="loading" size="medium">
       <template v-if="song">
-
+        <!-- ═══ 双栏布局 ═══ -->
         <div class="detail-body">
-
+          <!-- ── 左栏：封面 + 信息 ── -->
           <div class="detail-left">
             <div class="cover-wrap">
               <img
@@ -36,18 +57,26 @@
               </div>
             </div>
 
-
+            <!-- 艺术家 -->
             <div class="info-block">
               <span class="info-label">艺术家</span>
+              <span v-if="song.artists && song.artists.length > 1" class="info-text">
+                <span
+                  v-for="(a, i) in song.artists"
+                  :key="a.id"
+                  class="info-link"
+                  @click="goArtist(a.id)"
+                >{{ a.name }}<span v-if="i < song.artists.length - 1"> / </span></span>
+              </span>
               <span
-                v-if="song.artistId"
+                v-else-if="song.artistId"
                 class="info-link"
                 @click="goArtist(song.artistId)"
-              >{{ song.artist || '—' }}</span>
-              <span v-else class="info-text">{{ song.artist || '—' }}</span>
+              >{{ displayArtist }}</span>
+              <span v-else class="info-text">{{ displayArtist }}</span>
             </div>
 
-
+            <!-- 专辑 -->
             <div class="info-block">
               <span class="info-label">专辑</span>
               <span
@@ -58,7 +87,7 @@
               <span v-else class="info-text">{{ song.album || '—' }}</span>
             </div>
 
-
+            <!-- 元数据标签 -->
             <div class="meta-tags">
               <div v-if="song.duration" class="meta-item">
                 <n-icon :size="14"><TimeOutline /></n-icon>
@@ -90,7 +119,7 @@
               </div>
             </div>
 
-
+            <!-- 评分 -->
             <div class="info-block">
               <span class="info-label">评分</span>
               <StarRatingComp
@@ -101,7 +130,7 @@
               />
             </div>
 
-
+            <!-- 操作按钮 -->
             <div class="action-btns">
               <n-button type="primary" size="medium" round block @click="playSong">
                 <template #icon><n-icon :size="18"><PlayOutline /></n-icon></template>
@@ -134,15 +163,15 @@
             </div>
           </div>
 
-
+          <!-- ── 右栏：歌词 ── -->
           <div class="detail-right">
-
+            <!-- 加载中 -->
             <div v-if="lyricsLoading" class="lyrics-status">
               <n-spin :size="20" />
               <span>{{ $t('fullscreen.loading') }}</span>
             </div>
 
-
+            <!-- 同步 LRC 歌词 -->
             <div
               v-else-if="lyricsSynced && lyricsLines.length"
               ref="lyricsScrollRef"
@@ -161,7 +190,7 @@
               </div>
             </div>
 
-
+            <!-- 纯文本歌词 -->
             <div v-else-if="lyricsLines.length" class="lyrics-plain">
               <div
                 v-for="(line, i) in lyricsLines"
@@ -170,7 +199,7 @@
               >{{ line.value }}</div>
             </div>
 
-
+            <!-- 暂无歌词 -->
             <div v-else class="lyrics-status">
               <n-icon :size="32" color="var(--ct-text-3)"><MusicalNotesOutline /></n-icon>
               <span>{{ $t('songDetail.noLyrics') }}</span>
@@ -180,7 +209,7 @@
         </div>
       </template>
 
-
+      <!-- Not found -->
       <n-empty
         v-else-if="!loading"
         :description="$t('player.noData')"
@@ -189,7 +218,7 @@
       />
     </n-spin>
 
-
+    <!-- 添加到歌单弹窗 -->
     <AddToPlaylistModal
       :show="showAddModal"
       :song-ids="addSongIds"
@@ -203,6 +232,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { SearchOutline } from '@vicons/ionicons5'
 import {
   MusicalNotesOutline, PlayOutline, AddOutline, HeartOutline, Heart,
   ChevronBackOutline, TimeOutline, CalendarOutline, PricetagsOutline,
@@ -218,6 +248,15 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
+
 const player = usePlayerStore()
 const { t } = useI18n()
 
@@ -229,12 +268,14 @@ const lyricsLoading = ref(false)
 const activeLine = ref(-1)
 const isFavorited = computed(() => player.isSongStarred(song.value?.id))
 const userRating = computed(() => Number(song.value?.userRating) || 0)
+const displayArtist = computed(() => song.value?.displayArtist || song.value?.artist || '—')
 
 const coverUrl = computed(() => {
   const artId = song.value?.coverArt || song.value?.albumId
   return artId ? subsonicGetCoverArtUrl(artId, 300) : ''
 })
 
+// ── 格式化 ──
 
 function formatDuration(s) {
   if (!s || !isFinite(s)) return '—'
@@ -250,11 +291,20 @@ function formatSize(bytes) {
   return `${(bytes / 1048576).toFixed(1)} MB`
 }
 
+// ── 数据加载 ──
 
-onMounted(async () => {
+onMounted(() => loadSongData())
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId && newId !== oldId) loadSongData()
+})
+
+async function loadSongData() {
   const id = route.params.id
   if (!id) return
   loading.value = true
+  lyricsLines.value = []
+  lyricsSynced.value = false
+  activeLine.value = -1
   try {
     const data = await subsonicGetSong(id)
     song.value = data?.['subsonic-response']?.song || data?.song || null
@@ -267,7 +317,7 @@ onMounted(async () => {
     loading.value = false
   }
   player.loadFavoriteIds()
-})
+}
 
 async function loadLyrics(songId) {
   lyricsLoading.value = true
@@ -285,6 +335,7 @@ async function loadLyrics(songId) {
   }
 }
 
+// ── 歌词时间同步 ──
 
 watch(
   () => [player.currentTime, player.current?.id],
@@ -303,6 +354,7 @@ watch(
   },
 )
 
+// ── 歌词滚动 ──
 
 const lyricsScrollRef = ref(null)
 watch(activeLine, (idx) => {
@@ -313,6 +365,7 @@ watch(activeLine, (idx) => {
   })
 })
 
+// ── 操作 ──
 
 function playSong() { if (song.value) player.play(song.value) }
 function addToQueue() { if (song.value) player.addToQueue([song.value]) }
@@ -332,6 +385,7 @@ function onRated(val) {
   if (song.value) song.value.userRating = val
 }
 
+// ── 添加到歌单 ──
 
 const showAddModal = ref(false)
 const addSongIds = ref([])
@@ -348,7 +402,9 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
 </script>
 
 <style scoped>
-
+/* ════════════════════════════════════════════════════
+   歌曲详情页 — 双栏分屏布局
+   ════════════════════════════════════════════════════ */
 
 .song-detail-page {
   width: min(100% - var(--content-padding-x) * 2, var(--content-max-width-narrow));
@@ -356,7 +412,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   padding: 20px 0 32px;
 }
 
-
+/* ── 面包屑 ── */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -399,14 +455,14 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   white-space: nowrap;
 }
 
-
+/* ═══ 双栏 ═══ */
 .detail-body {
   display: flex;
   gap: 40px;
   align-items: flex-start;
 }
 
-
+/* ── 左栏 ── */
 .detail-left {
   flex: 0 0 300px;
   display: flex;
@@ -414,7 +470,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   gap: 16px;
 }
 
-
+/* 封面 */
 .cover-wrap {
   width: 300px;
   height: 300px;
@@ -436,7 +492,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   justify-content: center;
 }
 
-
+/* 信息块 */
 .info-block {
   display: flex;
   align-items: baseline;
@@ -464,7 +520,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   white-space: nowrap;
 }
 
-
+/* 元数据标签 */
 .meta-tags {
   display: flex;
   flex-wrap: wrap;
@@ -484,7 +540,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   color: var(--ct-text-3);
 }
 
-
+/* 操作按钮 */
 .action-btns {
   display: flex;
   flex-direction: column;
@@ -501,7 +557,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   background: var(--ct-bg-hover) !important;
 }
 
-
+/* ── 右栏：歌词 ── */
 .detail-right {
   flex: 1;
   min-width: 0;
@@ -513,7 +569,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   overflow: hidden;
 }
 
-
+/* 歌词状态 */
 .lyrics-status {
   flex: 1;
   display: flex;
@@ -530,7 +586,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   margin: 0;
 }
 
-
+/* 同步滚动歌词 */
 .lyrics-scroll {
   flex: 1;
   overflow-y: auto;
@@ -563,7 +619,7 @@ function goAlbum(id) { if (id) router.push(`/player/albums/${id}`) }
   background: linear-gradient(90deg, transparent, rgb(var(--ct-accent-rgb) / 0.06), transparent);
 }
 
-
+/* 纯文本歌词 */
 .lyrics-plain {
   flex: 1;
   overflow-y: auto;

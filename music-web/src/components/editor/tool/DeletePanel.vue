@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="del-main">
-
+      <!-- 1. 顶部标题栏 -->
       <div class="del-topbar">
         <span class="del-title">{{ t('deleteModule.title') }}</span>
         <n-tag type="error" size="small" :bordered="false">
@@ -13,7 +13,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 2. 模式选择 -->
       <div class="del-section">
         <div class="del-section-header">
           <span class="del-section-title">{{ t('deleteModule.mode') }}</span>
@@ -29,7 +29,7 @@
         </n-text>
       </div>
 
-
+      <!-- 3. 警告区 -->
       <div class="del-section">
         <n-alert type="error" :bordered="false" class="del-warning-alert">
           <template #header>
@@ -39,7 +39,7 @@
         </n-alert>
       </div>
 
-
+      <!-- 4. 模式 1&2: 目标路径显示 -->
       <div v-if="deleteMode !== 'selected'" class="del-section">
         <div class="del-section-header">
           <span class="del-section-title">{{ t('deleteModule.targetPath') }}</span>
@@ -47,14 +47,14 @@
         <n-text code class="del-path">{{ props.targetPath || '/' }}</n-text>
       </div>
 
-
+      <!-- 5. 模式 3: 选中项统计 -->
       <div v-if="deleteMode === 'selected'" class="del-section">
         <div class="del-section-header">
           <span class="del-section-title">{{ t('deleteModule.selectedCount', { n: totalSelected }) }}</span>
         </div>
       </div>
 
-
+      <!-- 6. 操作按钮区 -->
       <div class="del-section">
         <n-popconfirm
           :positive-text="t('common.confirm')"
@@ -78,15 +78,7 @@
         </n-popconfirm>
       </div>
 
-
-      <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="del-result-alert">
-        <template #header>
-          <span v-if="result.success">{{ t('common.success') }}</span>
-          <span v-else>{{ t('common.error') }}</span>
-        </template>
-        <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-      </n-alert>
-
+      <!-- 7. 结果区 -->
       <n-alert v-if="error" type="error" class="del-result-alert">{{ error }}</n-alert>
     </div>
   </ToolPanelLayout>
@@ -114,7 +106,6 @@ const message = useMessage()
 
 const deleteMode = ref('empty-folders')
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
 const modeOptions = [
@@ -175,13 +166,13 @@ const canSubmit = computed(() => {
   if (deleteMode.value === 'selected') {
     return totalSelected.value > 0
   }
-    return !!props.targetPath
+  // 模式 1/2: 只需要有目标路径
+  return !!props.targetPath
 })
 
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
@@ -190,12 +181,11 @@ async function handleSubmit() {
       path: props.targetPath,
     }
     const res = await runTool('deleteFiles', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('common.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('common.error'))
+      message?.error(res?.error || t('common.error'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')
@@ -216,7 +206,7 @@ async function handleSubmit() {
   overflow-y: auto;
 }
 
-
+/* 1. 顶部标题栏 */
 .del-topbar {
   display: flex;
   align-items: center;
@@ -230,7 +220,7 @@ async function handleSubmit() {
   color: var(--ct-text);
 }
 
-
+/* section 通用 */
 .del-section {
   display: flex;
   flex-direction: column;
@@ -250,14 +240,14 @@ async function handleSubmit() {
   font-size: 12px;
 }
 
-
+/* 路径显示 */
 .del-path {
   font-size: 13px;
   padding: 6px 12px;
   word-break: break-all;
 }
 
-
+/* 警告 */
 .del-warning-alert {
   --n-padding: 12px 16px;
 }
@@ -267,7 +257,7 @@ async function handleSubmit() {
   color: var(--ct-text-2);
 }
 
-
+/* 结果 */
 .del-result-alert {
   margin-top: 4px;
 }

@@ -16,7 +16,8 @@ export function useEditAction() {
       fileStore.setSelectedIds([file.id])
     }
 
-        appStore.openDrawer()
+    // 先打开空抽屉，双 rAF 确保浏览器先 paint 一帧动画再渲染表单
+    appStore.openDrawer()
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const meta = file.meta
@@ -27,7 +28,8 @@ export function useEditAction() {
           year: songField(meta, 'year') || file.year || 0,
           genre: meta?.styles?.[0]?.styleName || file.genre || '',
         })
-                fetchMetadata(file.path)
+        // 后台异步获取完整元数据，静默更新
+        fetchMetadata(file.path)
           .then(res => {
             editStore.refreshMeta(file, res)
           })

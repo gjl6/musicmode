@@ -13,7 +13,7 @@
 <script setup>
 defineProps({
   items: { type: Array, required: true },
-
+  /** Array<{ icon: Component, value: number|string, label: string, color?: string }> */
 })
 </script>
 

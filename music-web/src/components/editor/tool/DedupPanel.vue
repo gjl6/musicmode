@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="dp-main">
-
+      <!-- 1. 顶部标题栏 -->
       <div class="dp-topbar">
         <span class="dp-title">{{ t('workbench.tools.dedup') }}</span>
         <n-tag type="warning" size="small" :bordered="false">
@@ -13,7 +13,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 2. 功能说明区 -->
       <div class="dp-section">
         <div class="dp-section-header">
           <span class="dp-section-title">{{ t('encodingRepair.featureDesc') }}</span>
@@ -26,7 +26,7 @@
         </n-alert>
       </div>
 
-
+      <!-- 3. 检测策略区 -->
       <div class="dp-section">
         <div class="dp-section-header">
           <span class="dp-section-title">{{ t('tool.dedupStrategies') }}</span>
@@ -45,7 +45,7 @@
           <span class="dp-strategy-desc">{{ s.desc }}</span>
         </n-checkbox>
 
-
+        <!-- metadata 子选项 -->
         <div class="dp-sub-options" v-if="selectedStrategies.includes('metadata')">
           <n-form-item :label="t('tool.dedupMetadataMode')" label-placement="left" size="small">
             <n-radio-group v-model:value="metadataMode" :disabled="processing" size="small">
@@ -56,7 +56,7 @@
           </n-form-item>
         </div>
 
-
+        <!-- fingerprint 子选项 -->
         <div class="dp-sub-options" v-if="selectedStrategies.includes('fingerprint')">
           <n-form-item :label="t('tool.dedupFingerprintThreshold')" label-placement="left" size="small">
             <n-slider v-model:value="fpThreshold" :min="0.60" :max="0.95" :step="0.05"
@@ -66,7 +66,7 @@
         </div>
       </div>
 
-
+      <!-- 4. 提交区 -->
       <div class="dp-section">
         <n-button
           type="primary"
@@ -77,14 +77,6 @@
         >
           {{ processing ? t('tool.processing') : t('tool.startProcessing') }}
         </n-button>
-
-        <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="dp-result-alert">
-          <template #header>
-            <span v-if="result.success">{{ t('tool.success') }}</span>
-            <span v-else>{{ t('tool.failure') }}</span>
-          </template>
-          <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-        </n-alert>
 
         <n-alert v-if="error" type="error" class="dp-result-alert">{{ error }}</n-alert>
       </div>
@@ -112,7 +104,6 @@ const { t } = useI18n()
 const message = useMessage()
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
 const allStrategies = [
@@ -141,7 +132,6 @@ function toggleStrategy(key, checked) {
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
@@ -154,12 +144,11 @@ async function handleSubmit() {
       },
     }
     const res = await runTool('dedup', options)
-    result.value = res
-    if (res.success) {
-      message.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message.error(res.error || t('tool.failure'))
+      message.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')

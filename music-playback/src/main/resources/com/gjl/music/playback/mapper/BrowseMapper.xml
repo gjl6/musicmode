@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.playback.mapper.BrowseMapper">
+
+    <!-- ══════════════════════════════════════════════════
+         Song ResultMap（复制自 SongMapper.xml，因为跨 namespace 无法引用）
+         ══════════════════════════════════════════════════ -->
+
+    <resultMap id="songResultMap" type="com.gjl.music.model.Song">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="file_path" property="filePath"/>
+        <result column="file_name" property="fileName"/>
+        <result column="file_format" property="fileFormat"/>
+        <result column="file_size" property="fileSize"/>
+        <result column="file_hash" property="fileHash"/>
+        <result column="fingerprint" property="fingerprint"/>
+        <result column="duration" property="duration"/>
+        <result column="cover_path" property="coverPath"/>
+        <result column="year" property="year"/>
+        <result column="bitrate" property="bitrate"/>
+        <result column="sample_rate" property="sampleRate"/>
+        <result column="channels" property="channels"/>
+        <result column="bits_per_sample" property="bitsPerSample"/>
+        <result column="language" property="language"/>
+        <result column="album_id" property="albumId"/>
+        <result column="track_number" property="trackNumber"/>
+        <result column="disc_number" property="discNumber"/>
+        <result column="track_gain" property="trackGain"/>
+        <result column="track_peak" property="trackPeak"/>
+        <result column="composer" property="composer"/>
+        <result column="lyricist" property="lyricist"/>
+        <result column="arranger" property="arranger"/>
+        <result column="producer" property="producer"/>
+        <result column="extra_tags" property="extraTags"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="sort_title" property="sortTitle"/>
+        <result column="artist_name" property="artistName"/>
+        <result column="album_name" property="albumName"/>
+        <result column="artist_id" property="artistId"/>
+    </resultMap>
+
+    <!-- ══════════════════════════════════════════════════
+         艺术家浏览
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findArtists" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                    AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                OR COALESCE(sort_artist_name, artist_name) IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "albumCount"'>
+                ORDER BY album_count DESC, artist_name
+            </when>
+            <when test='sort == "songCount"'>
+                ORDER BY song_count DESC, artist_name
+            </when>
+            <otherwise>
+                ORDER BY COALESCE(sort_artist_name, artist_name)
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countArtists" resultType="int">
+        SELECT COUNT(*) FROM artist
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt;= '0'
+                AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt; '0'
+                OR (SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &gt; '9'
+                    AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt; 'A')
+                OR UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt; 'Z'
+                OR COALESCE(sort_artist_name, artist_name) IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                COALESCE(sort_artist_name, artist_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="getArtistLetters" resultType="map">
+        SELECT
+            CASE
+                WHEN UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &gt;= 'A'
+                    AND UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1)) &lt;= 'Z'
+                    THEN UPPER(SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1))
+                WHEN SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) >= '0'
+                    AND SUBSTR(COALESCE(sort_artist_name, artist_name), 1, 1) &lt;= '9'
+                    THEN '0-9'
+                ELSE '#'
+            END AS letter,
+            COUNT(*) AS cnt
+        FROM artist
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <select id="findArtistIndex" resultType="map" databaseId="h2">
+        SELECT UPPER(LEFT(COALESCE(sort_artist_name, artist_name), 1)) AS letter, COUNT(*) AS cnt
+        FROM artist
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <select id="findArtistIndex" resultType="map" databaseId="mysql">
+        SELECT UPPER(LEFT(COALESCE(sort_artist_name, artist_name), 1)) AS letter, COUNT(*) AS cnt
+        FROM artist
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <!-- 一次性获取所有艺术家（简化字段，取代 N+1 按字母循环查询） -->
+    <select id="findAllArtistsSimple" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               album_count AS albumCount, song_count AS songCount
+        FROM artist
+        ORDER BY COALESCE(sort_artist_name, artist_name)
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         专辑浏览
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findAlbumsByType" resultType="com.gjl.music.model.Album">
+        SELECT album.id, album.album_name AS albumName, album.album_type AS albumType,
+               album.album_cover AS albumCover, album.introduction, album.album_year AS albumYear,
+               album.company, album.language, album.artist_id AS artistId, album.song_count AS songCount,
+               album.create_time AS createTime, album.update_time AS updateTime
+        FROM album
+        <if test="(type == 'frequent' or type == 'mostPlayed' or type == 'recent' or type == 'recentlyPlayed') and userId != null">
+            LEFT JOIN play_count pc ON pc.item_id = album.id
+                AND pc.item_type = 'album' AND pc.user_id = #{userId}
+        </if>
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) >= '0'
+                AND SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                (SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) &lt; '0'
+                OR (SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) > '9'
+                    AND SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) &lt; 'A')
+                OR (SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) > 'Z'
+                    AND SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) &lt; 'a')
+                OR SUBSTR(COALESCE(album.sort_album_name, album.album_name), 1, 1) > 'z'
+                OR (album.sort_album_name IS NULL AND album.album_name IS NULL))
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                COALESCE(album.sort_album_name, album.album_name) LIKE CONCAT(#{letter}, '%')
+            </if>
+            <if test="starred != null and starred == true">
+                AND album.id IN (SELECT item_id FROM user_starred WHERE item_type = 'album'
+                    AND user_id = (SELECT id FROM auth_user WHERE username = #{starredUsername}))
+            </if>
+            <if test="artistId != null">
+                AND album.artist_id = #{artistId}
+            </if>
+        </where>
+        <choose>
+            <when test="type == 'alphabetical' or type == 'alphabeticalByName'">
+                ORDER BY COALESCE(album.sort_album_name, album.album_name) ASC
+            </when>
+            <when test="type == 'random'">ORDER BY RAND()</when>
+            <when test="type == 'byYear'">ORDER BY album.album_year DESC NULLS LAST</when>
+            <when test="type == 'frequent' or type == 'mostPlayed'">
+                ORDER BY COALESCE(pc.play_count, 0) DESC,
+                    COALESCE(album.sort_album_name, album.album_name) ASC
+            </when>
+            <when test="type == 'recent' or type == 'recentlyPlayed'">
+                ORDER BY COALESCE(pc.last_played_at, album.create_time) DESC
+            </when>
+            <otherwise>ORDER BY album.create_time DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAlbumsByLetter" resultType="int">
+        SELECT COUNT(*) FROM album
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) >= '0'
+                AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; '0'
+                OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) > '9'
+                    AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'A')
+                OR (SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) > 'Z'
+                    AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt; 'a')
+                OR SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) > 'z'
+                OR (sort_album_name IS NULL AND album_name IS NULL))
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                album_name LIKE CONCAT(#{letter}, '%')
+            </if>
+            <if test="starred != null and starred == true">
+                AND album.id IN (SELECT item_id FROM user_starred WHERE item_type = 'album'
+                    AND user_id = (SELECT id FROM auth_user WHERE username = #{starredUsername}))
+            </if>
+            <if test="artistId != null">
+                AND album.artist_id = #{artistId}
+            </if>
+        </where>
+    </select>
+
+    <select id="getAlbumLetters" resultType="map">
+        SELECT
+            CASE
+                WHEN UPPER(SUBSTR(COALESCE(sort_album_name, album_name), 1, 1)) >= 'A'
+                    AND UPPER(SUBSTR(COALESCE(sort_album_name, album_name), 1, 1)) &lt;= 'Z'
+                    THEN UPPER(SUBSTR(COALESCE(sort_album_name, album_name), 1, 1))
+                WHEN SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) >= '0'
+                    AND SUBSTR(COALESCE(sort_album_name, album_name), 1, 1) &lt;= '9' THEN '0-9'
+                ELSE '#'
+            END AS letter,
+            COUNT(*) AS cnt
+        FROM album
+        <if test="starred != null and starred == true">
+            WHERE album.id IN (SELECT item_id FROM user_starred WHERE item_type = 'album'
+                AND user_id = (SELECT id FROM auth_user WHERE username = #{starredUsername}))
+        </if>
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         歌曲浏览
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findSongsPaginated" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        <if test='sort == "frequent" and userId != null'>
+            LEFT JOIN play_count pc ON pc.item_id = s.id
+                AND pc.item_type = 'song' AND pc.user_id = #{userId}
+        </if>
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(s.sort_title, 1, 1) >= '0' AND SUBSTR(s.sort_title, 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                SUBSTR(s.sort_title, 1, 1) &lt; '0'
+                OR (SUBSTR(s.sort_title, 1, 1) > '9' AND SUBSTR(s.sort_title, 1, 1) &lt; 'A')
+                OR (SUBSTR(s.sort_title, 1, 1) > 'Z' AND SUBSTR(s.sort_title, 1, 1) &lt; 'a')
+                OR SUBSTR(s.sort_title, 1, 1) > 'z'
+                OR s.sort_title IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                s.sort_title LIKE CONCAT(#{letter}, '%')
+            </if>
+            <if test="artistId != null">
+                AND EXISTS (SELECT 1 FROM song_artist sa2 WHERE sa2.song_id = s.id AND sa2.artist_id = #{artistId})
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "frequent"'>ORDER BY COALESCE(pc.play_count, 0) DESC, s.sort_title</when>
+            <when test='sort == "newest"'>ORDER BY s.create_time DESC</when>
+            <otherwise>ORDER BY s.sort_title, s.create_time DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSongs" resultType="int">
+        SELECT COUNT(*) FROM song s
+        <where>
+            <if test='letter == "0-9"'>
+                s.sort_title >= '0' AND s.sort_title &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                s.sort_title &lt; '0'
+                OR (s.sort_title > '9' AND s.sort_title &lt; 'A')
+                OR (s.sort_title > 'Z' AND s.sort_title &lt; 'a')
+                OR s.sort_title > 'z'
+                OR s.sort_title IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                s.sort_title LIKE CONCAT(#{letter}, '%')
+            </if>
+            <if test="artistId != null">
+                AND EXISTS (SELECT 1 FROM song_artist sa WHERE sa.song_id = s.id AND sa.artist_id = #{artistId})
+            </if>
+        </where>
+    </select>
+
+    <select id="getSongLetters" resultType="map">
+        SELECT
+            CASE
+                WHEN UPPER(SUBSTR(sort_title, 1, 1)) >= 'A' AND UPPER(SUBSTR(sort_title, 1, 1)) &lt;= 'Z' THEN UPPER(SUBSTR(sort_title, 1, 1))
+                WHEN SUBSTR(sort_title, 1, 1) >= '0' AND SUBSTR(sort_title, 1, 1) &lt;= '9' THEN '0-9'
+                ELSE '#'
+            END AS letter,
+            COUNT(*) AS cnt
+        FROM song
+        WHERE sort_title IS NOT NULL
+        GROUP BY letter
+        ORDER BY letter
+    </select>
+
+    <select id="findRandomSongs" resultMap="songResultMap">
+        SELECT id, title, file_path, file_name, file_format, file_size, file_hash,
+               fingerprint, duration, cover_path, "year", bitrate, sample_rate,
+               channels, bits_per_sample, language, album_id,
+               track_number, disc_number, track_gain, track_peak,
+               composer, lyricist, arranger, producer, extra_tags,
+               create_time, update_time
+        FROM song
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         流派浏览
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findDistinctGenres" resultType="map">
+        SELECT st.id AS "id", st.style_name AS "genre", st.style_image AS "image",
+               st.description AS "description",
+               st.song_count AS "songCount",
+               COUNT(DISTINCT s.album_id) AS "albumCount"
+        FROM style st
+        LEFT JOIN song_style ss ON st.id = ss.style_id
+        LEFT JOIN song s ON ss.song_id = s.id
+        WHERE st.song_count > 0
+        GROUP BY st.id, st.style_name, st.style_image, st.description, st.song_count
+        ORDER BY st.song_count DESC, st.style_name ASC
+    </select>
+
+    <select id="findSongsByGenre" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               a.artist_name, al.album_name
+        FROM song s
+        INNER JOIN song_style ss ON s.id = ss.song_id
+        INNER JOIN style st ON ss.style_id = st.id AND st.style_name = #{genre}
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        <if test='sort == "frequent" and userId != null'>
+            LEFT JOIN play_count pc ON pc.item_id = s.id
+                AND pc.item_type = 'song' AND pc.user_id = #{userId}
+        </if>
+        <where>
+            <if test='letter == "0-9"'>
+                SUBSTR(s.sort_title, 1, 1) >= '0' AND SUBSTR(s.sort_title, 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                SUBSTR(s.sort_title, 1, 1) &lt; '0'
+                OR (SUBSTR(s.sort_title, 1, 1) > '9' AND SUBSTR(s.sort_title, 1, 1) &lt; 'A')
+                OR (SUBSTR(s.sort_title, 1, 1) > 'Z' AND SUBSTR(s.sort_title, 1, 1) &lt; 'a')
+                OR SUBSTR(s.sort_title, 1, 1) > 'z'
+                OR s.sort_title IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                s.sort_title LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "frequent"'>ORDER BY COALESCE(pc.play_count, 0) DESC, s.sort_title</when>
+            <when test='sort == "newest"'>ORDER BY s.create_time DESC</when>
+            <otherwise>ORDER BY s.sort_title, s.create_time DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSongsByGenre" resultType="int">
+        SELECT COUNT(*)
+        FROM song s
+        INNER JOIN song_style ss ON s.id = ss.song_id
+        INNER JOIN style st ON ss.style_id = st.id AND st.style_name = #{genre}
+        <where>
+            <if test='letter == "0-9"'>
+                s.sort_title >= '0' AND s.sort_title &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                s.sort_title &lt; '0'
+                OR (s.sort_title > '9' AND s.sort_title &lt; 'A')
+                OR (s.sort_title > 'Z' AND s.sort_title &lt; 'a')
+                OR s.sort_title > 'z'
+                OR s.sort_title IS NULL
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                s.sort_title LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="findGenresPaginated" resultType="map">
+        SELECT st.id AS "id", st.style_name AS "genre", st.style_image AS "image",
+               st.description AS "description",
+               st.song_count AS "songCount"
+        FROM style st
+        <where>
+            st.song_count > 0
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) >= '0'
+                AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(st.style_name, ''), 1, 1) > '9' AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; 'A')
+                    OR (SUBSTR(COALESCE(st.style_name, ''), 1, 1) > 'Z' AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; 'a')
+                    OR SUBSTR(COALESCE(st.style_name, ''), 1, 1) > 'z'
+                    OR st.style_name IS NULL)
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND st.style_name LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+        <choose>
+            <when test='sort == "songCount"'>ORDER BY st.song_count DESC, st.style_name ASC</when>
+            <otherwise>ORDER BY st.style_name ASC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countGenres" resultType="int">
+        SELECT COUNT(*)
+        FROM style st
+        <where>
+            st.song_count > 0
+            <if test='letter == "0-9"'>
+                AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) >= '0'
+                AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt;= '9'
+            </if>
+            <if test='letter == "#"'>
+                AND (SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; '0'
+                    OR (SUBSTR(COALESCE(st.style_name, ''), 1, 1) > '9' AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; 'A')
+                    OR (SUBSTR(COALESCE(st.style_name, ''), 1, 1) > 'Z' AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt; 'a')
+                    OR SUBSTR(COALESCE(st.style_name, ''), 1, 1) > 'z'
+                    OR st.style_name IS NULL)
+            </if>
+            <if test='letter != null and letter != "" and letter != "0-9" and letter != "#"'>
+                AND st.style_name LIKE CONCAT(#{letter}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="getGenreLetters" resultType="map">
+        SELECT
+            CASE
+                WHEN UPPER(SUBSTR(COALESCE(st.style_name, ''), 1, 1)) >= 'A'
+                    AND UPPER(SUBSTR(COALESCE(st.style_name, ''), 1, 1)) &lt;= 'Z'
+                    THEN UPPER(SUBSTR(st.style_name, 1, 1))
+                WHEN SUBSTR(COALESCE(st.style_name, ''), 1, 1) >= '0'
+                    AND SUBSTR(COALESCE(st.style_name, ''), 1, 1) &lt;= '9'
+                    THEN '0-9'
+                ELSE '#'
+            END AS "letter",
+            COUNT(*) AS "cnt"
+        FROM style st
+        WHERE st.style_name IS NOT NULL AND st.song_count > 0
+        GROUP BY "letter"
+        ORDER BY "letter"
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         辅助查询
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findArtistIdsBySongId" resultType="long">
+        SELECT artist_id FROM song_artist WHERE song_id = #{songId} ORDER BY sort_order
+    </select>
+
+    <select id="findStyleIdsBySongId" resultType="long">
+        SELECT style_id FROM song_style WHERE song_id = #{songId}
+    </select>
+
+    <select id="findSongIdsByStyleId" resultType="long">
+        SELECT song_id FROM song_style WHERE style_id = #{styleId}
+    </select>
+
+    <select id="findUserIdByUsername" resultType="long">
+        SELECT id FROM auth_user WHERE username = #{username}
+    </select>
+
+    <!-- 相似艺术家：按共享流派数降序排列（排除自身） -->
+    <select id="findSimilarArtists" resultType="com.gjl.music.model.Artist">
+        SELECT a.id, a.artist_name AS artistName, a.artist_cover AS artistCover,
+               a.album_count AS albumCount, a.song_count AS songCount
+        FROM artist a
+        INNER JOIN song_artist sa ON a.id = sa.artist_id
+        INNER JOIN song_style ss ON sa.song_id = ss.song_id
+        WHERE ss.style_id IN (
+            SELECT DISTINCT ss2.style_id
+            FROM song_style ss2
+            INNER JOIN song_artist sa2 ON ss2.song_id = sa2.song_id
+            WHERE sa2.artist_id = #{artistId}
+        )
+        AND a.id != #{artistId}
+        GROUP BY a.id
+        ORDER BY COUNT(DISTINCT ss.style_id) DESC, a.song_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         DB 关键字搜索（Lucene 索引为空时的回退方案）
+         ══════════════════════════════════════════════════ -->
+
+    <select id="searchSongsByKeyword" resultMap="songResultMap">
+        SELECT s.id, s.title, s.sort_title, s.file_path, s.file_name, s.file_format,
+               s.file_size, s.file_hash, s.fingerprint, s.duration,
+               s.cover_path, s."year", s.bitrate, s.sample_rate,
+               s.channels, s.bits_per_sample, s.language, s.album_id,
+               s.track_number, s.disc_number, s.track_gain, s.track_peak,
+               s.composer, s.lyricist, s.arranger, s.producer, s.extra_tags,
+               s.create_time, s.update_time,
+               sa.artist_id, a.artist_name, al.album_name
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id AND sa.sort_order = 0
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (s.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR s.file_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR a.artist_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR al.album_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY s.sort_title, s.create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="searchAlbumsByKeyword" resultType="com.gjl.music.model.Album">
+        SELECT al.id, al.album_name AS albumName, al.album_type AS albumType,
+               al.album_cover AS albumCover, al.introduction, al.album_year AS albumYear,
+               al.company, al.language, al.artist_id AS artistId, al.song_count AS songCount,
+               al.create_time AS createTime, al.update_time AS updateTime
+        FROM album al
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (al.album_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR al.introduction LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY al.album_name ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="searchArtistsByKeyword" resultType="com.gjl.music.model.Artist">
+        SELECT id, artist_name AS artistName, artist_cover AS artistCover,
+               introduction, gender, country, album_count AS albumCount,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM artist
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (artist_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR introduction LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY COALESCE(sort_artist_name, artist_name) ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+</mapper>

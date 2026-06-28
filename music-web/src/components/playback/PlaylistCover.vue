@@ -6,7 +6,7 @@
       :height="sizeNum"
       class="cover-canvas"
     />
-
+    <!-- 加载中/无歌曲时占位 -->
     <div v-if="showPlaceholder" class="cover-placeholder">
       <n-icon :size="iconSize" color="var(--ct-text-3)">
         <MusicalNotesOutline />
@@ -24,7 +24,7 @@ import { subsonicGetCoverArtUrl } from '@/api/playback/subsonic.js'
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   size: { type: [Number, String], default: 180 },
-
+  /** 无歌曲时回退的封面 art ID（歌单/专辑 ID 等） */
   fallbackArt: { type: String, default: '' },
 })
 
@@ -45,6 +45,7 @@ const containerStyle = computed(() => {
   return { width: s, height: s }
 })
 
+// ── 获取封面 URL ──
 
 function getCoverUrls() {
   const entries = props.entries || []
@@ -62,6 +63,7 @@ function getCoverUrls() {
   return urls
 }
 
+// ── 图片加载工具 ──
 
 function loadImage(url) {
   return new Promise((resolve) => {
@@ -75,12 +77,13 @@ function loadImage(url) {
   })
 }
 
+// ── 绘制拼贴 ──
 
 const ACCENT_COLORS = [
-  '#6366F1',
-  '#8B5CF6',
-  '#EC4899',
-  '#F97316',
+  '#6366F1', // indigo
+  '#8B5CF6', // violet
+  '#EC4899', // pink
+  '#F97316', // orange
 ]
 
 async function drawCollage() {
@@ -97,7 +100,8 @@ async function drawCollage() {
   const hasAnyUrl = urls.some(u => u !== null)
 
   if (!hasAnyUrl) {
-        if (props.fallbackArt) {
+    // 无 entry 封面 → 尝试回退到 fallbackArt
+    if (props.fallbackArt) {
       const fallbackUrl = subsonicGetCoverArtUrl(props.fallbackArt, w)
       const img = await loadImage(fallbackUrl)
       if (img) {
@@ -111,7 +115,8 @@ async function drawCollage() {
         return
       }
     }
-        drawPlaceholder(ctx, w)
+    // 回退也失败 → 渐变占位
+    drawPlaceholder(ctx, w)
     loading.value = false
     showPlaceholder.value = true
     return
@@ -119,7 +124,8 @@ async function drawCollage() {
 
   const images = await Promise.all(urls.map(loadImage))
 
-    const allFailed = images.every(img => img === null)
+  // 检查是否全部失败
+  const allFailed = images.every(img => img === null)
   if (allFailed) {
     drawPlaceholder(ctx, w)
     loading.value = false
@@ -127,23 +133,27 @@ async function drawCollage() {
     return
   }
 
-    for (let i = 0; i < 4; i++) {
+  // 绘制 2x2 拼贴
+  for (let i = 0; i < 4; i++) {
     const col = i % 2
     const row = Math.floor(i / 2)
     const x = col * half
     const y = row * half
     const img = images[i]
-    const dim = (i === 3 && w % 2 !== 0) ? half : half
+    const dim = (i === 3 && w % 2 !== 0) ? half : half // 右下角处理奇数尺寸
 
     if (img) {
-            const srcSize = Math.min(img.width, img.height)
+      // 裁剪为正方形填充
+      const srcSize = Math.min(img.width, img.height)
       const sx = (img.width - srcSize) / 2
       const sy = (img.height - srcSize) / 2
       ctx.drawImage(img, sx, sy, srcSize, srcSize, x, y, half, half)
     } else {
-            ctx.fillStyle = ACCENT_COLORS[i] + '44'
+      // 无图片象限用纯色填充
+      ctx.fillStyle = ACCENT_COLORS[i] + '44'
       ctx.fillRect(x, y, half, half)
-            ctx.fillStyle = ACCENT_COLORS[i] + '88'
+      // 中央小图标
+      ctx.fillStyle = ACCENT_COLORS[i] + '88'
       ctx.beginPath()
       const cx = x + half / 2
       const cy = y + half / 2
@@ -158,7 +168,8 @@ async function drawCollage() {
 }
 
 function drawPlaceholder(ctx, w) {
-    const grad = ctx.createLinearGradient(0, 0, w, w)
+  // 渐变背景
+  const grad = ctx.createLinearGradient(0, 0, w, w)
   grad.addColorStop(0, '#6366F1')
   grad.addColorStop(1, '#8B5CF6')
   ctx.fillStyle = grad
@@ -166,6 +177,7 @@ function drawPlaceholder(ctx, w) {
   dataUrl.value = ''
 }
 
+// ── 响应式重绘 ──
 
 onMounted(() => { nextTick(drawCollage) })
 

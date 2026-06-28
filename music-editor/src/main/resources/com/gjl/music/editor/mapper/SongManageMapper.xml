@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.editor.mapper.SongManageMapper">
+
+    <!-- ══════════════════════════════════════════════════
+         批量删除
+         ══════════════════════════════════════════════════ -->
+
+    <delete id="deleteSongArtistsBySongIds">
+        DELETE FROM song_artist WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteSongStylesBySongIds">
+        DELETE FROM song_style WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteLyricsBySongIds">
+        DELETE FROM lyric WHERE song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteSongsByIds">
+        DELETE FROM song WHERE id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- ══════════════════════════════════════════════════
+         文件整理
+         ══════════════════════════════════════════════════ -->
+
+    <update id="updateSongFilePath" databaseId="h2">
+        UPDATE song SET file_path = #{newPath}, file_name = #{newFileName},
+                        update_time = CURRENT_TIMESTAMP
+        WHERE file_path = #{oldPath}
+    </update>
+
+    <update id="updateSongFilePath" databaseId="mysql">
+        UPDATE song SET file_path = #{newPath}, file_name = #{newFileName},
+                        update_time = CURRENT_TIMESTAMP
+        WHERE file_path = #{oldPath}
+    </update>
+
+    <!-- ══════════════════════════════════════════════════
+         DB 同步辅助
+         ══════════════════════════════════════════════════ -->
+
+    <select id="selectSongPathsUnderRoot" resultType="map">
+        SELECT id, file_path, file_size, file_mtime FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%')
+    </select>
+
+    <select id="selectSongPathsByList" resultType="map">
+        SELECT file_path, id, file_mtime FROM song
+        WHERE file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+    </select>
+
+    <select id="selectSongIdsUnderRootPaged" resultType="map">
+        SELECT id, file_path FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%')
+        ORDER BY id
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectSongPathsUnderDirs" resultType="map">
+        SELECT id, file_path, file_size, file_mtime FROM song WHERE
+        <foreach collection="dirs" item="dir" open="(" separator=" OR " close=")">
+            file_path LIKE CONCAT(#{dir}, '%')
+        </foreach>
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         Dedup 查询
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findHashDuplicates" resultType="map" databaseId="h2">
+        SELECT file_hash AS hash, LISTAGG(file_path, '||') AS paths,
+               LISTAGG(file_name, '||') AS names, COUNT(*) AS cnt
+        FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%')
+        GROUP BY file_hash HAVING COUNT(*) > 1
+    </select>
+
+    <select id="findHashDuplicates" resultType="map" databaseId="mysql">
+        SELECT file_hash AS hash, GROUP_CONCAT(file_path SEPARATOR '||') AS paths,
+               GROUP_CONCAT(file_name SEPARATOR '||') AS names, COUNT(*) AS cnt
+        FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%')
+        GROUP BY file_hash HAVING COUNT(*) > 1
+    </select>
+
+    <select id="findFileNameDuplicates" resultType="map" databaseId="h2">
+        SELECT file_name AS name, LISTAGG(file_path, '||') AS paths,
+               LISTAGG(file_name, '||') AS names, COUNT(*) AS cnt
+        FROM song
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        GROUP BY file_name HAVING COUNT(*) > 1
+    </select>
+
+    <select id="findFileNameDuplicates" resultType="map" databaseId="mysql">
+        SELECT file_name AS name, GROUP_CONCAT(file_path SEPARATOR '||') AS paths,
+               GROUP_CONCAT(file_name SEPARATOR '||') AS names, COUNT(*) AS cnt
+        FROM song
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        GROUP BY file_name HAVING COUNT(*) > 1
+    </select>
+
+    <select id="findMetadataForDedup" resultType="map" databaseId="h2">
+        SELECT s.file_path AS filePath, s.file_name AS fileName,
+               s.title, s.duration, al.album_name AS albumName,
+               LISTAGG(a.artist_name, ',') WITHIN GROUP (ORDER BY sa.sort_order, a.id) AS artistNames
+        FROM song s
+        LEFT JOIN album al ON s.album_id = al.id
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            s.file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        GROUP BY s.id
+    </select>
+
+    <select id="findMetadataForDedup" resultType="map" databaseId="mysql">
+        SELECT s.file_path AS filePath, s.file_name AS fileName,
+               s.title, s.duration, al.album_name AS albumName,
+               GROUP_CONCAT(a.artist_name ORDER BY sa.sort_order, a.id SEPARATOR ',') AS artistNames
+        FROM song s
+        LEFT JOIN album al ON s.album_id = al.id
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            s.file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        GROUP BY s.id
+    </select>
+
+    <select id="findFingerprintsForDedup" resultType="map">
+        SELECT file_path AS filePath, file_name AS fileName,
+               fingerprint, duration
+        FROM song
+        WHERE file_path LIKE CONCAT(#{rootPath}, '%') AND fingerprint IS NOT NULL
+        ORDER BY id
+    </select>
+
+    <select id="findAllSongsUnderRoot" resultType="map">
+        SELECT file_path AS filePath, file_name AS fileName,
+               file_hash AS fileHash, fingerprint, duration
+        FROM song
+        WHERE
+        <foreach collection="rootPaths" item="p" open="(" separator=" OR " close=")">
+            file_path LIKE CONCAT(#{p}, '%')
+        </foreach>
+        ORDER BY id
+    </select>
+
+    <!-- ══════════════════════════════════════════════════
+         批量回填
+         ══════════════════════════════════════════════════ -->
+
+    <update id="batchUpdateSongHash">
+        UPDATE song SET file_hash = CASE file_path
+        <foreach collection="list" item="item" separator=" ">
+            WHEN #{item.filePath} THEN #{item.fileHash}
+        </foreach>
+        END
+        WHERE file_path IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.filePath}
+        </foreach>
+    </update>
+
+    <update id="batchUpdateSongFingerprint">
+        UPDATE song SET fingerprint = CASE file_path
+        <foreach collection="list" item="item" separator=" ">
+            WHEN #{item.filePath} THEN #{item.fingerprint}
+        </foreach>
+        END
+        WHERE file_path IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.filePath}
+        </foreach>
+    </update>
+
+    <!-- ══════════════════════════════════════════════════
+         缓存辅助查询
+         ══════════════════════════════════════════════════ -->
+
+    <select id="findFingerprintsByPaths" resultType="map">
+        SELECT file_path AS filePath, file_name AS fileName, fingerprint
+        FROM song
+        WHERE file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+    </select>
+
+    <select id="findMetadataByPaths" resultType="map">
+        SELECT s.file_path AS filePath,
+               s.title AS TITLE, s.duration AS DURATION,
+               GROUP_CONCAT(DISTINCT a.artist_name ORDER BY sa.sort_order SEPARATOR ',') AS ARTISTNAMES,
+               al.album_name AS ALBUMNAME
+        FROM song s
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN album al ON s.album_id = al.id
+        WHERE s.file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+        GROUP BY s.id
+    </select>
+
+    <select id="findFullMetadataByPaths" resultType="map">
+        SELECT s.file_path                                     AS FILEPATH,
+               s.title                                         AS TITLE,
+               s.file_name                                     AS FILE_NAME,
+               s.file_format                                   AS FILE_FORMAT,
+               s.file_size                                     AS FILE_SIZE,
+               s.file_hash                                     AS FILE_HASH,
+               s.fingerprint                                   AS FINGERPRINT,
+               s.duration                                      AS DURATION,
+               s.cover_path                                    AS COVER_PATH,
+               <![CDATA[s."year"]]>                                        AS "YEAR",
+               s.bitrate                                       AS BITRATE,
+               s.sample_rate                                   AS SAMPLE_RATE,
+               s.channels                                      AS CHANNELS,
+               s.bits_per_sample                               AS BITS_PER_SAMPLE,
+               s.language                                      AS LANGUAGE,
+               s.album_id                                      AS ALBUM_ID,
+               s.track_number                                  AS TRACK_NUMBER,
+               s.disc_number                                   AS DISC_NUMBER,
+               s.track_gain                                    AS TRACK_GAIN,
+               s.track_peak                                    AS TRACK_PEAK,
+               s.composer                                      AS COMPOSER,
+               s.lyricist                                      AS LYRICIST,
+               s.arranger                                      AS ARRANGER,
+               s.producer                                      AS PRODUCER,
+               s.file_mtime                                    AS FILE_MTIME,
+               al.album_name                                   AS ALBUM_NAME,
+               al.album_year                                   AS ALBUM_YEAR,
+               al.introduction                                 AS ALBUM_INTRODUCTION,
+               al.company                                      AS ALBUM_COMPANY,
+               al.language                                     AS ALBUM_LANGUAGE,
+               GROUP_CONCAT(DISTINCT
+                   CONCAT(a.artist_name, '::', COALESCE(a.country, ''))
+                   ORDER BY sa.sort_order, a.id
+                   SEPARATOR '||')                             AS ARTIST_DATA,
+               GROUP_CONCAT(DISTINCT st.style_name
+                   SEPARATOR '||')                             AS STYLE_NAMES,
+               GROUP_CONCAT(DISTINCT l.content
+                   SEPARATOR '|||')                            AS LYRIC_CONTENTS
+        FROM song s
+        LEFT JOIN album al ON s.album_id = al.id
+        LEFT JOIN song_artist sa ON s.id = sa.song_id
+        LEFT JOIN artist a ON sa.artist_id = a.id
+        LEFT JOIN song_style ss ON s.id = ss.song_id
+        LEFT JOIN style st ON ss.style_id = st.id
+        LEFT JOIN lyric l ON s.id = l.song_id
+        WHERE s.file_path IN
+        <foreach collection="paths" item="p" open="(" separator="," close=")">
+            #{p}
+        </foreach>
+        GROUP BY s.id, al.id
+    </select>
+
+</mapper>

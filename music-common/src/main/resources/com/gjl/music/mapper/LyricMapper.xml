@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.LyricMapper">
+
+    <insert id="upsertLyric" databaseId="h2">
+        MERGE INTO lyric (content, lrc_path, type, lyric_hash, song_id, update_time)
+        KEY(lyric_hash, song_id)
+        VALUES (#{content}, #{lrcPath}, #{type}, #{lyricHash}, #{songId}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertLyric" databaseId="mysql">
+        INSERT INTO lyric (content, lrc_path, type, lyric_hash, song_id, update_time)
+        VALUES (#{content}, #{lrcPath}, #{type}, #{lyricHash}, #{songId}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            content     = VALUES(content),
+            lrc_path    = VALUES(lrc_path),
+            type        = VALUES(type),
+            update_time = CURRENT_TIMESTAMP
+    </insert>
+
+    <insert id="batchUpsertLyrics" databaseId="h2">
+        MERGE INTO lyric (content, lrc_path, type, lyric_hash, song_id, update_time)
+        KEY(lyric_hash, song_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.content}, #{item.lrcPath}, #{item.type}, #{item.lyricHash}, #{item.songId}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsertLyrics" databaseId="mysql">
+        INSERT INTO lyric (content, lrc_path, type, lyric_hash, song_id, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.content}, #{item.lrcPath}, #{item.type}, #{item.lyricHash}, #{item.songId}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            content     = VALUES(content),
+            lrc_path    = VALUES(lrc_path),
+            type        = VALUES(type),
+            update_time = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="findLyricBySongId" resultType="map">
+        SELECT id, content, lrc_path AS lrcPath, type, lyric_hash AS lyricHash,
+               song_id AS songId, create_time AS createTime, update_time AS updateTime
+        FROM lyric
+        WHERE song_id = #{songId}
+        ORDER BY id LIMIT 1
+    </select>
+
+    <select id="findLyricsBySongIds" resultType="map">
+        SELECT l.song_id AS songId, l.content AS lyricContent
+        FROM lyric l
+        WHERE l.song_id IN
+        <foreach collection="songIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY l.song_id, l.id
+    </select>
+
+    <select id="searchLyricSongIds" resultType="long">
+        SELECT DISTINCT l.song_id
+        FROM lyric l
+        WHERE l.content LIKE CONCAT('%', #{query}, '%')
+        ORDER BY l.song_id
+        LIMIT #{limit}
+    </select>
+
+</mapper>

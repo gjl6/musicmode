@@ -4,7 +4,9 @@ import com.gjl.music.auth.model.AuthRefreshToken;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-
+/**
+ * Refresh Token Mapper。
+ */
 @Mapper
 public interface AuthRefreshTokenMapper {
 

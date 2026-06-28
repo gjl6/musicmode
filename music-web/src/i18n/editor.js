@@ -1,5 +1,6 @@
-
-
+/**
+ * Editor 模块翻译 — 工作台、编辑、工具、管道、配置等
+ */
 export const en = {
   "workbench": {
     "title": "Workbench",
@@ -148,6 +149,13 @@ export const en = {
     "directory": "Directory: {path}",
     "processing": "Processing...",
     "submit": "Submit"
+  },
+  "importCollection": {
+    "title": "Import to Collection",
+    "whatItDoes": "Scan, parse tags, and save to database",
+    "desc": "Select music files in the file browser, then use this tool to parse their ID3 metadata and write them into the database. Processed files will appear in the music library.",
+    "sourceFiles": "{n} file(s) selected | {n} file(s) selected",
+    "noFilesHint": "No files selected. Please select files in the file browser first."
   },
   "pipelineList": {
     "title": "Pipeline Tasks",
@@ -638,6 +646,26 @@ export const en = {
     "submitted": "Pipeline submitted",
     "execFailed": "Execution failed",
     "noData": "None",
+    "scanConfig": "Scan Config",
+    "dirScan": "DIR_SCAN",
+    "fileScan": "FILE_SCAN",
+    "intervalSec": "Interval (s)",
+    "scanNow": "Scan Now",
+    "scanComplete": "Scan completed",
+    "scanning": "Scanning...",
+    "scanFailed": "Scan failed",
+    "pause": "Pause",
+    "paused": "Paused",
+    "resume": "Resume",
+    "resumed": "Resumed",
+    "off": "Off",
+    "lastScan": "Last Scan:",
+    "lastRun": "Last Run:",
+    "state": "State",
+    "stateIdle": "Idle",
+    "stateRunning": "Running",
+    "stateWaiting": "Waiting",
+    "stateError": "Error",
     "steps": {
       "encodingRepair": "Encoding Repair",
       "chineseConvert": "Chinese Convert",
@@ -708,6 +736,10 @@ export const en = {
     "deleteConfirm": "Delete \"{label}\"? This operation is irreversible.",
     "deleteSuccess": "Deleted \"{label}\"",
     "deleteFailed": "Delete failed",
+    "metadataTags": "Metadata Tags",
+    "builtinSection": "Built-in Sources",
+    "customSection": "Custom Sources",
+    "tagsHint": "Select which metadata fields this provider can supply. Deselected fields will skip this provider during enrichment.",
     "providers": {
       "qqmusic": {
         "label": "QQ Music",
@@ -736,7 +768,25 @@ export const en = {
       "musicbrainz": {
         "label": "MusicBrainz",
         "desc": "Open music encyclopedia with community-maintained global metadata. Extremely high accuracy, supports Recording search and Release details. Unauthenticated: strict 1 req/s."
+      },
+      "baidubaike": {
+        "label": "Baidu Baike",
+        "desc": "Baidu's online encyclopedia, the largest Chinese-language wiki. Best source for Chinese artist biographies, gender and country info. HTML scraping with fallback support."
+      },
+      "wikipedia": {
+        "label": "Wikipedia",
+        "desc": "The world's largest multilingual encyclopedia. Provides artist introductions, gender, country and cover images via the public API. Adaptive rate limiting with exponential backoff."
       }
+    },
+    "entityTypes": {
+      "song": "Songs",
+      "artist": "Artists",
+      "album": "Albums"
+    },
+    "entityTags": {
+      "song": { "title": "Title", "artist": "Artist", "album": "Album", "lyric": "Lyric", "cover": "Cover", "year": "Year", "track": "Track#", "disc": "Disc#" },
+      "artist": { "introduction": "Bio", "gender": "Gender", "country": "Country", "coverUrl": "Cover" },
+      "album": { "introduction": "Bio", "albumType": "Type", "albumYear": "Year", "company": "Label", "language": "Language", "coverUrl": "Cover" }
     },
     "tags": {
       "title": "Title",
@@ -757,7 +807,10 @@ export const en = {
       "lyricDownload": "Lyric DL",
       "song": "Song",
       "lookup": "Lookup",
-      "release": "Release"
+      "release": "Release",
+      "coverTpl": "Cover Template",
+      "apiUrl": "API URL",
+      "baseUrl": "Base URL"
     },
     "fields": {
       "rateLimitMs": "Interval (ms)",
@@ -830,6 +883,35 @@ export const en = {
     "dedupDeleteRuleKeepFirst": "Keep First",
     "dedupDeleteRuleKeepByDir": "Keep By Dir",
     "dedupDeleteRuleKeepFormat": "Keep Best Format"
+  },
+  "configBasic": {
+    "tab": "Basic",
+    "globalSwitches": "Global Switches",
+    "persistEnabled": "Save to Database",
+    "persistEnabledDesc": "When disabled, metadata changes will NOT be written to the database. Only affects pipeline write operations.",
+    "writeTagsEnabled": "Write to Audio Files",
+    "writeTagsEnabledDesc": "When disabled, ID3 tags in audio files will NOT be modified. Only affects pipeline write operations.",
+    "artistSettings": "Artist Settings",
+    "splitSeparators": "Artist Separators",
+    "splitSeparatorsDesc": "Characters or keywords used to split artist strings. Single-char = literal separator, multi-char = word-boundary keyword. Changes take effect on next pipeline run.",
+    "joinSeparator": "Artist Join Separator",
+    "joinSeparatorDesc": "String used to join multiple artists when displaying. Applied when reading tags and formatting artist names.",
+    "fileWatch": "File Watch",
+    "watchEnabled": "Enable File Watch",
+    "watchEnabledDesc": "When enabled, the system monitors file changes and auto-triggers pipelines on matching watch profiles.",
+    "incrementalIntervalSec": "Incremental Scan Interval (s)",
+    "incrementalIntervalSecDesc": "How often to scan for new or changed files. Shorter intervals detect changes faster but use more resources.",
+    "fullScanIntervalMin": "Full Reconciliation Interval (min)",
+    "fullScanIntervalMinDesc": "How often to perform a full directory reconciliation against the database. Longer intervals reduce I/O.",
+    "addSeparator": "Add",
+    "separatorPlaceholder": "e.g. feat.",
+    "removeSeparator": "Remove",
+    "restoreDefaults": "Restore defaults",
+    "saveFailed": "Save failed: {key}"
+  },
+  "configAdmin": {
+    "allowRegistration": "Open Registration",
+    "allowRegistrationDesc": "When enabled, anyone can register a new account from the login page. When disabled, only administrators can create accounts."
   },
   "others": {
     "tab": "Others",
@@ -1017,6 +1099,92 @@ export const en = {
     "toolMergeConfirm": "Confirm Merge",
     "toolMergeWarning": "Source artists will be deleted and their songs/albums reassigned. File tags will be synced in background.",
     "toolMergeSuccess": "Merge submitted: {id}"
+  },
+  "albumManager": {
+    "title": "Album Manager",
+    "searchPlaceholder": "Search albums...",
+    "checkDup": "Find Duplicates",
+    "dupFound": "{n} duplicate group(s) found",
+    "noDup": "No duplicates found",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "mergeAll": "Merge All",
+    "caseDup": "Case Dup",
+    "albums": "albums",
+    "merge": "Merge",
+    "mergeSelected": "Merge Selected ({n})",
+    "mergeHint": "Select 2+ albums to merge, first selected = target",
+    "submitMerge": "Submit Merge Task",
+    "mergeConfirmDesc": "Will merge {n} albums into one. Affected songs will have their file tags synced in background.",
+    "keepTarget": "Keep (Target)",
+    "mergeWarning": "Merge will update database and sync file tags. Source albums will be deleted. Progress can be tracked on pipeline page.",
+    "cancel": "Cancel",
+    "submitPipeline": "Submit Pipeline Task",
+    "editAlbum": "Edit Album",
+    "selection": "Selection",
+    "letter": "Letter",
+    "quickMode": "Quick Mode",
+    "overlayFilters": "Overlay",
+    "query": "Search",
+    "queryResult": "{n} album(s) matched",
+    "mode_all": "All",
+    "mode_incomplete": "Incomplete",
+    "mode_unenriched": "Unenriched",
+    "mode_naked": "Naked Data",
+    "mode_duplicates": "Duplicates",
+    "mode_ids": "By IDs",
+    "mode_keyword": "Keyword",
+    "filterArtist": "Artist",
+    "filterMinSongs": "Min Songs",
+    "filterMaxSongs": "Max Songs",
+    "noData": "No albums found",
+    "enrichSource": "Source",
+    "coverArt": "Cover",
+    "songCount": "Songs",
+    "actions": "Actions",
+    "batchTools": "Batch Tools",
+    "toolEnrich": "Online Enrich",
+    "toolEnrichDesc": "Fetch album info from online sources",
+    "toolNormalize": "Normalize Name",
+    "toolNormalizeDesc": "Standardize album name format",
+    "toolMerge": "Merge Selected",
+    "toolMergeDesc": "Dedup and merge selected albums",
+    "pipelineSubmitted": "Pipeline submitted: {id}",
+    "viewProgress": "View Progress",
+    "editAlbumTitle": "Edit Album",
+    "editName": "Name",
+    "editType": "Type",
+    "editYear": "Year",
+    "editCompany": "Company",
+    "editLanguage": "Language",
+    "editIntroduction": "Introduction",
+    "editCover": "Cover Image",
+    "editCoverUpload": "Choose File",
+    "editCoverUrl": "Use URL",
+    "editCoverUrlPlaceholder": "https://...",
+    "editSave": "Save",
+    "editSaved": "Saved",
+    "typeAlbum": "Album",
+    "typeSingle": "Single",
+    "typeEP": "EP",
+    "typeCompilation": "Compilation",
+    "typeLive": "Live",
+    "typeSoundtrack": "Soundtrack",
+    "toolEnrichAllResults": "All Results ({n})",
+    "toolEnrichSelected": "Selected Only ({n})",
+    "toolEnrichScope": "Scope",
+    "toolEnrichProviders": "Tag Sources",
+    "toolNormalizeAllResults": "All Results ({n})",
+    "toolNormalizeSelected": "Selected Only ({n})",
+    "toolNormalizeScope": "Scope",
+    "toolMergePanelTitle": "Merge Albums",
+    "toolMergeScope": "Merge Scope",
+    "toolMergeSelected": "Selected ({n})",
+    "toolMergeKeep": "Keep (Target)",
+    "toolMergePreview": "Impact Preview",
+    "toolMergeConfirm": "Confirm Merge",
+    "toolMergeWarning": "Source albums will be deleted and their songs reassigned. File tags will be synced in background.",
+    "toolMergeSuccess": "Merge submitted: {id}"
   }
 }
 
@@ -1168,6 +1336,13 @@ export const zhCN = {
     "directory": "目录：{path}",
     "processing": "处理中...",
     "submit": "提交"
+  },
+  "importCollection": {
+    "title": "导入收藏",
+    "whatItDoes": "扫描文件、解析标签、写入数据库",
+    "desc": "在文件浏览器中选中音乐文件，使用此工具解析其 ID3 元数据并写入数据库。处理完成的文件会出现在音乐库中。",
+    "sourceFiles": "已选 {n} 个文件",
+    "noFilesHint": "尚未选择文件，请先在文件浏览器中选中要导入的音乐文件"
   },
   "pipelineList": {
     "title": "管道任务",
@@ -1658,6 +1833,26 @@ export const zhCN = {
     "submitted": "已提交管道",
     "execFailed": "执行失败",
     "noData": "无",
+    "scanConfig": "扫描配置",
+    "dirScan": "目录级扫描",
+    "fileScan": "文件级扫描",
+    "intervalSec": "间隔(秒)",
+    "scanNow": "立即扫描",
+    "scanComplete": "扫描完成",
+    "scanning": "扫描中...",
+    "scanFailed": "扫描失败",
+    "pause": "暂停",
+    "paused": "已暂停",
+    "resume": "恢复",
+    "resumed": "已恢复",
+    "off": "关闭",
+    "lastScan": "上次扫描:",
+    "lastRun": "上次执行:",
+    "state": "状态",
+    "stateIdle": "空闲",
+    "stateRunning": "运行中",
+    "stateWaiting": "等待中",
+    "stateError": "异常",
     "steps": {
       "encodingRepair": "乱码修复",
       "chineseConvert": "繁简转换",
@@ -1728,6 +1923,10 @@ export const zhCN = {
     "deleteConfirm": "确定删除「{label}」？此操作不可恢复。",
     "deleteSuccess": "已删除「{label}」",
     "deleteFailed": "删除失败",
+    "metadataTags": "元数据标签",
+    "builtinSection": "内置标签源",
+    "customSection": "自定义标签源",
+    "tagsHint": "选择此标签源可提供的元数据字段。取消勾选的字段将在增强时跳过此标签源。",
     "providers": {
       "qqmusic": {
         "label": "QQ音乐",
@@ -1756,7 +1955,25 @@ export const zhCN = {
       "musicbrainz": {
         "label": "MusicBrainz",
         "desc": "开放音乐百科全书，社区维护的全球音乐元数据库。数据准确度极高，支持 Recording 搜索和 Release 详情，适合古典音乐及小众外语歌曲。未认证严格 1 req/s。"
+      },
+      "baidubaike": {
+        "label": "百度百科",
+        "desc": "百度旗下在线百科全书，全球最大的中文百科。华语艺术家简介、性别、国籍的最佳数据源。基于 HTML 解析，支持降级回退。"
+      },
+      "wikipedia": {
+        "label": "Wikipedia",
+        "desc": "全球最大的多语言百科。通过公开 API 提供艺术家简介、性别、国家/地区及封面图片。自适应限流，支持指数退避。"
       }
+    },
+    "entityTypes": {
+      "song": "歌曲",
+      "artist": "艺术家",
+      "album": "专辑"
+    },
+    "entityTags": {
+      "song": { "title": "标题", "artist": "艺术家", "album": "专辑", "lyric": "歌词", "cover": "封面", "year": "年份", "track": "音轨号", "disc": "CD号" },
+      "artist": { "introduction": "简介", "gender": "性别", "country": "国家/地区", "coverUrl": "封面" },
+      "album": { "introduction": "简介", "albumType": "类型", "albumYear": "年份", "company": "发行公司", "language": "语言", "coverUrl": "封面" }
     },
     "tags": {
       "title": "标题",
@@ -1777,7 +1994,10 @@ export const zhCN = {
       "lyricDownload": "歌词下载",
       "song": "歌曲",
       "lookup": "Lookup",
-      "release": "Release"
+      "release": "Release",
+      "coverTpl": "封面模板",
+      "apiUrl": "API地址",
+      "baseUrl": "基础地址"
     },
     "fields": {
       "rateLimitMs": "请求间隔(ms)",
@@ -1850,6 +2070,35 @@ export const zhCN = {
     "dedupDeleteRuleKeepFirst": "保留第一个",
     "dedupDeleteRuleKeepByDir": "按目录保留",
     "dedupDeleteRuleKeepFormat": "保留最优格式"
+  },
+  "configBasic": {
+    "tab": "基础配置",
+    "globalSwitches": "全局开关",
+    "persistEnabled": "保存到数据库",
+    "persistEnabledDesc": "关闭后，元数据修改不会写入数据库。仅影响管道写入操作。",
+    "writeTagsEnabled": "写回音频文件",
+    "writeTagsEnabledDesc": "关闭后，不会修改音频文件的 ID3 标签。仅影响管道写入操作。",
+    "artistSettings": "艺术家设置",
+    "splitSeparators": "艺术家分隔符",
+    "splitSeparatorsDesc": "用于拆分艺术家字符串的字符或关键词。单字符=字面分隔符，多字符=词边界关键词。修改后下次运行管道生效。",
+    "joinSeparator": "艺术家连接符",
+    "joinSeparatorDesc": "多个艺术家显示时的连接字符串。读取标签和格式化艺术家名称时使用。",
+    "fileWatch": "文件监控",
+    "watchEnabled": "启用文件监控",
+    "watchEnabledDesc": "开启后，系统会监控文件变更并在匹配的监控规则上自动触发管道。",
+    "incrementalIntervalSec": "增量扫描间隔（秒）",
+    "incrementalIntervalSecDesc": "扫描新增或变更文件的频率。值越小检测越快，但资源消耗更高。",
+    "fullScanIntervalMin": "全量对账间隔（分钟）",
+    "fullScanIntervalMinDesc": "对数据库进行全量目录对账的频率。值越大 I/O 越少，但数据一致性窗口更宽。",
+    "addSeparator": "添加",
+    "separatorPlaceholder": "如 feat.",
+    "removeSeparator": "移除",
+    "restoreDefaults": "恢复默认",
+    "saveFailed": "保存失败: {key}"
+  },
+  "configAdmin": {
+    "allowRegistration": "开放注册",
+    "allowRegistrationDesc": "开启后，任何人都可以在登录页面注册新账号。关闭后仅管理员可创建账号。"
   },
   "others": {
     "tab": "其他配置",
@@ -2036,6 +2285,92 @@ export const zhCN = {
     "toolMergePreview": "影响预览",
     "toolMergeConfirm": "确认合并",
     "toolMergeWarning": "源艺术家将被删除，其歌曲和专辑重新分配。文件标签将在后台同步更新。",
+    "toolMergeSuccess": "合并已提交: {id}"
+  },
+  "albumManager": {
+    "title": "专辑管理",
+    "searchPlaceholder": "搜索专辑...",
+    "checkDup": "查重复",
+    "dupFound": "发现 {n} 组潜在重复",
+    "noDup": "未发现重复",
+    "expand": "展开处理",
+    "collapse": "收起",
+    "mergeAll": "一键合并全部",
+    "caseDup": "大小写",
+    "albums": "个专辑",
+    "merge": "合并",
+    "mergeSelected": "合并选中 ({n})",
+    "mergeHint": "勾选 2 个以上专辑开始合并，第一个为保留目标",
+    "submitMerge": "提交合并任务",
+    "mergeConfirmDesc": "将合并 {n} 个专辑为一个，受影响的歌曲将在后台同步更新文件标签。",
+    "keepTarget": "保留（目标）",
+    "mergeWarning": "合并将更新数据库并同步文件标签。源专辑将被删除。可在管道页面查看进度。",
+    "cancel": "取消",
+    "submitPipeline": "提交管道任务",
+    "editAlbum": "编辑专辑",
+    "selection": "选择范围",
+    "letter": "首字母",
+    "quickMode": "快速模式",
+    "overlayFilters": "叠加",
+    "query": "查询",
+    "queryResult": "共匹配 {n} 张专辑",
+    "mode_all": "全部",
+    "mode_incomplete": "信息不完整",
+    "mode_unenriched": "未增强",
+    "mode_naked": "裸数据",
+    "mode_duplicates": "疑似重复",
+    "mode_ids": "指定 ID",
+    "mode_keyword": "关键字",
+    "filterArtist": "艺术家",
+    "filterMinSongs": "最少歌曲",
+    "filterMaxSongs": "最多歌曲",
+    "noData": "暂无专辑数据",
+    "enrichSource": "来源",
+    "coverArt": "封面",
+    "songCount": "歌曲数",
+    "actions": "操作",
+    "batchTools": "批量工具",
+    "toolEnrich": "在线增强",
+    "toolEnrichDesc": "从在线源补全专辑信息",
+    "toolNormalize": "名称规范化",
+    "toolNormalizeDesc": "统一专辑命名格式",
+    "toolMerge": "合并选中",
+    "toolMergeDesc": "去重合并选中的专辑",
+    "pipelineSubmitted": "管道任务已提交: {id}",
+    "viewProgress": "查看进度",
+    "editAlbumTitle": "编辑专辑",
+    "editName": "名称",
+    "editType": "类型",
+    "editYear": "年份",
+    "editCompany": "发行公司",
+    "editLanguage": "语言",
+    "editIntroduction": "简介",
+    "editCover": "封面图片",
+    "editCoverUpload": "选择文件",
+    "editCoverUrl": "使用URL",
+    "editCoverUrlPlaceholder": "https://...",
+    "editSave": "保存",
+    "editSaved": "保存成功",
+    "typeAlbum": "专辑",
+    "typeSingle": "单曲",
+    "typeEP": "EP",
+    "typeCompilation": "合辑",
+    "typeLive": "现场",
+    "typeSoundtrack": "原声",
+    "toolEnrichAllResults": "全部结果 ({n})",
+    "toolEnrichSelected": "仅勾选 ({n})",
+    "toolEnrichScope": "处理范围",
+    "toolEnrichProviders": "标签源",
+    "toolNormalizeAllResults": "全部结果 ({n})",
+    "toolNormalizeSelected": "仅勾选 ({n})",
+    "toolNormalizeScope": "处理范围",
+    "toolMergePanelTitle": "合并专辑",
+    "toolMergeScope": "合并范围",
+    "toolMergeSelected": "已选 ({n})",
+    "toolMergeKeep": "保留（目标）",
+    "toolMergePreview": "影响预览",
+    "toolMergeConfirm": "确认合并",
+    "toolMergeWarning": "源专辑将被删除，其歌曲重新分配。文件标签将在后台同步更新。",
     "toolMergeSuccess": "合并已提交: {id}"
   }
 }

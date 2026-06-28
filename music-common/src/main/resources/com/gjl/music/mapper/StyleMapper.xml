@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.StyleMapper">
+
+    <insert id="upsertStyle" databaseId="h2">
+        MERGE INTO style (style_name, sort_style_name, description, style_image, song_count, update_time)
+        KEY(style_name)
+        VALUES (#{styleName}, #{sortStyleName}, #{description}, #{styleImage}, #{songCount}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertStyle" databaseId="mysql">
+        INSERT INTO style (style_name, sort_style_name, description, style_image, song_count, update_time)
+        VALUES (#{styleName}, #{sortStyleName}, #{description}, #{styleImage}, #{songCount}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            sort_style_name = VALUES(sort_style_name),
+            description     = VALUES(description),
+            style_image     = VALUES(style_image),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectStyleIdByName" resultType="long">
+        SELECT id FROM style WHERE style_name = #{styleName}
+    </select>
+
+    <select id="findStyleById" resultType="com.gjl.music.model.Style">
+        SELECT id, style_name AS styleName, sort_style_name AS sortStyleName,
+               description, style_image AS styleImage, song_count AS songCount,
+               create_time AS createTime, update_time AS updateTime
+        FROM style WHERE id = #{id}
+    </select>
+
+    <select id="selectStyleInfoByName" resultType="map">
+        SELECT id, style_name AS "name", style_image AS "image", description, song_count AS "songCount"
+        FROM style WHERE style_name = #{styleName}
+    </select>
+
+    <insert id="batchUpsertStyles" databaseId="h2">
+        MERGE INTO style (style_name, sort_style_name, description, style_image, song_count, update_time)
+        KEY(style_name)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.styleName}, #{item.sortStyleName}, #{item.description}, #{item.styleImage}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <insert id="batchUpsertStyles" databaseId="mysql">
+        INSERT INTO style (style_name, sort_style_name, description, style_image, song_count, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.styleName}, #{item.sortStyleName}, #{item.description}, #{item.styleImage}, #{item.songCount}, CURRENT_TIMESTAMP)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            sort_style_name = VALUES(sort_style_name),
+            description     = VALUES(description),
+            style_image     = VALUES(style_image),
+            song_count      = VALUES(song_count),
+            update_time     = CURRENT_TIMESTAMP
+    </insert>
+
+    <update id="updateStyle">
+        UPDATE style
+        <set>
+            <if test="styleName != null">style_name = #{styleName},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="styleImage != null">style_image = #{styleImage},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectStyleIdsByNames" resultType="map">
+        SELECT style_name, id FROM style WHERE style_name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+    <select id="findStylesByIds" resultType="com.gjl.music.model.Style">
+        SELECT id, style_name AS styleName, sort_style_name AS sortStyleName,
+               description, style_image AS styleImage,
+               song_count AS songCount, create_time AS createTime, update_time AS updateTime
+        FROM style WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

@@ -1,6 +1,6 @@
 <template>
   <aside class="sidebar" :class="{ collapsed: appStore.sidebarCollapsed }">
-
+    <!-- 面包屑 -->
     <div class="breadcrumb">
       <span
         v-for="(seg, i) in breadcrumbs"
@@ -20,7 +20,7 @@
       </button>
     </div>
 
-
+    <!-- 搜索 -->
     <div class="search-bar">
       <n-input
         :value="fileStore.searchKeyword"
@@ -35,13 +35,13 @@
       </n-input>
     </div>
 
-
+<!-- 返回上级 -->
     <div v-if="!fileStore.isRoot" class="back-row" @click="fileStore.goUp()">
       <n-icon :size="14"><ArrowUpOutline /></n-icon>
       <span>{{ t('workbench.backToParent') }}</span>
     </div>
 
-
+    <!-- 文件树 -->
     <div class="sidebar-body">
       <n-spin :show="fileStore.loading" size="small">
         <ul class="tree-list">
@@ -84,7 +84,7 @@
       />
     </div>
 
-
+    <!-- 选中计数 -->
     <div v-if="fileStore.selectedCount > 0" class="select-footer">
       已选 {{ fileStore.selectedFileCount }} 个文件<span v-if="fileStore.selectedFolderCount > 0">, {{ fileStore.selectedFolderCount }} 个文件夹</span>
     </div>
@@ -111,9 +111,11 @@ const fileStore = useFileStore()
 const appStore = useAppStore()
 const { openEditor } = useEditAction()
 
+// ── 双击检测 ──
 
 const clickTimer = ref(null)
 
+// ── 面包屑 ──
 
 const breadcrumbs = computed(() => {
   const path = fileStore.currentPath
@@ -143,19 +145,22 @@ function enterFolder(folder) {
 }
 
 function handleFolderClick(folder) {
-    if (clickTimer.value && clickTimer.value.id === folder && clickTimer.value.type === 'folder') {
+  // 双击 → 进入目录
+  if (clickTimer.value && clickTimer.value.id === folder && clickTimer.value.type === 'folder') {
     clearTimeout(clickTimer.value.timer)
     clickTimer.value = null
     fileStore.clearSelection()
     enterFolder(folder)
     return
   }
-    fileStore.toggleFolderSelect(folder)
+  // 单击 → 切换选中
+  fileStore.toggleFolderSelect(folder)
   clickTimer.value = { id: folder, type: 'folder', timer: setTimeout(() => { clickTimer.value = null }, 300) }
 }
 
 function handleFileClick(file) {
-    if (clickTimer.value && clickTimer.value.id === file.id && clickTimer.value.type === 'file') {
+  // 双击 → 打开编辑
+  if (clickTimer.value && clickTimer.value.id === file.id && clickTimer.value.type === 'file') {
     clearTimeout(clickTimer.value.timer)
     clickTimer.value = null
     fileStore.clearSelection()
@@ -163,7 +168,8 @@ function handleFileClick(file) {
     openEditor(file)
     return
   }
-    fileStore.toggleSelect(file.id)
+  // 单击 → 切换选中
+  fileStore.toggleSelect(file.id)
   clickTimer.value = { id: file.id, type: 'file', timer: setTimeout(() => { clickTimer.value = null }, 300) }
 }
 
@@ -176,8 +182,9 @@ onMounted(() => {
 
 
 <style scoped>
-
-
+/* ─────────────────────────────────────
+   Audio Precision — Sidebar
+   ───────────────────────────────────── */
 .sidebar {
   width: 260px;
   height: 100vh;
@@ -197,7 +204,7 @@ onMounted(() => {
   border-right: none;
 }
 
-
+/* 噪点纹理 */
 .sidebar::before {
   content: '';
   position: absolute;
@@ -213,6 +220,7 @@ onMounted(() => {
   filter: invert(1);
 }
 
+/* ── 面包屑 ── */
 
 .breadcrumb {
   display: flex;
@@ -275,6 +283,7 @@ onMounted(() => {
   font-weight: 400;
 }
 
+/* ── 搜索 ── */
 
 .search-bar {
   padding: 0 14px 10px;
@@ -283,6 +292,7 @@ onMounted(() => {
   z-index: 2;
 }
 
+/* ── 返回上级 ── */
 
 .back-row {
   display: flex;
@@ -308,6 +318,7 @@ onMounted(() => {
   box-shadow: var(--shadow-sm);
 }
 
+/* ── 树列表 ── */
 
 .sidebar-body {
   flex: 1;
@@ -336,6 +347,7 @@ onMounted(() => {
   padding: 0;
 }
 
+/* ── 列表项共用 ── */
 
 .tree-item {
   display: flex;
@@ -390,7 +402,7 @@ onMounted(() => {
   box-shadow: var(--shadow-sm);
 }
 
-
+/* 文件夹图标 */
 .tree-item.folder :deep(.n-icon) {
   color: var(--sb-folder) !important;
   transition: transform 0.2s ease;
@@ -400,12 +412,13 @@ onMounted(() => {
   transform: scale(1.08);
 }
 
-
+/* 文件图标 */
 .tree-item.file :deep(.n-icon) {
   color: var(--sb-text-3) !important;
   transition: color 0.15s;
 }
 
+/* ── 选中态 ── */
 
 .tree-item.file.selected {
   background: rgb(var(--sb-selection-rgb) / 0.12);
@@ -433,6 +446,7 @@ onMounted(() => {
   box-shadow: var(--effect-selection-bar);
 }
 
+/* ── 文件名 ── */
 
 .item-name {
   font-size: 12.5px;
@@ -447,6 +461,7 @@ onMounted(() => {
   font-weight: 500;
 }
 
+/* ── 格式标签 ── */
 
 .item-format {
   font-size: 10.5px;
@@ -466,6 +481,7 @@ onMounted(() => {
   background: rgb(var(--sb-selection-rgb) / 0.1);
 }
 
+/* ── 选中底部状态栏 ── */
 
 .select-footer {
   flex-shrink: 0;

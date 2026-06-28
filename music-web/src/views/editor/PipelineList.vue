@@ -5,7 +5,7 @@
       <span class="log-count">{{ filteredCount }} {{ $t('pipelineList.records') }}</span>
     </div>
 
-
+    <!-- 筛选栏 -->
     <div class="filter-bar">
       <n-input
         v-model:value="searchQuery"
@@ -33,7 +33,7 @@
       />
     </div>
 
-
+    <!-- 表格 -->
     <n-spin :show="loading">
       <n-data-table
         v-if="!loading && displayList.length > 0"
@@ -55,7 +55,7 @@
       />
     </n-spin>
 
-
+    <!-- 分页 -->
     <n-pagination
       v-if="filteredCount > pageSize"
       v-model:page="currentPage"
@@ -78,10 +78,12 @@ import { fetchPipelines } from '@/api/editor/pipeline.js'
 const { t } = useI18n()
 const router = useRouter()
 
+// ── 数据 ──
 const rawData = ref([])
 const loading = ref(true)
 let timer = null
 
+// ── 筛选状态 ──
 const searchQuery = ref('')
 const debouncedSearch = ref('')
 const filterLevel = ref(null)
@@ -102,6 +104,7 @@ watch([filterLevel, filterState], () => {
   currentPage.value = 1
 })
 
+// ── 等级选项 ──
 const levelOptions = computed(() => [
   { label: t('pipelineList.allLevels'), value: null },
   { label: t('pipelineList.levelInfo'), value: 'INFO' },
@@ -110,6 +113,7 @@ const levelOptions = computed(() => [
   { label: t('pipelineList.levelError'), value: 'ERROR' },
 ])
 
+// ── 状态选项 ──
 const stateOptions = computed(() => [
   { label: t('pipelineList.allStates'), value: null },
   { label: t('pipelineList.stateRunning'), value: 'RUNNING' },
@@ -119,6 +123,7 @@ const stateOptions = computed(() => [
   { label: t('pipelineList.stateCancelled'), value: 'CANCELLED' },
 ])
 
+// ── 颜色常量（JS 中用，CSS 变量在 v-bind 中不解析） ──
 const LevelColors = { INFO: '#2080f0', SUCCESS: '#18a058', WARN: '#f0a020', ERROR: '#d03050' }
 const StateColor = {
   READY: 'default',
@@ -129,6 +134,7 @@ const StateColor = {
   CANCELLED: 'default',
 }
 
+// ── 派生字段 ──
 function deriveLevel(row) {
   if (row.state === 'FAILED') return 'ERROR'
   if (row.errorModule && row.errorModule.length > 0) return 'WARN'
@@ -158,6 +164,7 @@ function deriveDetail(row) {
   return detail
 }
 
+// 给 raw data 增强派生字段
 const enrichedData = computed(() =>
   rawData.value.map((row) => ({
     ...row,
@@ -167,10 +174,12 @@ const enrichedData = computed(() =>
   }))
 )
 
+// ── 筛选链 ──
 const displayList = computed(() => {
   let list = enrichedData.value
 
-    const kw = debouncedSearch.value.trim().toLowerCase()
+  // 关键词搜索
+  const kw = debouncedSearch.value.trim().toLowerCase()
   if (kw) {
     list = list.filter((r) =>
       r._operation.toLowerCase().includes(kw)
@@ -180,11 +189,13 @@ const displayList = computed(() => {
     )
   }
 
-    if (filterLevel.value) {
+  // 等级筛选
+  if (filterLevel.value) {
     list = list.filter((r) => r._level === filterLevel.value)
   }
 
-    if (filterState.value) {
+  // 状态筛选
+  if (filterState.value) {
     list = list.filter((r) => r.state === filterState.value)
   }
 
@@ -198,6 +209,7 @@ const pagedData = computed(() => {
   return displayList.value.slice(start, start + pageSize)
 })
 
+// ── 表格列 ──
 const columns = computed(() => [
   {
     type: 'expand',
@@ -277,6 +289,7 @@ const columns = computed(() => [
   },
 ])
 
+// ── 行点击 ──
 function rowProps(row) {
   return {
     style: 'cursor: pointer;',
@@ -288,6 +301,7 @@ function onExpandUpdate(keys) {
   expandedKeys.value = keys
 }
 
+// ── 数据加载 ──
 async function load() {
   try {
     const data = await fetchPipelines()
@@ -346,7 +360,7 @@ onUnmounted(() => {
   color: var(--color-text-tertiary);
 }
 
-
+/* ── 筛选栏 ── */
 .filter-bar {
   display: flex;
   gap: 10px;
@@ -364,13 +378,13 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-
+/* ── 表格 ── */
 .log-table {
   flex: 1;
   overflow: auto;
 }
 
-
+/* ── 展开行 ── */
 .expanded-detail {
   padding: 8px 16px 12px;
   background: var(--gradient-card, var(--color-surface));
@@ -406,14 +420,14 @@ onUnmounted(() => {
   color: var(--color-destructive);
 }
 
-
+/* ── 分页 ── */
 .list-pagination {
   margin-top: 12px;
   justify-content: flex-end;
   flex-shrink: 0;
 }
 
-
+/* ── 覆盖 n-spin 容器 ── */
 :deep(.n-spin-container) {
   flex: 1;
   display: flex;

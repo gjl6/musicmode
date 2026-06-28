@@ -5,6 +5,19 @@
         <n-icon :size="16"><ArrowBackOutline /></n-icon>
       </n-button>
       <h1>{{ $t('playlist.edit') }}</h1>
+      <n-input
+        v-model:value="searchText"
+        :placeholder="$t('player.searchPlaceholder')"
+        size="small"
+        clearable
+        round
+        style="width:180px;margin-left:auto"
+        @keyup.enter="doSearch"
+      >
+        <template #prefix>
+          <n-icon :size="16"><SearchOutline /></n-icon>
+        </template>
+      </n-input>
     </div>
 
     <n-spin :show="!pl" size="medium">
@@ -30,12 +43,21 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowBackOutline } from '@vicons/ionicons5'
+import { ArrowBackOutline, SearchOutline } from '@vicons/ionicons5'
 import { useLibraryStore } from '@/store/playback/library.js'
 import { subsonicUpdatePlaylist } from '@/api/playback/subsonic.js'
 
 const route = useRoute()
 const router = useRouter()
+
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
+
 const library = useLibraryStore()
 
 const pl = computed(() => library.playlistDetail)

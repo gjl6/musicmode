@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.gjl</groupId>
         <artifactId>music-mode</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -14,13 +14,13 @@
     <description>流媒体播放模块：HTTP Range 流、实时转码、Subsonic API、播放列表/队列</description>
 
     <dependencies>
-
+        <!-- 内部：共享数据层 -->
         <dependency>
             <groupId>com.gjl</groupId>
             <artifactId>music-common</artifactId>
         </dependency>
 
-
+        <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
@@ -30,43 +30,26 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
-
+        <!-- Spring Security（仅注解，运行时由 music-auth 提供） -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-core</artifactId>
         </dependency>
 
-
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
-
+        <!-- Jackson XML（Subsonic API） -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
         </dependency>
 
-
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>9.12.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analysis-smartcn</artifactId>
-            <version>9.12.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-queryparser</artifactId>
-            <version>9.12.0</version>
-        </dependency>
-
-
+        <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>

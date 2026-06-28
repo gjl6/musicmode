@@ -1,6 +1,6 @@
 <template>
   <div class="fullscreen-player">
-
+    <!-- ═══ 背景层 ═══ -->
     <div class="fp-bg-layer">
       <div
         class="fp-bg-cover"
@@ -9,7 +9,7 @@
       />
     </div>
 
-
+    <!-- ═══ 空状态 ═══ -->
     <div v-if="!player.hasTrack" class="fp-empty">
       <div class="fp-empty-card">
         <n-icon :size="48" color="var(--ct-text-3)"><MusicalNotesOutline /></n-icon>
@@ -20,10 +20,11 @@
       </div>
     </div>
 
-
+    <!-- ═══ 主布局：全视口 Flex 行（主体 + 侧边队列）═══ -->
     <Transition name="fp-fade">
-      <div v-if="player.hasTrack" class="fp-layout">
-
+      <div v-if="player.hasTrack" class="fp-main-area">
+        <div class="fp-layout">
+        <!-- ── 顶栏 ── -->
         <div class="fp-top">
           <n-button text class="fp-back-btn" @click.stop="goBack">
             <template #icon><n-icon :size="20"><ChevronBackOutline /></n-icon></template>
@@ -33,6 +34,9 @@
             <span class="fp-top-artist">{{ player.displayArtist }}</span>
           </div>
           <div class="fp-top-actions">
+            <n-button text class="fp-top-btn" @click.stop="$router.push('/player/search')" :title="$t('player.search')">
+              <template #icon><n-icon :size="18"><SearchOutline /></n-icon></template>
+            </n-button>
             <n-button text class="fp-top-btn" @click.stop="toggleNativeFullscreen">
               <template #icon>
                 <n-icon :size="18">
@@ -47,9 +51,9 @@
           </div>
         </div>
 
-
+        <!-- ── 主体：左列(封面+进度+控制) / 右列(歌词) ── -->
         <div class="fp-body">
-
+          <!-- 左列 -->
           <div class="fp-left">
             <div class="fp-cover-section">
               <div
@@ -82,7 +86,7 @@
               </div>
             </div>
 
-
+            <!-- 进度条 -->
             <div class="fp-progress" @click.stop="seekProgress">
               <div class="fp-progress-track">
                 <div
@@ -101,7 +105,7 @@
               </div>
             </div>
 
-
+            <!-- 控制栏 -->
             <div class="fp-controls">
               <div class="fp-ctls-side">
                 <n-button text class="fp-ctl-btn" @click.stop="player.togglePlayMode()">
@@ -170,14 +174,11 @@
                     </n-icon>
                   </template>
                 </n-button>
-                <n-button text class="fp-ctl-btn" @click.stop="toggleQueue">
-                  <template #icon><n-icon :size="16"><ListOutline /></n-icon></template>
-                </n-button>
               </div>
             </div>
           </div>
 
-
+          <!-- 右列：歌词 -->
           <div class="fp-lyrics-section">
             <div v-if="player.lyricsLoading" class="fp-lyrics-status">
               <n-spin :size="18" />
@@ -218,52 +219,8 @@
           </div>
         </div>
       </div>
-    </Transition>
-
-
-    <Transition name="fp-slide">
-      <div v-if="showQueue && player.hasTrack" class="fp-queue-overlay" @click="showQueue = false">
-        <div class="fp-queue-card" @click.stop>
-          <div class="fp-queue-header">
-            <span>{{ t('fullscreen.queueTitle', { count: player.queue.length }) }}</span>
-            <div class="fp-queue-header-actions">
-              <n-button text size="tiny" type="error" @click="player.clearQueue()">
-                {{ t('fullscreen.clear') }}
-              </n-button>
-              <n-button text size="tiny" class="fp-queue-close" @click="showQueue = false">
-                <template #icon><n-icon :size="16"><CloseOutline /></n-icon></template>
-              </n-button>
-            </div>
-          </div>
-          <div class="fp-queue-list">
-            <div
-              v-for="(s, i) in player.queue"
-              :key="i"
-              class="fp-queue-item"
-              :class="{ 'fp-queue-item--current': i === player.currentIndex }"
-              @dblclick="player.playIndex(i)"
-            >
-              <span class="fp-queue-idx">{{ i + 1 }}</span>
-              <img
-                v-if="getThumbUrl(s)"
-                :src="getThumbUrl(s)"
-                class="fp-queue-thumb"
-              />
-              <div class="fp-queue-info">
-                <span class="fp-queue-title">{{ s.title || '—' }}</span>
-                <span class="fp-queue-artist">{{ s.artist || '—' }}</span>
-              </div>
-              <span class="fp-queue-dur">{{ formatDur(s.duration) }}</span>
-              <n-button text size="tiny" class="fp-queue-play" @click.stop="player.playIndex(i)">
-                <template #icon><n-icon :size="14"><PlayOutline /></n-icon></template>
-              </n-button>
-              <n-button text size="tiny" class="fp-queue-remove" @click.stop="player.removeFromQueue(i)">
-                <template #icon><n-icon :size="14"><CloseOutline /></n-icon></template>
-              </n-button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <QueuePanel class="fp-queue-sidebar" variant="immersive" />
+    </div>
     </Transition>
   </div>
 </template>
@@ -281,18 +238,19 @@ import {
   RepeatOutline, Repeat,
   ShuffleOutline,
   ChevronBackOutline,
-  ListOutline,
-  CloseOutline,
   InformationCircleOutline,
   ExpandOutline, ContractOutline,
+  SearchOutline,
 } from '@vicons/ionicons5'
 import { usePlayerStore } from '@/store/playback/player.js'
 import { subsonicGetCoverArtUrl } from '@/api/playback/subsonic.js'
+import QueuePanel from '@/components/playback/QueuePanel.vue'
 
 const router = useRouter()
 const player = usePlayerStore()
 const { t } = useI18n()
 
+// ═══ 浏览器全屏 ═══
 
 const isNativeFullscreen = ref(false)
 
@@ -312,6 +270,7 @@ async function toggleNativeFullscreen() {
   }
 }
 
+// ═══ 键盘快捷键 ═══
 
 function onKeyDown(e) {
   if (!player.hasTrack) return
@@ -343,7 +302,6 @@ function onKeyDown(e) {
       volValue.value = Math.round(player.volume * 100)
       break
     case 'Escape':
-      if (showQueue.value) { showQueue.value = false; break }
       goBack()
       break
     case 'KeyM':
@@ -372,6 +330,7 @@ onUnmounted(() => {
   stopSmooth()
 })
 
+// ═══ rAF 平滑时间 ═══
 
 const smoothTime = ref(0)
 let _lastTuTime = 0
@@ -413,17 +372,14 @@ watch(() => player.hasTrack, (v) => {
   if (!v) { stopSmooth(); _lastTuTime = 0; _lastTuStamp = 0; smoothTime.value = 0 }
 })
 
+// ═══ 封面 ═══
 
 const coverUrl = computed(() => {
   const artId = player.current?.coverArt || player.current?.albumId
   return artId ? subsonicGetCoverArtUrl(artId, 600) : null
 })
 
-function getThumbUrl(song) {
-  const artId = song?.coverArt || song?.albumId
-  return artId ? subsonicGetCoverArtUrl(artId, 48) : null
-}
-
+// ═══ 歌词自动滚动 ═══
 
 const lyricsScrollRef = ref(null)
 
@@ -439,6 +395,7 @@ function seekLyric(startMs) {
   if (startMs != null && startMs > 0) player.seek(startMs / 1000)
 }
 
+// ═══ 进度条 ═══
 
 const hoveringProgress = ref(false)
 
@@ -453,6 +410,7 @@ function seekProgress(e) {
   smoothTime.value = newTime
 }
 
+// ═══ 音量 ═══
 
 const volPopShow = ref(false)
 const volWrapRef = ref(null)
@@ -467,21 +425,12 @@ function onDocClick(e) {
   if (!volWrapRef.value?.contains(e.target)) volPopShow.value = false
 }
 
-
-const showQueue = ref(false)
-function toggleQueue() { showQueue.value = !showQueue.value }
-
+// ═══ 工具 ═══
 
 function formatTime(sec) {
   if (!sec || !isFinite(sec) || sec <= 0) return '0:00'
   const s = Math.floor(sec)
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-
-function formatDur(sec) {
-  if (!sec || !isFinite(sec)) return '—'
-  const s = Number(sec)
-  return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 }
 
 function formatSize(bytes) {
@@ -499,7 +448,9 @@ function goToSong() {
 </script>
 
 <style scoped>
-
+/* ═══════════════════════════════════════════════════════
+   全屏播放器 — 全视口粘土沉浸布局
+   ═══════════════════════════════════════════════════════ */
 
 .fullscreen-player {
   position: fixed;
@@ -514,7 +465,7 @@ function goToSong() {
   overflow: hidden;
 }
 
-
+/* ═══ 背景模糊封面 ═══ */
 .fp-bg-layer {
   position: absolute;
   inset: 0;
@@ -543,29 +494,40 @@ function goToSong() {
   to { transform: scale(1.2); }
 }
 
-
+/* ═══ 过渡 ═══ */
 .fp-fade-enter-active,
 .fp-fade-leave-active { transition: opacity 0.35s ease; }
 .fp-fade-enter-from,
 .fp-fade-leave-to { opacity: 0; }
 
-.fp-slide-enter-active,
-.fp-slide-leave-active { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; }
-.fp-slide-enter-from,
-.fp-slide-leave-to { transform: translateX(100%); opacity: 0; }
+/* ═══════════════════════════════════════════════════════
+   主布局 — 全视口 Flex 行（主体 + 队列侧边栏）
+   ═══════════════════════════════════════════════════════ */
 
-
-.fp-layout {
+.fp-main-area {
   position: relative;
   z-index: 5;
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
-  padding: 0 48px;
+  overflow: hidden;
 }
 
+.fp-layout {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 48px;
+  overflow: hidden;
+}
 
+.fp-queue-sidebar {
+  flex-shrink: 0;
+  height: 100%;
+}
+
+/* ── 顶栏 ── */
 .fp-top {
   display: flex;
   align-items: center;
@@ -630,7 +592,7 @@ function goToSong() {
 }
 .fp-top-btn:hover { color: var(--ct-text) !important; background: var(--ct-bg-secondary) !important; }
 
-
+/* ── 主体：左列 / 右列 ── */
 .fp-body {
   flex: 1;
   display: flex;
@@ -639,17 +601,17 @@ function goToSong() {
   padding: 4px 0;
 }
 
-
+/* ═══ 左列：封面 + 进度条 + 控制 ═══ */
 .fp-left {
   flex-shrink: 0;
-  width: clamp(280px, 36vw, 420px);
+  width: min(clamp(280px, 36vw, 420px), 55vh);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
 }
 
-
+/* ═══ 封面 ═══ */
 .fp-cover-section {
   display: flex;
   flex-direction: column;
@@ -724,7 +686,7 @@ function goToSong() {
   border-radius: var(--radius-sm);
 }
 
-
+/* ═══ 右列：歌词 ═══ */
 .fp-lyrics-section {
   flex: 1;
   min-width: 0;
@@ -790,7 +752,7 @@ function goToSong() {
   font-size: var(--text-md);
 }
 
-
+/* ═══ 进度条 ═══ */
 .fp-progress {
   flex-shrink: 0;
   width: 100%;
@@ -845,7 +807,7 @@ function goToSong() {
   font-feature-settings: 'tnum';
 }
 
-
+/* ═══ 控制栏 ═══ */
 .fp-controls {
   flex-shrink: 0;
   width: 100%;
@@ -919,7 +881,7 @@ function goToSong() {
   color: var(--ct-accent);
 }
 
-
+/* ═══ 音量弹窗 ═══ */
 .fp-vol-wrap { position: relative; }
 .fp-vol-drop {
   position: absolute;
@@ -942,108 +904,7 @@ function goToSong() {
   font-feature-settings: 'tnum';
 }
 
-
-.fp-queue-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 15;
-  background: rgba(0 0 0 / 0.3);
-  display: flex;
-  justify-content: flex-end;
-}
-
-.fp-queue-card {
-  width: 340px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: var(--gradient-card);
-  border-left: var(--border-width-strong) solid var(--ct-border);
-  box-shadow: var(--shadow-lg);
-}
-
-.fp-queue-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 18px 12px;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--ct-text);
-  flex-shrink: 0;
-  border-bottom: var(--border-width-default) solid var(--ct-border);
-}
-.fp-queue-header-actions { display: flex; align-items: center; gap: 4px; }
-.fp-queue-close { color: var(--ct-text-3) !important; }
-.fp-queue-close:hover { color: var(--ct-text) !important; }
-
-.fp-queue-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px 10px 16px;
-}
-.fp-queue-list::-webkit-scrollbar { width: 4px; }
-.fp-queue-list::-webkit-scrollbar-thumb { background: var(--color-scrollbar); border-radius: 2px; }
-
-.fp-queue-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background var(--transition-fast);
-}
-.fp-queue-item:hover { background: var(--ct-bg-secondary); }
-.fp-queue-item--current {
-  background: var(--ct-bg-secondary);
-  box-shadow: var(--effect-selection-glow);
-}
-.fp-queue-item--current .fp-queue-title { color: var(--ct-accent); font-weight: 600; }
-
-.fp-queue-idx {
-  width: 20px;
-  font-size: var(--text-2xs);
-  color: var(--ct-text-3);
-  text-align: center;
-  flex-shrink: 0;
-  font-feature-settings: 'tnum';
-}
-.fp-queue-thumb {
-  width: 34px; height: 34px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-  flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
-}
-.fp-queue-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.fp-queue-title {
-  font-size: var(--text-sm);
-  color: var(--ct-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.fp-queue-artist { font-size: var(--text-2xs); color: var(--ct-text-3); }
-.fp-queue-dur {
-  font-size: var(--text-2xs);
-  color: var(--ct-text-3);
-  font-feature-settings: 'tnum';
-  flex-shrink: 0;
-}
-.fp-queue-play,
-.fp-queue-remove {
-  opacity: 0;
-  color: var(--ct-text-2) !important;
-  width: 26px; height: 26px;
-  flex-shrink: 0;
-}
-.fp-queue-item:hover .fp-queue-play,
-.fp-queue-item:hover .fp-queue-remove { opacity: 1; }
-.fp-queue-play:hover { color: var(--ct-accent) !important; }
-.fp-queue-remove:hover { color: var(--color-destructive) !important; }
-
-
+/* ═══ 空状态 ═══ */
 .fp-empty { position: relative; z-index: 5; }
 .fp-empty-card {
   display: flex;
@@ -1058,7 +919,7 @@ function goToSong() {
 }
 .fp-empty-card p { font-size: var(--text-md); color: var(--ct-text-2); margin: 0; }
 
-
+/* ═══ 响应式 ═══ */
 @media (max-width: 768px) {
   .fp-layout { padding: 0 20px; }
 
@@ -1096,10 +957,7 @@ function goToSong() {
     font-size: var(--text-md);
     padding: 4px 16px;
   }
-  .fp-lyric-line--active { font-size: var(--text-lg); }
-
-  .fp-queue-card { width: 280px; }
-}
+  .fp-lyric-line--active { font-size: var(--text-lg); }}
 
 @media (prefers-reduced-motion: reduce) {
   .fp-cover-frame--spinning .fp-cover-inner { animation: none; }

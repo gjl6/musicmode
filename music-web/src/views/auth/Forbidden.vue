@@ -4,7 +4,7 @@
       <div class="forbidden-icon">🔒</div>
       <h1 class="forbidden-title">403</h1>
       <p class="forbidden-desc">您没有权限访问此页面</p>
-      <n-button type="primary" @click="$router.push({ name: 'Workbench' })">
+      <n-button type="primary" @click="$router.push({ name: 'Home' })">
         返回工作台
       </n-button>
     </div>

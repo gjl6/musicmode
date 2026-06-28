@@ -23,7 +23,7 @@
       >
         <td class="col-idx">{{ idx + 1 }}</td>
 
-
+        <!-- 封面 -->
         <td class="col-cv">
           <img
             v-if="(row.coverArt || row.id)"
@@ -33,19 +33,32 @@
           <span v-else class="dash">—</span>
         </td>
 
-
+        <!-- 标题 + 艺术家（合并列） -->
         <td class="col-main">
           <span class="main-name link" :title="row.title" @click.stop="goSong(row)">{{ row.title || '—' }}</span>
           <span
-            v-if="row.artistId"
+            v-if="row.artists && row.artists.length > 1"
+            class="main-artist"
+          >
+            <span
+              v-for="(a, i) in row.artists"
+              :key="a.id"
+              class="main-artist-chip"
+              :class="{ link: a.id }"
+              :title="a.name"
+              @click.stop="goArtist(a.id)"
+            >{{ a.name }}<span v-if="i < row.artists.length - 1"> / </span></span>
+          </span>
+          <span
+            v-else-if="row.artistId"
             class="main-artist link"
-            :title="row.artist"
-            @click.stop="goArtist(row)"
-          >{{ row.artist || '—' }}</span>
-          <span v-else class="main-artist" :title="row.artist">{{ row.artist || '—' }}</span>
+            :title="row.displayArtist || row.artist"
+            @click.stop="goArtist(row.artistId)"
+          >{{ row.displayArtist || row.artist || '—' }}</span>
+          <span v-else class="main-artist" :title="row.displayArtist || row.artist">{{ row.displayArtist || row.artist || '—' }}</span>
         </td>
 
-
+        <!-- 专辑 -->
         <td class="col-album">
           <span
             v-if="row.albumId"
@@ -56,7 +69,7 @@
           <span v-else :title="row.album">{{ row.album || '—' }}</span>
         </td>
 
-
+        <!-- 格式 -->
         <td class="col-fmt">
           <span
             v-if="row.suffix || row.fileFormat"
@@ -66,10 +79,10 @@
           <span v-else class="dash">—</span>
         </td>
 
-
+        <!-- 时长 -->
         <td class="col-dur">{{ formatDuration(row.duration) }}</td>
 
-
+        <!-- 大小 -->
         <td class="col-size">
           <span v-if="formatSize(row.size || row.fileSize)">
             {{ formatSize(row.size || row.fileSize).val }}<span class="unit">{{ formatSize(row.size || row.fileSize).unit }}</span>
@@ -77,7 +90,7 @@
           <span v-else class="dash">—</span>
         </td>
 
-
+        <!-- 比特率 -->
         <td class="col-br">
           <span v-if="formatBitrate(row.bitRate)">
             {{ formatBitrate(row.bitRate).val }}<span class="unit">{{ formatBitrate(row.bitRate).unit }}</span>
@@ -85,7 +98,7 @@
           <span v-else class="dash">—</span>
         </td>
 
-
+        <!-- 评分 -->
         <td class="col-rate" @click.stop>
           <StarRatingComp
             :rating="Number(row.userRating) || 0"
@@ -95,7 +108,7 @@
           />
         </td>
 
-
+        <!-- 操作 -->
         <td class="col-act">
           <div class="actions">
             <button class="act-btn act-play" @click.stop="$emit('play', row)" title="播放">
@@ -137,6 +150,7 @@ defineProps({
 
 defineEmits(['play', 'addToQueue', 'toggleFav', 'rate', 'addToPlaylist'])
 
+// ── 格式化 ──
 
 function formatDuration(s) {
   if (!s || !isFinite(s)) return '—'
@@ -157,18 +171,20 @@ function formatBitrate(kbps) {
   return { val: String(kbps), unit: 'kbps' }
 }
 
+// ── 封面 ──
 
 function coverUrl(row) {
   const artId = row.coverArt || row.id
   return artId ? subsonicGetCoverArtUrl(artId, 64) : ''
 }
 
+// ── 导航 ──
 
 function goSong(row) {
   if (row.id) router.push(`/player/songs/${row.id}`)
 }
-function goArtist(row) {
-  if (row.artistId) router.push(`/player/artists/${row.artistId}`)
+function goArtist(artistId) {
+  if (artistId) router.push(`/player/artists/${artistId}`)
 }
 function goAlbum(row) {
   if (row.albumId) router.push(`/player/albums/${row.albumId}`)
@@ -176,8 +192,11 @@ function goAlbum(row) {
 </script>
 
 <style scoped>
+/* ═══════════════════════════════════════════════════════════════
+   Claymorphism Song Table — 9 列原生 table
+   ═══════════════════════════════════════════════════════════════ */
 
-
+/* ── 表格基础 ── */
 .clay-table {
   width: 100%;
   border-collapse: separate;
@@ -185,7 +204,7 @@ function goAlbum(row) {
   table-layout: fixed;
 }
 
-
+/* 列宽 */
 .col-idx   { width: 36px;  text-align: center; }
 .col-cv    { width: 45px;  text-align: center; }
 .col-main  { text-align: left; }
@@ -197,10 +216,10 @@ function goAlbum(row) {
 .col-rate  { width: 90px;  text-align: center; }
 .col-act   { width: 120px; text-align: center; }
 
-
+/* 修正 th 默认居中对齐 */
 th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center; }
 
-
+/* ── 表头 ── */
 .clay-table th {
   background: var(--gradient-button);
   box-shadow:
@@ -219,7 +238,7 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
 .clay-table th:first-child { border-radius: 10px 0 0 10px; }
 .clay-table th:last-child  { border-radius: 0 10px 10px 0; }
 
-
+/* ── 数据行 ── */
 .clay-table td {
   background: var(--gradient-table-row);
   box-shadow:
@@ -241,7 +260,7 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
 .clay-table td:first-child { border-radius: 12px 0 0 12px; }
 .clay-table td:last-child  { border-radius: 0 12px 12px 0; }
 
-
+/* hover */
 .clay-table tbody tr:hover td {
   background: var(--gradient-card);
   box-shadow:
@@ -251,7 +270,7 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
   transform: translateY(-2px);
 }
 
-
+/* ── 暗色主题 ── */
 :root.dark .clay-table th {
   box-shadow:
     var(--effect-button-inner),
@@ -268,7 +287,7 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
     4px 6px 18px rgba(0 0 0 / 0.5);
 }
 
-
+/* ── 封面缩略图 ── */
 .cv-img {
   width: 42px; height: 42px;
   border-radius: 7px;
@@ -277,7 +296,7 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
   margin: 0 auto;
 }
 
-
+/* ── 合并列：标题 + 艺术家 ── */
 .col-main {
   line-height: 1.4;
 }
@@ -301,6 +320,20 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 多艺术家 chip 模式 */
+.main-artist:has(.main-artist-chip) {
+  white-space: normal;
+  line-height: 1.5;
+}
+.main-artist-chip {
+  display: inline;
+}
+.main-artist-chip.link {
+  cursor: pointer;
+}
+.main-artist-chip.link:hover {
+  color: var(--ct-accent);
+}
 .main-artist.link {
   cursor: pointer;
 }
@@ -308,7 +341,7 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
   color: var(--ct-accent);
 }
 
-
+/* ── 可点击链接（专辑列）── */
 .link {
   cursor: pointer;
 }
@@ -316,20 +349,20 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
   color: var(--ct-accent);
 }
 
-
+/* ── 占位符 ── */
 .dash {
   font-size: 12px;
   color: var(--ct-text-3);
 }
 
-
+/* 序号 */
 .col-idx {
   font-size: 12px;
   color: var(--ct-text-3);
   font-variant-numeric: tabular-nums;
 }
 
-
+/* 时长/大小/比特率 */
 .col-dur, .col-size, .col-br {
   font-size: 11px;
   color: var(--ct-text-3);
@@ -341,7 +374,7 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
   margin-left: 1px;
 }
 
-
+/* ── 格式徽章 ── */
 .badge {
   display: inline-block;
   font-size: 10px;
@@ -358,7 +391,7 @@ th.col-dur, th.col-fmt, th.col-size, th.col-br, th.col-rate { text-align: center
 .badge-fmt--aac  { color: #7C3AED; background: rgba(124 58 237 / 0.1); }
 .badge-fmt--ogg  { color: #CA8A40; background: rgba(202 138 64 / 0.1); }
 
-
+/* ── 操作按钮 ── */
 .actions {
   display: flex;
   gap: 3px;

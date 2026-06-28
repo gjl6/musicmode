@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-
+/** 播放列表 */
 @Data
 @Builder
 @NoArgsConstructor

@@ -27,7 +27,7 @@ const props = defineProps({
   alt: { type: String, default: '' },
   size: { type: [Number, String], default: 160 },
   circle: { type: Boolean, default: false },
-
+  /** 'album' | 'artist' | 'playlist' | 'generic' */
   type: { type: String, default: 'album' },
 })
 

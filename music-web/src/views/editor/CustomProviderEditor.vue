@@ -1,6 +1,6 @@
 <template>
   <div class="editor-page">
-
+    <!-- 页头 -->
     <div class="page-head">
       <n-button text size="small" @click="$router.push('/config')">
         <template #icon><n-icon :size="16"><ArrowBackOutline /></n-icon></template>
@@ -12,7 +12,7 @@
     <n-spin :show="saving">
       <n-form label-placement="top" require-mark-placement="right">
 
-
+        <!-- ═══════════ 基本信息 ═══════════ -->
         <n-card :title="$t('customProvider.basicInfo')" class="section">
           <div class="info-row">
             <n-form-item :label="$t('customProvider.label')" required class="info-name">
@@ -27,7 +27,7 @@
           </n-form-item>
         </n-card>
 
-
+        <!-- ═══════════ 接入模式 ═══════════ -->
         <n-card class="section">
           <template #header>
             <div class="card-header-row">
@@ -49,7 +49,7 @@
             </div>
           </template>
 
-
+          <!-- ── BRIDGE ── -->
           <div v-if="form.mode === 'BRIDGE'" class="mode-body">
             <n-form-item required>
               <template #label>
@@ -107,7 +107,7 @@
             </n-alert>
           </div>
 
-
+          <!-- ── JAVA ── -->
           <div v-if="form.mode === 'JAVA'" class="mode-body">
             <div class="java-toolbar">
               <n-button size="small" quaternary @click="downloadTemplateFile">
@@ -133,7 +133,7 @@
               </span>
             </div>
 
-
+            <!-- 参数列表 -->
             <div v-if="params.length > 0" class="param-section">
               <n-text depth="3" class="param-heading">
                 {{ $t('customProvider.paramsHint') }}
@@ -175,7 +175,7 @@
           </div>
         </n-card>
 
-
+        <!-- ═══════════ 操作 ═══════════ -->
         <div class="actions-bar">
           <n-button size="small" @click="doTest" :loading="testing" secondary>
             <template #icon><n-icon :size="15"><PulseOutline /></n-icon></template>
@@ -190,7 +190,7 @@
       </n-form>
     </n-spin>
 
-
+    <!-- 测试结果弹窗 -->
     <n-modal
       v-model:show="testModal"
       preset="card"
@@ -223,9 +223,11 @@
 </template>
 
 <script setup>
+// 1. Vue 核心
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+// 2. 第三方库
 import { useI18n } from 'vue-i18n'
 import { useMessage } from 'naive-ui'
 import {
@@ -234,6 +236,7 @@ import {
   LinkOutline, PulseOutline
 } from '@vicons/ionicons5'
 
+// 3. 项目内部 — API
 import * as api from '@/api/editor/custom-provider.js'
 
 const { t } = useI18n()
@@ -241,14 +244,17 @@ const route = useRoute()
 const router = useRouter()
 const message = useMessage()
 
+// ── 路由 ──
 const id = computed(() => route.params.id)
 const isNew = computed(() => !id.value || id.value === 'new')
 
+// ── 状态 ──
 const saving = ref(false)
 const testing = ref(false)
 const testModal = ref(false)
 const testResult = ref(null)
 
+// ── 表单数据 ──
 const form = ref({ name: '', label: '', description: '', icon: '🔌', mode: 'BRIDGE' })
 const bridgeUrl = ref('')
 const authHeader = ref('')
@@ -261,12 +267,14 @@ const params = ref([])
 const fileInputRef = ref(null)
 const uploadedParams = ref([])
 
+// ── 计算属性 ──
 const providerName = computed(() => {
   if (form.value.name) return form.value.name
   if (form.value.mode === 'JAVA' && uploadedParams.value.length > 0) return t('customProvider.autoDetect')
   return 'custom:' + (form.value.label || 'new').replace(/[^a-zA-Z0-9一-鿿_-]/g, '') || t('customProvider.autoGenerate')
 })
 
+// ── 生命周期 ──
 onMounted(async () => {
   if (!isNew.value) {
     try {
@@ -287,10 +295,11 @@ onMounted(async () => {
         params.value = dbParams
       }
       sourceCode.value = data.sourceCode || ''
-    } catch {  }
+    } catch { /* 加载失败静默处理 */ }
   }
 })
 
+// ── 模板下载 ──
 async function downloadTemplateFile() {
   const res = await api.downloadTemplate('MyMusicProvider', form.value.label || 'my-provider')
   const blob = new Blob([res.sourceCode], { type: 'text/java' })
@@ -303,6 +312,7 @@ async function downloadTemplateFile() {
   message.success(t('customProvider.templateDownloaded'))
 }
 
+// ── 文件上传 ──
 function onFileChange(e) {
   const file = e.target.files?.[0]
   if (!file) return
@@ -346,6 +356,7 @@ function onFileChange(e) {
   e.target.value = ''
 }
 
+// ── 构建配置 ──
 function buildConfigJson() {
   if (form.value.mode === 'BRIDGE') {
     return JSON.stringify({
@@ -365,6 +376,7 @@ function buildConfigJson() {
   })
 }
 
+// ── 测试 ──
 async function doTest() {
   testing.value = true
   testResult.value = null
@@ -390,6 +402,7 @@ async function doTest() {
   }
 }
 
+// ── 保存 ──
 async function doSave(silent = false) {
   saving.value = true
   try {
@@ -437,12 +450,12 @@ async function doSave(silent = false) {
 </script>
 
 <style scoped>
-
+/* ── 页面容器 ── */
 .editor-page {
   padding: var(--space-6) var(--space-6) var(--space-12);
 }
 
-
+/* ── 页头 ── */
 .page-head {
   display: flex;
   align-items: center;
@@ -455,10 +468,10 @@ async function doSave(silent = false) {
   font-weight: 600;
 }
 
-
+/* ── 卡片间距 ── */
 .section { margin-bottom: var(--space-4); }
 
-
+/* ── 基本信息行 ── */
 .info-row {
   display: flex;
   gap: var(--space-5);
@@ -467,7 +480,7 @@ async function doSave(silent = false) {
 .info-name { flex: 1; }
 .info-icon { flex-shrink: 0; width: 140px; }
 
-
+/* ── 模式卡片标题行 ── */
 .card-header-row {
   display: flex;
   align-items: center;
@@ -476,21 +489,21 @@ async function doSave(silent = false) {
 }
 .card-title-text { font-weight: 600; font-size: var(--text-md); }
 
-
+/* ── 模式按钮 ── */
 .radio-inner {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
 }
 
-
+/* ── 模式内容 ── */
 .mode-body {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
-
+/* ── 表单标签带字段名 ── */
 .field-label { font-size: var(--text-base); }
 .field-key {
   font-size: var(--text-xs);
@@ -502,14 +515,14 @@ async function doSave(silent = false) {
   margin-left: var(--space-2);
 }
 
-
+/* ── BRIDGE 参数双列网格 ── */
 .bridge-params-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0 var(--space-4);
 }
 
-
+/* ── 接口约定提示 ── */
 .api-hint {
   margin-top: var(--space-2);
   font-size: var(--text-base);
@@ -521,7 +534,7 @@ async function doSave(silent = false) {
   font-size: var(--text-sm);
 }
 
-
+/* ── JAVA 工具栏 ── */
 .java-toolbar {
   display: flex;
   align-items: center;
@@ -530,7 +543,7 @@ async function doSave(silent = false) {
 }
 .upload-badge { margin-left: var(--space-1); }
 
-
+/* ── 参数区域 ── */
 .param-section {
   margin-top: var(--space-2);
   padding: var(--space-3);
@@ -573,7 +586,7 @@ async function doSave(silent = false) {
   padding-left: var(--space-1);
 }
 
-
+/* ── 操作栏 ── */
 .actions-bar {
   display: flex;
   align-items: center;
@@ -586,7 +599,7 @@ async function doSave(silent = false) {
   gap: var(--space-2);
 }
 
-
+/* ── 测试结果弹窗 ── */
 .test-result {
   display: flex;
   flex-direction: column;

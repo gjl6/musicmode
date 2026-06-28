@@ -5,12 +5,13 @@ import { fetchDirectory, fetchDirectoryMetadata } from '@/api/editor/browse.js'
 export const useFileStore = defineStore('file', () => {
   const currentPath = ref('')
   const folders = ref([])
-  const files = ref([])
-  const pageFiles = ref([])
+  const files = ref([])           // 侧边栏：全部文件（基础信息，不解析标签）
+  const pageFiles = ref([])       // 表格：当前页文件（带元数据）
   const loading = ref(false)
   const metadataLoading = ref(false)
 
-    const totalFiles = ref(0)
+  // 分页
+  const totalFiles = ref(0)
   const currentPage = ref(1)
   const pageSize = ref(50)
 
@@ -18,6 +19,7 @@ export const useFileStore = defineStore('file', () => {
   const selectedIds = ref(new Set())
   const selectedFolderNames = ref(new Set())
 
+  // ── 计算属性 ──
 
   const filteredFiles = computed(() => {
     let result = files.value
@@ -46,6 +48,7 @@ export const useFileStore = defineStore('file', () => {
 
   const isRoot = computed(() => !currentPath.value || currentPath.value === '/')
 
+  // ── 方法 ──
 
   async function loadDirectory(path) {
     loading.value = true

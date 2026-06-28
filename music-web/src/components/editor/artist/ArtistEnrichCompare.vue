@@ -5,9 +5,9 @@
         <p>正在查询各标签源…</p>
       </div>
 
-
+      <!-- ═══ Compact 模式：纵向表格（行=数据源，列=字段） ═══ -->
       <div v-else-if="compact && results.length > 0">
-
+        <!-- 模式切换 -->
         <div class="aec-v-mode">
           <n-radio-group v-model:value="writeMode" size="small">
             <n-radio-button value="fill">只填空</n-radio-button>
@@ -29,7 +29,7 @@
               </tr>
             </thead>
             <tbody>
-
+              <!-- Provider 行 -->
               <tr
                 v-for="r in results"
                 :key="r.source"
@@ -77,7 +77,7 @@
         </div>
       </div>
 
-
+      <!-- ═══ 非 Compact 模式：横向对比表格（批量工具用） ═══ -->
       <div v-else-if="!compact && results.length > 0">
         <n-table :single-line="false" size="small" class="aec-table">
           <thead>
@@ -148,7 +148,7 @@
         </div>
       </div>
 
-
+      <!-- 无结果 -->
       <n-empty v-else-if="!loading" description="无 Provider 返回数据">
         <template #extra>
           <n-button size="small" @click="$emit('refreshNeeded')">重新查询</n-button>
@@ -252,18 +252,21 @@ function isDifferent(fieldKey, info) {
   return String(cur) !== String(val ?? '')
 }
 
+// ── 单元格点击 → 始终填入表单（同 song EnrichPanel.fillField） ──
 function handleCellClick(fieldKey, result) {
   if (props.compact) {
     emit('fillField', fieldKey, result.info[fieldKey])
   }
 }
 
+// ── [应用] 按钮 → 填入整行（受 fill/overwrite 控制） ──
 function handleFillAll(result) {
   if (props.compact) {
     emit('fillAll', { ...result.info }, writeMode.value)
   }
 }
 
+// ── 直接写入 DB（非 compact 模式用） ──
 async function doApply() {
   applying.value = true
   try {
@@ -288,6 +291,7 @@ async function doApply() {
 .aec-empty { color: var(--ct-text-disabled); font-style: italic; }
 .aec-different { font-weight: 600; }
 
+/* ═══ Compact 模式：纵向表格 ═══ */
 
 .aec-v-mode {
   display: flex;
@@ -337,7 +341,7 @@ async function doApply() {
   background: var(--ct-bg-secondary);
 }
 
-
+/* 列宽 — 封面放在前面更突出 */
 .aec-v-th-src, .aec-v-td-src { width: 75px; }
 .aec-v-th-cover, .aec-v-td-cover { width: 60px; text-align: center; }
 .aec-v-th-intro, .aec-v-td-intro { width: 180px; }
@@ -354,7 +358,7 @@ async function doApply() {
   line-height: 1.3;
 }
 
-
+/* 可点击单元格（同 song 风格：underline，hover 变色） */
 .aec-clickable {
   cursor: pointer;
   text-decoration: underline;
@@ -368,7 +372,7 @@ async function doApply() {
   color: var(--n-color-primary);
 }
 
-
+/* 文字溢出省略 */
 .aec-ellipsis {
   display: block;
   overflow: hidden;
@@ -376,7 +380,7 @@ async function doApply() {
   white-space: nowrap;
 }
 
-
+/* 封面缩略图 */
 .aec-cover-thumb {
   width: 44px;
   height: 44px;
@@ -386,6 +390,7 @@ async function doApply() {
   margin: 0 auto;
 }
 
+/* ═══ 非 Compact 模式：横向对比表格 ═══ */
 
 .aec-table { margin-bottom: 12px; }
 

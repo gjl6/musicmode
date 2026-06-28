@@ -86,6 +86,7 @@ function goArtist(album) {
 .album-card {
   display: flex;
   flex-direction: column;
+  height: 100%;
   border-radius: var(--radius-md, 10px);
   background: var(--gradient-card);
   border: var(--border-width-default, 1px) solid var(--ct-border);
@@ -104,7 +105,7 @@ function goArtist(album) {
   transform: scale(0.98);
 }
 
-
+/* ── 封面区 ── */
 .album-card-cover {
   position: relative;
   aspect-ratio: 1;
@@ -115,7 +116,7 @@ function goArtist(album) {
   overflow: hidden;
 }
 
-
+/* hover 悬浮层 */
 .album-card-overlay {
   position: absolute;
   inset: 0;
@@ -131,7 +132,7 @@ function goArtist(album) {
   opacity: 1;
 }
 
-
+/* 播放按钮 */
 .card-play-btn {
   background: rgba(255, 255, 255, 0.92) !important;
   color: var(--ct-accent) !important;
@@ -144,7 +145,7 @@ function goArtist(album) {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-
+/* 收藏按钮 */
 .card-fav-btn {
   position: absolute;
   top: 8px;
@@ -158,7 +159,7 @@ function goArtist(album) {
   transform: scale(1.12);
 }
 
-
+/* ── 信息区 ── */
 .album-card-body {
   display: flex;
   flex-direction: column;
@@ -191,7 +192,7 @@ function goArtist(album) {
   color: var(--ct-accent);
 }
 
-
+/* ── 元信息 ── */
 .album-card-meta {
   display: flex;
   align-items: center;

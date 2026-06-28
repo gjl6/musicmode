@@ -75,6 +75,7 @@ const genderLabel = computed(() => {
 .artist-card {
   display: flex;
   flex-direction: column;
+  height: 100%;
   border-radius: var(--radius-md, 10px);
   background: var(--gradient-card);
   border: var(--border-width-default, 1px) solid var(--ct-border);
@@ -91,7 +92,7 @@ const genderLabel = computed(() => {
   transform: scale(0.98);
 }
 
-
+/* ── 封面区 ── */
 .artist-card-cover {
   position: relative;
   aspect-ratio: 1;
@@ -102,7 +103,7 @@ const genderLabel = computed(() => {
   overflow: hidden;
 }
 
-
+/* hover 悬浮层 */
 .artist-card-overlay {
   position: absolute;
   inset: 0;
@@ -130,7 +131,7 @@ const genderLabel = computed(() => {
   transform: scale(1.12);
 }
 
-
+/* ── 名称 ── */
 .artist-card-body {
   padding: 10px 12px 4px;
   min-width: 0;
@@ -146,7 +147,7 @@ const genderLabel = computed(() => {
   line-height: 1.4;
 }
 
-
+/* ── 元信息 ── */
 .artist-card-meta {
   display: flex;
   align-items: center;

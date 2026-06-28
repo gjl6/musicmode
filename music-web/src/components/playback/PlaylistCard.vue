@@ -1,6 +1,6 @@
 <template>
   <div class="playlist-card" @click="$emit('click')">
-
+    <!-- 封面区 + 悬停 overlay -->
     <div class="card-cover-wrap">
       <PlaylistCover
         :entries="playlist.entry || []"
@@ -35,7 +35,7 @@
       </n-button>
     </div>
 
-
+    <!-- 信息区 -->
     <div class="card-info">
       <div class="card-title" :title="playlist.name">{{ playlist.name || '—' }}</div>
       <div class="card-meta">
@@ -82,7 +82,7 @@ const durationText = computed(() => {
   transform: translateY(-2px);
 }
 
-
+/* ── 封面 + overlay ── */
 .card-cover-wrap {
   position: relative;
   width: fit-content;
@@ -105,7 +105,7 @@ const durationText = computed(() => {
   opacity: 1;
 }
 
-
+/* 播放按钮 */
 .overlay-play-btn {
   background: rgba(255, 255, 255, 0.92) !important;
   color: var(--ct-accent, #6366F1) !important;
@@ -119,7 +119,7 @@ const durationText = computed(() => {
   transform: scale(1.1);
 }
 
-
+/* 收藏按钮 */
 .card-fav-btn {
   position: absolute;
   top: 8px;
@@ -133,7 +133,7 @@ const durationText = computed(() => {
   transform: scale(1.12);
 }
 
-
+/* ── 信息区 ── */
 .card-info {
   padding: 10px 4px 4px;
   min-width: 0;

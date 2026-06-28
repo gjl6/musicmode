@@ -2,19 +2,21 @@ import { ref } from 'vue'
 import { listProviders, enrichSearch, fetchSongDetail } from '@/api/editor/enrich.js'
 import { useEditStore } from '@/store/editor/edit.js'
 
-
+/** 可用的 provider 列表（全局缓存，只加载一次） */
 const providerList = ref([])
 let providersLoaded = false
 
-
+/**
+ * 增强搜索 composable — 搜索快速返回基础字段，详情按需加载。
+ */
 export function useEnrich() {
   const provider = ref(['netease'])
   const results = ref([])
   const loading = ref(false)
   const error = ref(null)
-  const overwriteMode = ref('fill')
+  const overwriteMode = ref('fill') // 'fill' | 'overwrite'
 
-
+  /** 加载 provider 列表（幂等，全局缓存） */
   async function loadProviders() {
     if (providersLoaded) return
     try {
@@ -36,7 +38,7 @@ export function useEnrich() {
     }
   }
 
-
+  /** 执行搜索 —— 一次返回完整数据。支持多源（数组 → 逗号字符串） */
   async function search() {
     const meta = useEditStore().currentMeta
     const title = meta?.song?.title || ''
@@ -55,18 +57,22 @@ export function useEnrich() {
     }
   }
 
-
+  /**
+   * 按需加载歌曲完整详情（genre, language, company, description, lyrics 等）。
+   * 将返回的详情字段合并回 results 中对应行。
+   */
   async function loadDetail(rowIndex) {
     const row = results.value[rowIndex]
     if (!row) return
-    const songId = row.songs?.[0]?.fileName
+    const songId = row.songs?.[0]?.fileName // enrichSearch 暂存于此
     if (!songId) return
     try {
       const pv = Array.isArray(provider.value) ? provider.value[0] : provider.value
       const data = await fetchSongDetail(pv, songId)
       const detail = data?.detail
       if (!detail) return
-            const updated = { ...row }
+      // 合并详情字段到 results 行
+      const updated = { ...row }
       if (detail.genre && !updated.styles?.[0]) {
         updated.styles = [{ styleName: detail.genre }]
       } else if (detail.genre && updated.styles?.[0]) {
@@ -94,10 +100,11 @@ export function useEnrich() {
       }
       results.value[rowIndex] = updated
     } catch {
-          }
+      // 静默失败
+    }
   }
 
-
+  /** 清除 HTML 标签，保留 LRC 时间标记 */
   function cleanLyric(lrc) {
     if (!lrc) return ''
     return lrc

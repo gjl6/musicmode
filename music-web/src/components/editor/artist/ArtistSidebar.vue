@@ -1,6 +1,6 @@
 <template>
   <aside class="asb-root">
-
+    <!-- 全局搜索（独立，不影响过滤） -->
     <div class="asb-search">
       <n-input
         v-model:value="searchText"
@@ -17,9 +17,9 @@
 
     <div class="asb-divider"></div>
 
-
+    <!-- 过滤面板（首字母 + 快速模式 + 叠加过滤，AND 叠加） -->
     <div class="asb-filters">
-
+      <!-- 首字母 -->
       <div class="asb-section-label">首字母</div>
       <div class="asb-letter-grid">
         <button
@@ -36,7 +36,7 @@
         >{{ ch }}</button>
       </div>
 
-
+      <!-- 快速模式 -->
       <div class="asb-section-label">快速模式</div>
       <n-radio-group
         :value="selectMode"
@@ -54,7 +54,7 @@
         </n-radio>
       </n-radio-group>
 
-
+      <!-- 叠加过滤 -->
       <div class="asb-section-label">歌曲范围</div>
       <div class="asb-range-row">
         <n-input-number
@@ -85,7 +85,7 @@
         @update:value="v => $emit('update:filterCountry', v)"
       />
 
-
+      <!-- 查询按钮 + 结果数 -->
       <div class="asb-query-row">
         <n-button type="primary" size="small" :loading="loading" block @click="$emit('query')">
           <template #icon><n-icon :size="16"><SearchOutline /></n-icon></template>
@@ -106,6 +106,7 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
+// ── 字母索引 ──
 const letterChips = (() => {
   const chips = []
   for (let c = 65; c <= 90; c++) chips.push(String.fromCharCode(c))
@@ -139,6 +140,7 @@ const emit = defineEmits([
   'search', 'query',
 ])
 
+// ── 全局搜索（独立，防抖 350ms） ──
 const searchText = ref('')
 let searchTimer = null
 function onSearchInput(val) {
@@ -146,6 +148,7 @@ function onSearchInput(val) {
   searchTimer = setTimeout(() => emit('search', val || ''), 350)
 }
 
+// ── 快速模式切换 ──
 function onModeChange(mode) {
   emit('update:selectMode', mode)
   emit('query')
@@ -163,7 +166,7 @@ function onModeChange(mode) {
   border-right: 1px solid var(--ct-border);
 }
 
-
+/* ── 全局搜索 ── */
 .asb-search {
   padding: 12px 12px 8px;
   flex-shrink: 0;
@@ -176,7 +179,7 @@ function onModeChange(mode) {
   flex-shrink: 0;
 }
 
-
+/* ── 过滤面板（可滚动） ── */
 .asb-filters {
   flex: 1;
   overflow-y: auto;
@@ -191,7 +194,7 @@ function onModeChange(mode) {
 .asb-filters::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
 .asb-filters:hover::-webkit-scrollbar-thumb { background: var(--sb-scrollbar); }
 
-
+/* ── 区块标签 ── */
 .asb-section-label {
   font-size: 11px;
   font-weight: 600;
@@ -199,7 +202,7 @@ function onModeChange(mode) {
   letter-spacing: 0.03em;
 }
 
-
+/* ── 首字母 5 列网格 ── */
 .asb-letter-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -235,7 +238,7 @@ function onModeChange(mode) {
   font-weight: 600;
 }
 
-
+/* ── 快速模式 radio ── */
 .asb-mode-group {
   display: flex;
   flex-direction: column;
@@ -260,7 +263,7 @@ function onModeChange(mode) {
   color: var(--ct-text-2);
 }
 
-
+/* ── 歌曲范围 ── */
 .asb-range-row {
   display: flex;
   align-items: center;
@@ -272,7 +275,7 @@ function onModeChange(mode) {
   color: var(--ct-text-3);
 }
 
-
+/* ── 查询 ── */
 .asb-query-row {
   display: flex;
   flex-direction: column;

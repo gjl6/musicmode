@@ -6,7 +6,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 
-
+/**
+ * 用户列表响应。
+ */
 @Data
 @Builder
 public class UserListResponse {
@@ -19,6 +21,6 @@ public class UserListResponse {
     private LocalDateTime lastLoginTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-
+    /** 拥有的角色列表 */
     private List<String> roles;
 }

@@ -7,8 +7,10 @@
         <id     column="id"              property="id" javaType="long"/>
         <result column="username"        property="username"/>
         <result column="password"        property="password"/>
+        <result column="subsonic_secret" property="subsonicSecret"/>
         <result column="email"           property="email"/>
         <result column="display_name"    property="displayName"/>
+        <result column="avatar_path"     property="avatarPath"/>
         <result column="status"          property="status"/>
         <result column="last_login_time" property="lastLoginTime"/>
         <result column="failed_attempts" property="failedAttempts"/>
@@ -34,8 +36,8 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO auth_user (username, password, email, display_name, status, create_time, update_time)
-        VALUES (#{username}, #{password}, #{email}, #{displayName}, #{status},
+        INSERT INTO auth_user (username, password, subsonic_secret, email, display_name, status, create_time, update_time)
+        VALUES (#{username}, #{password}, #{subsonicSecret}, #{email}, #{displayName}, #{status},
                 COALESCE(#{createTime}, CURRENT_TIMESTAMP),
                 COALESCE(#{updateTime}, CURRENT_TIMESTAMP))
     </insert>
@@ -48,7 +50,17 @@
     </update>
 
     <update id="updatePassword">
-        UPDATE auth_user SET password = #{password}, update_time = CURRENT_TIMESTAMP
+        UPDATE auth_user SET password = #{password}, subsonic_secret = #{subsonicSecret}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateSubsonicSecret">
+        UPDATE auth_user SET subsonic_secret = #{subsonicSecret}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateAvatar">
+        UPDATE auth_user SET avatar_path = #{avatarPath}, update_time = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
 

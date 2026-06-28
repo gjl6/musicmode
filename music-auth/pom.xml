@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.gjl</groupId>
         <artifactId>music-mode</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,49 +18,49 @@
     <description>认证模块：JWT + RBAC + Spring Security</description>
 
     <dependencies>
-
+        <!-- 内部：共享数据层（ConfigService, MetadataItem 等） -->
         <dependency>
             <groupId>com.gjl</groupId>
             <artifactId>music-common</artifactId>
         </dependency>
 
-
+        <!-- 内部：业务逻辑库（Controller, Service, Module, Pipeline） -->
         <dependency>
             <groupId>com.gjl</groupId>
             <artifactId>music-editor</artifactId>
         </dependency>
 
-
+        <!-- 内部：流媒体播放（流式传输、转码、播放列表、Subsonic API） -->
         <dependency>
             <groupId>com.gjl</groupId>
             <artifactId>music-playback</artifactId>
         </dependency>
 
-
+        <!-- Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-
+        <!-- Spring Web（主应用提供嵌入式 Tomcat） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
-
+        <!-- Spring WebSocket（STOMP 进度推送） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
-
+        <!-- Bean Validation（DTO 校验） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-
+        <!-- JWT 库（jjwt） -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -79,7 +79,7 @@
             <scope>runtime</scope>
         </dependency>
 
-
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -87,13 +87,13 @@
             <optional>true</optional>
         </dependency>
 
-
+        <!-- Caffeine（JwtTokenProvider 轻量缓存） -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
 
-
+        <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security-test</artifactId>

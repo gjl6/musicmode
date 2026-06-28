@@ -7,12 +7,12 @@
     :mask-closable="!processing"
     @update:show="$emit('update:visible', $event)"
   >
-
+    <!-- 工具描述 -->
     <n-alert type="info" :bordered="false" class="tool-desc">
       {{ toolDesc }}
     </n-alert>
 
-
+    <!-- 未实现工具 -->
     <n-result
       v-if="!isImplemented"
       status="info"
@@ -20,7 +20,7 @@
       :description="$t('tool.comingSoonDesc')"
     />
 
-
+    <!-- 已实现工具 -->
     <template v-if="isImplemented">
       <n-form-item :label="$t('tool.targetPath')" class="path-field">
         <n-input
@@ -43,7 +43,7 @@
         </n-collapse-item>
       </n-collapse>
 
-
+      <!-- 结果展示 -->
       <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="result-alert">
         <template #header>
           <span v-if="result.success">{{ $t('tool.success') }}</span>
@@ -59,7 +59,7 @@
         </p>
       </n-alert>
 
-
+      <!-- 错误展示 -->
       <n-alert v-if="error" type="error" class="result-alert">
         {{ error }}
       </n-alert>
@@ -127,6 +127,7 @@ const isWriteTool = computed(() =>
 const selectedCount = computed(() => fileStore.selectedIds?.size ?? 0)
 const selectedFilePaths = computed(() => fileStore.selectedFiles.map(f => f.path))
 
+// 弹窗打开时自动填充当前路径
 watch(() => props.visible, (v) => {
   if (v) {
     path.value = fileStore.currentPath || ''

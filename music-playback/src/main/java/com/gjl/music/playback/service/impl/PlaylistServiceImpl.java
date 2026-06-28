@@ -1,9 +1,9 @@
 package com.gjl.music.playback.service.impl;
+import com.gjl.music.infra.util.PathUtils;
+import com.gjl.music.infra.util.PinyinUtils;
 import com.gjl.music.playback.infra.m3u.M3uParser;
 import com.gjl.music.playback.service.PlaylistService;
-
-import com.gjl.music.infra.util.PinyinUtils;
-import com.gjl.music.mapper.MusicMapper;
+import com.gjl.music.mapper.SongMapper;
 import com.gjl.music.model.Song;
 import com.gjl.music.playback.mapper.PlaylistMapper;
 import com.gjl.music.playback.mapper.PlaylistTrackMapper;
@@ -30,19 +30,22 @@ public class PlaylistServiceImpl implements PlaylistService {
 
     private final PlaylistMapper playlistMapper;
     private final PlaylistTrackMapper trackMapper;
-    private final MusicMapper musicMapper;
+    private final SongMapper songMapper;
     private final Path coversDir;
 
     public PlaylistServiceImpl(PlaylistMapper playlistMapper,
                                PlaylistTrackMapper trackMapper,
-                               MusicMapper musicMapper,
+                               SongMapper songMapper,
                                @Value("${music.covers-dir:./covers}") String coversDir) {
         this.playlistMapper = playlistMapper;
         this.trackMapper = trackMapper;
-        this.musicMapper = musicMapper;
+        this.songMapper = songMapper;
         this.coversDir = Path.of(coversDir).toAbsolutePath().normalize();
     }
 
+    // ══════════════════════════════════════════════════
+    // 权限校验
+    // ══════════════════════════════════════════════════
 
     private void checkOwnership(Playlist pl, String username) {
         if (pl == null) throw new IllegalArgumentException("播放列表不存在");
@@ -51,6 +54,9 @@ public class PlaylistServiceImpl implements PlaylistService {
         }
     }
 
+    // ══════════════════════════════════════════════════
+    // 查询
+    // ══════════════════════════════════════════════════
 
     @Override
     public List<Playlist> listByUser(Long userId) {
@@ -71,7 +77,8 @@ public class PlaylistServiceImpl implements PlaylistService {
         List<PlaylistTrack> tracks = trackMapper.findByPlaylistId(playlistId);
         if (tracks.isEmpty()) return List.of();
 
-                return songsInTrackOrder(tracks);
+        // 按 track 顺序保留歌曲顺序（findSongsByIds 不保证顺序）
+        return songsInTrackOrder(tracks);
     }
 
     @Override
@@ -82,12 +89,12 @@ public class PlaylistServiceImpl implements PlaylistService {
         return songsInTrackOrder(tracks);
     }
 
-
+    /** 按 track position 顺序返回歌曲列表（findSongsByIds 不保证 IN 子句顺序） */
     private List<Song> songsInTrackOrder(List<PlaylistTrack> tracks) {
         List<Long> songIds = tracks.stream()
                 .map(PlaylistTrack::getSongId)
                 .toList();
-        Map<Long, Song> songMap = musicMapper.findSongsByIds(songIds).stream()
+        Map<Long, Song> songMap = songMapper.findSongsByIds(songIds).stream()
                 .collect(Collectors.toMap(s -> Long.valueOf(s.getId()), s -> s, (a, b) -> a));
         return songIds.stream()
                 .map(songMap::get)
@@ -99,21 +106,25 @@ public class PlaylistServiceImpl implements PlaylistService {
     public Map<Long, List<Song>> getFirstSongsBatch(List<Long> playlistIds, int limit) {
         if (playlistIds == null || playlistIds.isEmpty()) return Map.of();
 
-                List<PlaylistTrack> allTracks = trackMapper.findFirstNByPlaylistIds(playlistIds, limit);
+        // 1 条 SQL：批量查所有歌单前 N 条曲目记录
+        List<PlaylistTrack> allTracks = trackMapper.findFirstNByPlaylistIds(playlistIds, limit);
         if (allTracks.isEmpty()) return Map.of();
 
-                Map<Long, List<Long>> plSongIds = new LinkedHashMap<>();
+        // 按 playlistId 分组
+        Map<Long, List<Long>> plSongIds = new LinkedHashMap<>();
         for (PlaylistTrack t : allTracks) {
             plSongIds.computeIfAbsent(t.getPlaylistId(), k -> new ArrayList<>())
                     .add(t.getSongId());
         }
 
-                List<Long> allSongIds = allTracks.stream()
+        // 1 条 SQL：批量查所有相关歌曲
+        List<Long> allSongIds = allTracks.stream()
                 .map(PlaylistTrack::getSongId).distinct().toList();
-        Map<Long, Song> songMap = musicMapper.findSongsByIds(allSongIds).stream()
+        Map<Long, Song> songMap = songMapper.findSongsByIds(allSongIds).stream()
                 .collect(Collectors.toMap(s -> Long.valueOf(s.getId()), s -> s, (a, b) -> a));
 
-                Map<Long, List<Song>> result = new LinkedHashMap<>();
+        // 组装结果
+        Map<Long, List<Song>> result = new LinkedHashMap<>();
         for (var entry : plSongIds.entrySet()) {
             List<Song> songs = entry.getValue().stream()
                     .map(songMap::get)
@@ -131,11 +142,15 @@ public class PlaylistServiceImpl implements PlaylistService {
         List<Long> playlistIds = trackMapper.findPlaylistIdsBySongId(songId);
         if (playlistIds.isEmpty()) return List.of();
         List<Playlist> all = playlistMapper.findByIds(playlistIds);
-                return all.stream()
+        // 权限过滤：只返回自己的 + 公开的
+        return all.stream()
                 .filter(pl -> pl.getOwner().equals(username) || pl.isPublic())
                 .toList();
     }
 
+    // ══════════════════════════════════════════════════
+    // CRUD
+    // ══════════════════════════════════════════════════
 
     @Override
     @Transactional
@@ -145,14 +160,14 @@ public class PlaylistServiceImpl implements PlaylistService {
                 coverPath);
     }
 
-
+    /** 按用户名 + userId 创建播放列表 */
     @Transactional
     public Playlist createByUsername(String name, String comment, String username,
                                      Long userId, boolean isPublic) {
         return createByUsername(name, comment, username, userId, isPublic, null);
     }
 
-
+    /** 按用户名 + userId 创建播放列表（含封面路径） */
     @Transactional
     public Playlist createByUsername(String name, String comment, String username,
                                      Long userId, boolean isPublic, String coverPath) {
@@ -196,6 +211,9 @@ public class PlaylistServiceImpl implements PlaylistService {
         log.info("播放列表删除: id={}", id);
     }
 
+    // ══════════════════════════════════════════════════
+    // 歌曲管理
+    // ══════════════════════════════════════════════════
 
     @Override
     @Transactional
@@ -230,6 +248,9 @@ public class PlaylistServiceImpl implements PlaylistService {
         playlistMapper.updateSongCount(playlistId);
     }
 
+    // ══════════════════════════════════════════════════
+    // 排序（大间隔算法）
+    // ══════════════════════════════════════════════════
 
     @Override
     @Transactional
@@ -239,7 +260,8 @@ public class PlaylistServiceImpl implements PlaylistService {
 
         if (fromPosition == toPosition) return;
 
-                List<PlaylistTrack> sorted = trackMapper.findByPlaylistId(playlistId).stream()
+        // fromPosition / toPosition 是 1-based 显示序号，需转成 DB 大间隔 position
+        List<PlaylistTrack> sorted = trackMapper.findByPlaylistId(playlistId).stream()
                 .sorted(Comparator.comparingInt(PlaylistTrack::getPosition))
                 .toList();
 
@@ -247,28 +269,32 @@ public class PlaylistServiceImpl implements PlaylistService {
             throw new IllegalArgumentException("position " + fromPosition + " 超出范围");
         }
 
-                PlaylistTrack moving = sorted.get(fromPosition - 1);
+        // 找到实际要移动的 track（by 显示序号）
+        PlaylistTrack moving = sorted.get(fromPosition - 1);
         int actualFromPos = moving.getPosition();
 
-                boolean needRenumber = needRenumber(sorted, fromPosition, toPosition);
+        // 需要先 renumber 则重排后再递归调用一次（此时需用新的序号）
+        boolean needRenumber = needRenumber(sorted, fromPosition, toPosition);
         if (needRenumber) {
             renumberInternal(playlistId);
-                        reorderSong(playlistId, fromPosition, toPosition);
+            // 重新加载排序列表，递归计算新位置
+            reorderSong(playlistId, fromPosition, toPosition);
             return;
         }
 
-                int newPos = calcNewPosition(sorted, fromPosition, toPosition);
+        // 计算目标 DB position
+        int newPos = calcNewPosition(sorted, fromPosition, toPosition);
 
         trackMapper.updatePosition(playlistId, actualFromPos, newPos);
     }
 
-
+    /** 判断是否需要 renumber（插入区间不够用） */
     private boolean needRenumber(List<PlaylistTrack> sorted, int from, int to) {
         if (to <= 1) {
             return sorted.getFirst().getPosition() / 2 < 1;
         }
         if (to >= sorted.size()) {
-            return false;
+            return false; // 放末尾永远有空间
         }
         int prevIdx = from < to ? to - 1 : to - 2;
         int nextIdx = from < to ? to     : to - 1;
@@ -277,7 +303,7 @@ public class PlaylistServiceImpl implements PlaylistService {
         return nextPos - prevPos <= 1;
     }
 
-
+    /** 计算目标 DB position（1-based 显示序号 → 大间隔 position） */
     private int calcNewPosition(List<PlaylistTrack> sorted, int from, int to) {
         if (to <= 1) {
             int firstPos = sorted.getFirst().getPosition();
@@ -287,7 +313,8 @@ public class PlaylistServiceImpl implements PlaylistService {
         if (to >= sorted.size()) {
             return sorted.getLast().getPosition() + RENUMBER_INTERVAL;
         }
-                int prevIdx = from < to ? to - 1 : to - 2;
+        // 向下移动(from<to)：移除 from 后中间项上移，邻居索引 +1
+        int prevIdx = from < to ? to - 1 : to - 2;
         int nextIdx = from < to ? to     : to - 1;
         int prevPos = sorted.get(prevIdx).getPosition();
         int nextPos = sorted.get(nextIdx).getPosition();
@@ -296,7 +323,10 @@ public class PlaylistServiceImpl implements PlaylistService {
         return Math.max(np, prevPos + 1);
     }
 
-
+    /**
+     * 全量替换播放列表歌曲顺序（前端排序后一次落盘）。
+     * 简单策略：删光旧记录 → 按传入顺序重插，position 从 RENUMBER_INTERVAL 开始递增。
+     */
     @Override
     @Transactional
     public void reorderAll(Long playlistId, List<Long> songIds) {
@@ -335,6 +365,9 @@ public class PlaylistServiceImpl implements PlaylistService {
         }
     }
 
+    // ══════════════════════════════════════════════════
+    // M3U 导入/导出
+    // ══════════════════════════════════════════════════
 
     @Override
     public String exportM3u(Long playlistId) {
@@ -366,9 +399,9 @@ public class PlaylistServiceImpl implements PlaylistService {
             if (rootDir != null && !path.startsWith("/") && !path.contains(":")) {
                 path = rootDir + "/" + path;
             }
-            path = path.replace('\\', '/');
+            path = PathUtils.normalize(path);
 
-            Song song = musicMapper.findSongByFilePath(path);
+            Song song = songMapper.findSongByFilePath(path);
             if (song != null) {
                 songIds.add(Long.valueOf(song.getId()));
             } else {
@@ -386,6 +419,9 @@ public class PlaylistServiceImpl implements PlaylistService {
         return songIds;
     }
 
+    // ══════════════════════════════════════════════════
+    // 封面上传
+    // ══════════════════════════════════════════════════
 
     @Override
     @Transactional
@@ -393,9 +429,11 @@ public class PlaylistServiceImpl implements PlaylistService {
         Playlist pl = playlistMapper.findById(playlistId);
         if (pl == null) throw new IllegalArgumentException("播放列表不存在: " + playlistId);
 
-                Files.createDirectories(coversDir);
+        // 确保 covers 目录存在
+        Files.createDirectories(coversDir);
 
-                String originalName = file.getOriginalFilename();
+        // 生成文件名：playlist-{id}-{timestamp}.{ext}
+        String originalName = file.getOriginalFilename();
         String ext = "";
         if (originalName != null && originalName.contains(".")) {
             ext = originalName.substring(originalName.lastIndexOf('.'));
@@ -403,13 +441,15 @@ public class PlaylistServiceImpl implements PlaylistService {
         String fileName = "playlist-" + playlistId + "-" + System.currentTimeMillis() + ext;
         Path dest = coversDir.resolve(fileName);
 
-                if (!dest.normalize().startsWith(coversDir)) {
+        // 安全检查：防止路径穿越
+        if (!dest.normalize().startsWith(coversDir)) {
             throw new IOException("封面路径非法: " + fileName);
         }
 
         file.transferTo(dest.toFile());
 
-                String relativePath = fileName;
+        // 存储相对路径
+        String relativePath = fileName;
         pl.setCoverPath(relativePath);
         playlistMapper.update(pl);
 

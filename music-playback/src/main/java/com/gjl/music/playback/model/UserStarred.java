@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-
+/** 用户收藏 */
 @Data
 @Builder
 @NoArgsConstructor

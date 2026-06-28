@@ -1,6 +1,6 @@
 <template>
   <div class="amp-root">
-
+    <!-- 已选艺术家 -->
     <div class="amp-section">
       <div class="amp-section-title">{{ $t('artistManager.toolMergeSelected', { n: selectedList.length }) }}</div>
       <div class="amp-artist-list">
@@ -11,7 +11,7 @@
       </div>
     </div>
 
-
+    <!-- 保留目标 -->
     <div class="amp-section">
       <div class="amp-section-title">{{ $t('artistManager.toolMergeKeep') }}</div>
       <n-select
@@ -22,7 +22,7 @@
       />
     </div>
 
-
+    <!-- 影响预览 -->
     <div class="amp-section" v-if="sourceList.length">
       <div class="amp-section-title">{{ $t('artistManager.toolMergePreview') }}</div>
       <div class="amp-preview">
@@ -38,7 +38,7 @@
       </div>
     </div>
 
-
+    <!-- 提交 -->
     <div class="amp-footer">
       <n-button size="small" @click="$emit('done')">{{ $t('artistManager.cancel') }}</n-button>
       <n-button type="primary" size="small" :loading="submitting" :disabled="!canSubmit" @click="doSubmit">
@@ -90,6 +90,7 @@ const canSubmit = computed(() =>
   targetId.value && sourceList.value.length >= 1
 )
 
+// 初始化：默认选第一个
 if (props.selectedIds.length >= 2) {
   targetId.value = props.selectedIds[0]
 }
@@ -138,7 +139,7 @@ async function doSubmit() {
   color: var(--ct-text-2);
 }
 
-
+/* 已选列表 */
 .amp-artist-list {
   display: flex;
   flex-direction: column;
@@ -168,7 +169,7 @@ async function doSubmit() {
   color: var(--ct-text-3);
 }
 
-
+/* 影响预览 */
 .amp-preview {
   display: flex;
   flex-direction: column;
@@ -195,7 +196,7 @@ async function doSubmit() {
   font-weight: 500;
 }
 
-
+/* 警告 */
 .amp-warning {
   display: flex;
   align-items: flex-start;

@@ -16,7 +16,12 @@ import org.jaudiotagger.tag.id3.framebody.*;
 import java.io.File;
 import java.util.*;
 
-
+/**
+ * MP3 专用解析器 —— 读取 jaudiotagger 高层 FieldKey 不暴露的 ID3v2 帧。
+ *
+ * <p>额外提取：TXXX 自定义文本帧、USLT/SYLT 内嵌歌词、IPLS/TIPL 参与人员、
+ * COMM 多语言注释、PRIV 私有数据。</p>
+ */
 @Slf4j
 public class Mp3Parser extends DefaultParser {
 
@@ -28,10 +33,11 @@ public class Mp3Parser extends DefaultParser {
             Map<String, String> txxx = extractTxxx(id3v2);
             if (!txxx.isEmpty()) {
                 builder.extraTags(toJson(txxx));
-                                mapTxxxToSong(txxx, builder);
+                // 映射常用 TXXX 描述到 Song 明确字段
+                mapTxxxToSong(txxx, builder);
             }
             extractIplsTipl(id3v2, builder);
-            extractTsseTenc(id3v2, builder);
+            extractTsseTenc(id3v2, builder);  // 编码软件/人员
         }
 
         return builder.build();
@@ -42,7 +48,8 @@ public class Mp3Parser extends DefaultParser {
         List<Lyric> lyrics = new ArrayList<>(super.extractLyrics(tag, filePath));
 
         if (tag instanceof AbstractID3v2Tag id3v2) {
-                        List<TagField> usltFrames = id3v2.getFrame("USLT");
+            // USLT — 非同步歌词
+            List<TagField> usltFrames = id3v2.getFrame("USLT");
             if (usltFrames != null) {
                 for (TagField f : usltFrames) {
                     try {
@@ -57,7 +64,8 @@ public class Mp3Parser extends DefaultParser {
                     }
                 }
             }
-                        List<TagField> syltFrames = id3v2.getFrame("SYLT");
+            // SYLT — 同步歌词（格式化时间戳）
+            List<TagField> syltFrames = id3v2.getFrame("SYLT");
             if (syltFrames != null) {
                 for (TagField f : syltFrames) {
                     try {
@@ -77,6 +85,9 @@ public class Mp3Parser extends DefaultParser {
         return lyrics;
     }
 
+    // ═══════════════════════════════════════════════════════
+    // TXXX 提取
+    // ═══════════════════════════════════════════════════════
 
     private Map<String, String> extractTxxx(AbstractID3v2Tag id3v2) {
         Map<String, String> map = new LinkedHashMap<>();
@@ -102,15 +113,20 @@ public class Mp3Parser extends DefaultParser {
         if (arranger != null) builder.arranger(arranger);
         String producer = txxx.get("PRODUCER");
         if (producer != null) builder.producer(producer);
-                String acoustid = txxx.get("Acoustid Fingerprint");
+        // Acoustid 指纹
+        String acoustid = txxx.get("Acoustid Fingerprint");
         if (acoustid == null) acoustid = txxx.get("Acoustid Id");
         if (acoustid != null && builder.build().getFingerprint() == null) builder.fingerprint(acoustid);
     }
 
+    // ═══════════════════════════════════════════════════════
+    // IPLS / TIPL 人员提取
+    // ═══════════════════════════════════════════════════════
 
     private void extractIplsTipl(AbstractID3v2Tag id3v2, Song.SongBuilder<?, ?> builder) {
         Map<String, String> people = new LinkedHashMap<>();
-                safeIterateFrame(id3v2, "TIPL", f -> {
+        // ID3v2.4: TIPL
+        safeIterateFrame(id3v2, "TIPL", f -> {
             try {
                 FrameBodyTIPL body = (FrameBodyTIPL) ((AbstractID3v2Frame) f).getBody();
                 for (int i = 0; i < body.getNumberOfPairs(); i++) {
@@ -120,7 +136,8 @@ public class Mp3Parser extends DefaultParser {
                 }
             } catch (Exception e) { log.warn("TIPL 解析失败: {}", e.getMessage()); }
         });
-                safeIterateFrame(id3v2, "IPLS", f -> {
+        // ID3v2.3: IPLS（兜底）
+        safeIterateFrame(id3v2, "IPLS", f -> {
             try {
                 FrameBodyIPLS body = (FrameBodyIPLS) ((AbstractID3v2Frame) f).getBody();
                 for (int i = 0; i < body.getNumberOfPairs(); i++) {
@@ -137,9 +154,13 @@ public class Mp3Parser extends DefaultParser {
         if (prod != null && builder.build().getProducer() == null) builder.producer(prod);
     }
 
+    // ═══════════════════════════════════════════════════════
+    // TSSE / TENC 编码信息
+    // ═══════════════════════════════════════════════════════
 
     private void extractTsseTenc(AbstractID3v2Tag id3v2, Song.SongBuilder<?, ?> builder) {
-                String tsse = getFrameText(id3v2, "TSSE");
+        // 编码软件/人员信息存入 extraTags
+        String tsse = getFrameText(id3v2, "TSSE");
         String tenc = getFrameText(id3v2, "TENC");
         if (tsse != null || tenc != null) {
             Song current = builder.build();
@@ -166,18 +187,27 @@ public class Mp3Parser extends DefaultParser {
                 String content = frame.getContent();
                 return (content != null && !content.isBlank()) ? content : null;
             }
-        } catch (Exception e) {  }
+        } catch (Exception e) { /* ignore */ }
         return null;
     }
 
+    // ═══════════════════════════════════════════════════════
+    // SYLT 格式化
+    // ═══════════════════════════════════════════════════════
 
+    /**
+     * 将 SYLT 二进制歌词格式化为人可读的 LRC 风格文本。
+     * 每行 "[mm:ss.xx]lyric text"
+     */
     private String formatSylt(FrameBodySYLT body) {
         try {
             byte[] data = body.getLyrics();
             if (data == null || data.length == 0) return null;
             String raw = new String(data, java.nio.charset.StandardCharsets.UTF_8);
 
-                                    String filtered = raw.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]", "\n");
+            // SYLT 帧体内部结构：描述符 → 语言 → 时间戳格式 → 内容类型 → 歌词行
+            // 歌词行格式依编码不同，此处按纯文本提取可读部分
+            String filtered = raw.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]", "\n");
             String[] lines = filtered.split("\n");
             StringBuilder sb = new StringBuilder();
             for (String line : lines) {

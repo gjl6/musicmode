@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gjl.music.mapper.WatchRuleMapper">
+
+    <resultMap id="WatchRuleMap" type="com.gjl.music.model.WatchRule">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="watchPath" column="watch_path"/>
+        <result property="enabled" column="enabled"/>
+        <result property="autoTrigger" column="auto_trigger"/>
+        <result property="stepsJson" column="steps_json"/>
+        <result property="priority" column="priority"/>
+        <result property="description" column="description"/>
+        <!-- v2: 两级扫描 -->
+        <result property="dirScanEnabled" column="dir_scan_enabled"/>
+        <result property="dirScanIntervalSec" column="dir_scan_interval_sec"/>
+        <result property="fileScanEnabled" column="file_scan_enabled"/>
+        <result property="fileScanIntervalSec" column="file_scan_interval_sec"/>
+        <!-- v2: 运行状态 -->
+        <result property="state" column="state"/>
+        <result property="lastScanAt" column="last_scan_at"/>
+        <result property="lastRunAt" column="last_run_at"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="WatchRuleMap">
+        SELECT * FROM watch_profile ORDER BY priority DESC, id ASC
+    </select>
+
+    <select id="selectEnabled" resultMap="WatchRuleMap">
+        SELECT * FROM watch_profile WHERE enabled = TRUE ORDER BY priority DESC, id ASC
+    </select>
+
+    <select id="selectAutoTrigger" resultMap="WatchRuleMap">
+        SELECT * FROM watch_profile
+        WHERE enabled = TRUE AND auto_trigger = TRUE
+        ORDER BY priority DESC, id ASC
+    </select>
+
+    <select id="selectById" resultMap="WatchRuleMap">
+        SELECT * FROM watch_profile WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO watch_profile (
+            name, watch_path, enabled, auto_trigger, steps_json, priority, description,
+            dir_scan_enabled, dir_scan_interval_sec, file_scan_enabled, file_scan_interval_sec
+        ) VALUES (
+            #{name}, #{watchPath}, #{enabled}, #{autoTrigger}, #{stepsJson}, #{priority}, #{description},
+            #{dirScanEnabled}, #{dirScanIntervalSec}, #{fileScanEnabled}, #{fileScanIntervalSec}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE watch_profile SET
+            name = #{name},
+            watch_path = #{watchPath},
+            enabled = #{enabled},
+            auto_trigger = #{autoTrigger},
+            steps_json = #{stepsJson},
+            priority = #{priority},
+            description = #{description},
+            dir_scan_enabled = #{dirScanEnabled},
+            dir_scan_interval_sec = #{dirScanIntervalSec},
+            file_scan_enabled = #{fileScanEnabled},
+            file_scan_interval_sec = #{fileScanIntervalSec}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateState">
+        UPDATE watch_profile SET
+            state = #{state},
+            last_scan_at = #{lastScanAt},
+            last_run_at = #{lastRunAt},
+            error_message = #{errorMessage}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM watch_profile WHERE id = #{id}
+    </delete>
+
+</mapper>

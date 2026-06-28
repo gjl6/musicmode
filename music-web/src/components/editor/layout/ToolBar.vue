@@ -67,29 +67,34 @@ import {
 } from '@vicons/ionicons5'
 import { useAuthStore } from '@/store/auth.js'
 
+const props = defineProps({
+  tools: { type: Array, default: null },
+})
+
 defineEmits(['tool-click'])
 const { t } = useI18n()
 const auth = useAuthStore()
 const toolsCompact = ref(false)
 
 const allTools = [
-  { key: 'split',          label: t('workbench.tools.split'),          desc: t('workbench.tools.splitDesc'),          icon: CodeSlashOutline,    perm: 'music:edit' },
-  { key: 'encodingRepair', label: t('workbench.tools.encodingRepair'), desc: t('workbench.tools.encodingRepairDesc'), icon: CopyOutline,          perm: 'music:edit' },
-  { key: 'langConvert',    label: t('workbench.tools.langConvert'),    desc: t('workbench.tools.langConvertDesc'),    icon: LanguageOutline,      perm: 'music:edit' },
-  { key: 'replaceText',    label: t('workbench.tools.replaceText'),    desc: t('workbench.tools.replaceTextDesc'),    icon: TextOutline,          perm: 'music:edit' },
-  { key: 'dedup',          label: t('workbench.tools.dedup'),          desc: t('workbench.tools.dedupDesc'),          icon: LayersOutline,        perm: 'music:edit' },
-  { key: 'qqEnrich',       label: t('workbench.tools.qqEnrich'),       desc: t('workbench.tools.qqEnrichDesc'),       icon: CloudDownloadOutline,  perm: 'music:edit' },
-  { key: 'formatConvert',  label: t('workbench.tools.formatConvert'),  desc: t('workbench.tools.formatConvertDesc'),  icon: SwapHorizontalOutline, perm: 'music:edit' },
-  { key: 'cueSplit',       label: t('workbench.tools.cueSplit'),       desc: t('workbench.tools.cueSplitDesc'),       icon: CutOutline,           perm: 'music:edit' },
-  { key: 'batchWrite',     label: t('workbench.tools.batchWrite'),     desc: t('workbench.tools.batchWriteDesc'),     icon: SaveOutline,          perm: 'music:edit' },
-  { key: 'organize',       label: t('workbench.tools.organize'),       desc: t('workbench.tools.organizeDesc'),       icon: FolderOutline,        perm: 'music:edit' },
+  { key: 'split',          label: t('workbench.tools.split'),          desc: t('workbench.tools.splitDesc'),          icon: CodeSlashOutline,    perm: 'music:write' },
+  { key: 'encodingRepair', label: t('workbench.tools.encodingRepair'), desc: t('workbench.tools.encodingRepairDesc'), icon: CopyOutline,          perm: 'music:write' },
+  { key: 'langConvert',    label: t('workbench.tools.langConvert'),    desc: t('workbench.tools.langConvertDesc'),    icon: LanguageOutline,      perm: 'music:write' },
+  { key: 'replaceText',    label: t('workbench.tools.replaceText'),    desc: t('workbench.tools.replaceTextDesc'),    icon: TextOutline,          perm: 'music:write' },
+  { key: 'dedup',          label: t('workbench.tools.dedup'),          desc: t('workbench.tools.dedupDesc'),          icon: LayersOutline,        perm: 'music:write' },
+  { key: 'qqEnrich',       label: t('workbench.tools.qqEnrich'),       desc: t('workbench.tools.qqEnrichDesc'),       icon: CloudDownloadOutline,  perm: 'music:write' },
+  { key: 'formatConvert',  label: t('workbench.tools.formatConvert'),  desc: t('workbench.tools.formatConvertDesc'),  icon: SwapHorizontalOutline, perm: 'music:write' },
+  { key: 'cueSplit',       label: t('workbench.tools.cueSplit'),       desc: t('workbench.tools.cueSplitDesc'),       icon: CutOutline,           perm: 'music:write' },
+  { key: 'batchWrite',     label: t('workbench.tools.batchWrite'),     desc: t('workbench.tools.batchWriteDesc'),     icon: SaveOutline,          perm: 'music:write' },
+  { key: 'organize',       label: t('workbench.tools.organize'),       desc: t('workbench.tools.organizeDesc'),       icon: FolderOutline,        perm: 'music:write' },
   { key: 'deleteFiles',    label: t('workbench.tools.deleteFiles'),    desc: t('workbench.tools.deleteFilesDesc'),    icon: TrashOutline,         perm: 'music:delete' },
-  { key: 'importCollection', label: t('workbench.tools.importCollection'), desc: t('workbench.tools.importCollectionDesc'), icon: AddCircleOutline, perm: 'music:edit' },
+  { key: 'importCollection', label: t('workbench.tools.importCollection'), desc: t('workbench.tools.importCollectionDesc'), icon: AddCircleOutline, perm: 'music:import' },
 ]
 
-
+/** 根据权限过滤工具列表；传了 tools prop 则用它，否则用默认歌曲工具 */
 const toolList = computed(() => {
-  return allTools.filter((t) => auth.hasPermission(t.perm))
+  const source = props.tools || allTools
+  return source.filter((t) => !t.perm || auth.hasPermission(t.perm))
 })
 </script>
 
@@ -119,7 +124,7 @@ const toolList = computed(() => {
   gap: 0; flex-shrink: 0; width: 64px; min-width: 64px;
 }
 
-
+/* 工具卡片 */
 .tool-card {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px;
@@ -165,7 +170,7 @@ const toolList = computed(() => {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-
+/* 全部工具弹出面板 */
 .all-tools-popover { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 4px 0; }
 .all-tool-item {
   display: flex; align-items: center; gap: 10px;

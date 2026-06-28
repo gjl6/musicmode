@@ -1,6 +1,6 @@
 <template>
   <div class="user-mgmt">
-
+    <!-- 工具栏 -->
     <div class="toolbar">
       <n-input
         v-model:value="keyword"
@@ -15,7 +15,7 @@
       </n-button>
     </div>
 
-
+    <!-- 表格 -->
     <n-spin :show="loading">
       <n-data-table
         :columns="columns"
@@ -26,7 +26,7 @@
       />
     </n-spin>
 
-
+    <!-- 分页 -->
     <div v-if="total > 0" class="pager">
       <n-pagination
         v-model:page="page"
@@ -39,7 +39,7 @@
       />
     </div>
 
-
+    <!-- 新增/编辑弹窗 -->
     <n-modal v-model:show="showForm" :title="editingId ? '编辑用户' : '新增用户'" preset="card" style="width: 520px">
       <n-form ref="formRef" :model="form" :rules="formRules" label-placement="left" label-width="80">
         <n-form-item label="用户名" path="username">
@@ -66,7 +66,7 @@
       </template>
     </n-modal>
 
-
+    <!-- 分配角色弹窗 -->
     <n-modal v-model:show="showRoles" title="分配角色" preset="card" style="width: 420px">
       <n-checkbox-group v-model:value="roleForm.roleIds">
         <n-space vertical>
@@ -81,7 +81,7 @@
       </template>
     </n-modal>
 
-
+    <!-- 重置密码弹窗 -->
     <n-modal v-model:show="showPwd" title="重置密码" preset="card" style="width: 380px">
       <n-form :model="pwdForm" label-placement="left" label-width="80">
         <n-form-item label="新密码">
@@ -106,6 +106,7 @@ import * as adminApi from '@/api/auth/admin.js'
 
 const message = useMessage()
 
+// ── 列表 ──
 const loading = ref(false)
 const users = ref([])
 const total = ref(0)
@@ -165,6 +166,7 @@ function onSearch() {
 }
 function onSizeChange(s) { size.value = s; page.value = 1; load() }
 
+// ── 创建/编辑 ──
 const showForm = ref(false)
 const editingId = ref(null)
 const saving = ref(false)
@@ -210,6 +212,7 @@ async function save() {
   }
 }
 
+// ── 删除 ──
 async function doDelete(id) {
   try {
     await adminApi.deleteUser(id)
@@ -220,6 +223,7 @@ async function doDelete(id) {
   }
 }
 
+// ── 角色分配 ──
 const showRoles = ref(false)
 const roleUserId = ref(null)
 const roleForm = ref({ roleIds: [] })
@@ -228,7 +232,8 @@ const allRoles = ref([])
 async function openRoles(r) {
   roleUserId.value = r.id
   showRoles.value = true
-    const [roles, userRes] = await Promise.all([
+  // 加载所有角色 + 用户的当前角色
+  const [roles, userRes] = await Promise.all([
     adminApi.getRoles(),
     adminApi.getUser(r.id).catch(() => null),
   ])
@@ -251,6 +256,7 @@ async function saveRoles() {
   }
 }
 
+// ── 密码重置 ──
 const showPwd = ref(false)
 const pwdUserId = ref(null)
 const pwdForm = ref({ newPassword: '' })

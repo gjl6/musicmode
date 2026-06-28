@@ -1,6 +1,7 @@
 package com.gjl.music.parser;
 
 import com.gjl.music.infra.util.FileHashUtils;
+import com.gjl.music.infra.util.PathUtils;
 import com.gjl.music.model.Song;
 import lombok.extern.slf4j.Slf4j;
 import org.jaudiotagger.audio.AudioHeader;
@@ -17,11 +18,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-
+/**
+ * FLAC 专用解析器 —— 读取 Vorbis Comment 中 FieldKey 未覆盖的字段，
+ * 并兜底提取 FLAC 原生 PICTURE 块中的封面。
+ */
 @Slf4j
 public class FlacParser extends DefaultParser {
 
-
+    /** Vorbis Comment 中已被 DefaultParser 通过 FieldKey 读取的字段，遍历时跳过 */
     private static final Set<String> ALREADY_HANDLED = Set.of(
             "TITLE", "ARTIST", "ARTISTS", "ALBUMARTIST", "ALBUMARTISTS",
             "ALBUM", "TRACKNUMBER", "DISCNUMBER", "DATE", "GENRE",
@@ -59,12 +63,14 @@ public class FlacParser extends DefaultParser {
                 }
             }
 
-                        String arranger = getVorbisField(vc, "ARRANGER");
+            // ARRANGER / PRODUCER 虽然在 FieldKey 中有映射，但 DefaultParser 未读取
+            String arranger = getVorbisField(vc, "ARRANGER");
             if (arranger != null && builder.build().getArranger() == null) builder.arranger(arranger);
             String producer = getVorbisField(vc, "PRODUCER");
             if (producer != null && builder.build().getProducer() == null) builder.producer(producer);
 
-                        String acoustid = getVorbisField(vc, "ACOUSTID_FINGERPRINT");
+            // Acoustid 指纹
+            String acoustid = getVorbisField(vc, "ACOUSTID_FINGERPRINT");
             if (acoustid == null) acoustid = getVorbisField(vc, "ACOUSTID_ID");
             if (acoustid != null && builder.build().getFingerprint() == null) builder.fingerprint(acoustid);
 
@@ -79,7 +85,8 @@ public class FlacParser extends DefaultParser {
         String cover = super.extractCover(tag, filePath);
         if (cover != null) return cover;
 
-                if (tag instanceof FlacTag flacTag) {
+        // 兜底：FLAC 原生 PICTURE 块
+        if (tag instanceof FlacTag flacTag) {
             List<MetadataBlockDataPicture> pictures = flacTag.getImages();
             if (pictures != null && !pictures.isEmpty()) {
                 try {
@@ -93,9 +100,9 @@ public class FlacParser extends DefaultParser {
                         out.getParentFile().mkdirs();
                         try (FileOutputStream fos = new FileOutputStream(out)) { fos.write(data); }
                     }
-                    return java.nio.file.Path.of(coversDir).toAbsolutePath().normalize()
+                    return PathUtils.normalize(java.nio.file.Path.of(coversDir).toAbsolutePath().normalize()
                             .relativize(out.toPath().toAbsolutePath().normalize())
-                            .toString().replace('\\', '/');
+                            .toString());
                 } catch (Exception e) {
                     log.warn("FLAC原生封面提取失败: {}", e.getMessage());
                 }
@@ -111,7 +118,7 @@ public class FlacParser extends DefaultParser {
                 String val = tf.getContent();
                 return (val != null && !val.isBlank()) ? val.trim() : null;
             }
-        } catch (Exception e) {  }
+        } catch (Exception e) { /* ignore */ }
         return null;
     }
 

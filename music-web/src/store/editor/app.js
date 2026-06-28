@@ -1,17 +1,26 @@
-
-
+/*
+ * useAppStore — 全局应用 UI 状态管理
+ *
+ * 职责：
+ *   1. 主题模式：4 种组合 — default-light / default-dark / clay-light / clay-dark
+ *   2. 工作台左侧栏折叠状态
+ *   3. 编辑抽屉显隐控制
+ *   4. 主内容区视图模式切换（table / card）
+ */
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 const VALID_THEMES = ['default-light', 'default-dark', 'clay-light', 'clay-dark']
 
 export const useAppStore = defineStore('app', () => {
-    const theme = ref(loadTheme())
+  // ---- 主题：4 种组合 ----
+  const theme = ref(loadTheme())
 
   function loadTheme() {
     const stored = localStorage.getItem('app-theme')
     if (stored) {
-            if (stored === 'dark') return 'default-dark'
+      // 兼容旧值
+      if (stored === 'dark') return 'default-dark'
       if (stored === 'light') return 'default-light'
       if (VALID_THEMES.includes(stored)) return stored
     }
@@ -20,23 +29,30 @@ export const useAppStore = defineStore('app', () => {
       : 'default-light'
   }
 
-    const themeStyle = computed(() =>
+  // 派生：从 theme 解析风格类型
+  const themeStyle = computed(() =>
     theme.value.startsWith('clay') ? 'clay' : 'default'
   )
 
-    const colorScheme = computed(() =>
+  // 派生：从 theme 解析亮暗
+  const colorScheme = computed(() =>
     theme.value.endsWith('dark') ? 'dark' : 'light'
   )
 
-    const locale = ref(loadLocale())
+  // ---- 语言：'zh-CN' | 'en' ----
+  const locale = ref(loadLocale())
 
-    const sidebarCollapsed = ref(false)
+  // ---- 左侧文件目录栏折叠状态 ----
+  const sidebarCollapsed = ref(false)
 
-    const drawerVisible = ref(false)
+  // ---- 右侧编辑抽屉显隐 ----
+  const drawerVisible = ref(false)
 
-    const viewMode = ref('table')
+  // ---- 主内容区视图模式：'table'（表格）| 'card'（卡片） ----
+  const viewMode = ref('table')
 
-    const enrichPanelVisible = ref(false)
+  // ---- 增强数据面板 / 拆分元数据 / 替换文本 面板显隐 ----
+  const enrichPanelVisible = ref(false)
   const splitPanelVisible = ref(false)
   const replacePanelVisible = ref(false)
 
@@ -46,7 +62,9 @@ export const useAppStore = defineStore('app', () => {
     return navigator.language.startsWith('zh') ? 'zh-CN' : 'en'
   }
 
+  // ---- 方法 ----
 
+  /** 切换亮色/暗色（保持当前风格不变） */
   function toggleTheme() {
     const style = themeStyle.value
     theme.value = colorScheme.value === 'dark'
@@ -55,7 +73,7 @@ export const useAppStore = defineStore('app', () => {
     localStorage.setItem('app-theme', theme.value)
   }
 
-
+  /** 切换 Default / Clay 风格（保持亮暗不变） */
   function toggleThemeStyle() {
     const scheme = colorScheme.value
     theme.value = themeStyle.value === 'default'
@@ -64,24 +82,24 @@ export const useAppStore = defineStore('app', () => {
     localStorage.setItem('app-theme', theme.value)
   }
 
-
+  /** 设置语言并持久化 */
   function setLocale(loc) {
     if (!['zh-CN', 'en'].includes(loc)) return
     locale.value = loc
     localStorage.setItem('app-locale', loc)
   }
 
-
+  /** 切换左侧栏折叠/展开 */
   function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
-
+  /** 打开右侧编辑抽屉 */
   function openDrawer() {
     drawerVisible.value = true
   }
 
-
+  /** 关闭右侧编辑抽屉 */
   function closeDrawer() {
     drawerVisible.value = false
     enrichPanelVisible.value = false
@@ -113,7 +131,7 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-
+  /** 切换主内容区视图模式 */
   function setViewMode(mode) {
     viewMode.value = mode
   }

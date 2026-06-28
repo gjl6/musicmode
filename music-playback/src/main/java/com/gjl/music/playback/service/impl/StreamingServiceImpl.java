@@ -3,7 +3,7 @@ import com.gjl.music.playback.infra.streaming.RangeParser;
 import com.gjl.music.playback.service.StreamingService;
 
 import com.gjl.music.infra.util.ContentTypeResolver;
-import com.gjl.music.mapper.MusicMapper;
+import com.gjl.music.mapper.SongMapper;
 import com.gjl.music.model.Song;
 import com.gjl.music.playback.model.Range;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +20,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-
+/**
+ * 音频流式传输服务实现。
+ *
+ * <h3>Range 请求处理</h3>
+ * <ul>
+ *   <li>无 Range 头 → 200 OK + 全量传输</li>
+ *   <li>有效 Range → 206 Partial Content + Content-Range</li>
+ *   <li>无效 Range → 416 Range Not Satisfiable</li>
+ *   <li>If-None-Match (ETag) → 304 Not Modified</li>
+ * </ul>
+ *
+ * <p>使用 8KB ByteBuffer + FileChannel 循环写入，避免全量加载到内存。</p>
+ */
 @Slf4j
 @Service
 public class StreamingServiceImpl implements StreamingService {
@@ -28,10 +40,10 @@ public class StreamingServiceImpl implements StreamingService {
     private static final int BUFFER_SIZE = 8192;
     private static final int MAX_ETAG_CACHE_SIZE = 1000;
 
-    private final MusicMapper musicMapper;
+    private final SongMapper songMapper;
 
-    public StreamingServiceImpl(MusicMapper musicMapper) {
-        this.musicMapper = musicMapper;
+    public StreamingServiceImpl(SongMapper songMapper) {
+        this.songMapper = songMapper;
     }
 
     @Override
@@ -49,18 +61,21 @@ public class StreamingServiceImpl implements StreamingService {
         String contentType = ContentTypeResolver.resolve(filePath);
         String eTag = buildETag(filePath, fileSize);
 
-                String ifNoneMatch = request.getHeader("If-None-Match");
+        // —— ETag / If-None-Match → 304 ——
+        String ifNoneMatch = request.getHeader("If-None-Match");
         if (ifNoneMatch != null && ifNoneMatch.equals(eTag)) {
             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
             response.setHeader("ETag", eTag);
             return;
         }
 
-                String rangeHeader = request.getHeader("Range");
+        // —— Range 解析 ——
+        String rangeHeader = request.getHeader("Range");
         Range range = RangeParser.parse(rangeHeader, fileSize);
 
         if (range != null && range.isUnsatisfiable()) {
-                        response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+            // 416 Range Not Satisfiable
+            response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
             response.setHeader("Content-Range", "bytes */" + fileSize);
             return;
         }
@@ -72,7 +87,8 @@ public class StreamingServiceImpl implements StreamingService {
 
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
             if (range != null) {
-                                long start = range.getStart();
+                // 206 Partial Content
+                long start = range.getStart();
                 long length = range.getLength();
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 response.setHeader("Content-Range", range.toContentRangeHeader(fileSize));
@@ -80,7 +96,8 @@ public class StreamingServiceImpl implements StreamingService {
                 channel.position(start);
                 writeRange(channel, response.getOutputStream(), start, length);
             } else {
-                                response.setHeader("Content-Length", String.valueOf(fileSize));
+                // 200 OK — 全量
+                response.setHeader("Content-Length", String.valueOf(fileSize));
                 writeFull(channel, response.getOutputStream());
             }
         }
@@ -90,7 +107,7 @@ public class StreamingServiceImpl implements StreamingService {
     public void streamSong(Long songId, HttpServletRequest request,
                            HttpServletResponse response) throws IOException {
         log.info("[StreamingService] 按ID查询歌曲: songId={}", songId);
-        Song song = musicMapper.findSongById(songId);
+        Song song = songMapper.findSongById(songId);
         if (song == null || song.getFilePath() == null) {
             log.warn("[StreamingService] 歌曲不存在: songId={}", songId);
             response.sendError(HttpServletResponse.SC_NOT_FOUND,
@@ -102,7 +119,9 @@ public class StreamingServiceImpl implements StreamingService {
         streamFile(song.getFilePath(), request, response);
     }
 
+    // ── private helpers ──
 
+    /** 全量写入（200 OK） */
     private void writeFull(FileChannel channel, OutputStream out) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
         while (channel.read(buf) != -1) {
@@ -113,7 +132,7 @@ public class StreamingServiceImpl implements StreamingService {
         out.flush();
     }
 
-
+    /** 范围写入（206 Partial Content） */
     private void writeRange(FileChannel channel, OutputStream out,
                             long start, long length) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
@@ -131,9 +150,10 @@ public class StreamingServiceImpl implements StreamingService {
         out.flush();
     }
 
-
+    /** 构建 ETag：基于路径 + 大小的简单哈希 */
     private String buildETag(String filePath, long fileSize) {
-                int hash = filePath.hashCode() ^ Long.hashCode(fileSize);
+        // 使用 hashCode 构建简单 ETag（避免对每个请求做 I/O）
+        int hash = filePath.hashCode() ^ Long.hashCode(fileSize);
         return '"' + Integer.toHexString(hash) + '"';
     }
 }

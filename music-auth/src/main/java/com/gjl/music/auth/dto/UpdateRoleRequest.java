@@ -3,7 +3,9 @@ package com.gjl.music.auth.dto;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-
+/**
+ * 更新角色请求。
+ */
 @Data
 public class UpdateRoleRequest {
 

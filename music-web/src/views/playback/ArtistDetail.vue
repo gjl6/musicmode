@@ -1,6 +1,6 @@
 <template>
   <div class="artist-detail-page">
-
+    <!-- ═══ 页面头部 ═══ -->
     <div class="page-header">
       <div class="header-left">
         <n-button text class="back-btn" @click="goBack">
@@ -23,6 +23,19 @@
         <span class="header-count">{{ $t('artist.albumCount', { count: artist?.albumCount || 0 }) }} · {{ $t('artist.songCount', { count: artist?.songCount || 0 }) }}</span>
       </div>
       <div class="header-actions">
+        <n-input
+          v-model:value="searchText"
+          :placeholder="$t('player.searchPlaceholder')"
+          size="small"
+          clearable
+          round
+          style="width:180px"
+          @keyup.enter="doSearch"
+        >
+          <template #prefix>
+            <n-icon :size="16"><SearchOutline /></n-icon>
+          </template>
+        </n-input>
         <n-button size="small" @click="showEditModal = true">
           <n-icon :size="15"><CreateOutline /></n-icon>
           编辑
@@ -32,7 +45,7 @@
 
     <n-spin :show="!artist" size="medium">
       <template v-if="artist">
-
+        <!-- ═══ Hero 信息 ═══ -->
         <div class="detail-hero">
           <div class="hero-cover">
             <CoverArt
@@ -68,7 +81,7 @@
           </div>
         </div>
 
-
+        <!-- ═══ 标签切换 ═══ -->
         <div class="tab-bar">
           <div class="tab-btns">
             <button
@@ -82,42 +95,57 @@
               @click="switchTab('songs')"
             >歌曲 ({{ artist.songCount || 0 }})</button>
           </div>
-          <n-select
-            v-if="activeTab === 'albums'"
-            v-model:value="albumSort"
-            :options="albumSortOptions"
-            size="small"
-            :consistent-menu-width="false"
-            style="width:100px"
-            @update:value="onSortChange"
-          />
-          <n-select
-            v-if="activeTab === 'songs'"
-            v-model:value="songSort"
-            :options="songSortOptions"
-            size="small"
-            :consistent-menu-width="false"
-            style="width:100px"
-            @update:value="onSortChange"
-          />
+          <div v-if="activeTab === 'albums'" class="tab-actions">
+            <n-select
+              v-model:value="albumSort"
+              :options="albumSortOptions"
+              size="small"
+              :consistent-menu-width="false"
+              style="width:100px"
+              @update:value="onSortChange"
+            />
+            <ViewToggle v-model="albumViewMode" />
+          </div>
+          <div v-if="activeTab === 'songs'" class="tab-actions">
+            <n-select
+              v-model:value="songSort"
+              :options="songSortOptions"
+              size="small"
+              :consistent-menu-width="false"
+              style="width:100px"
+              @update:value="onSortChange"
+            />
+            <ViewToggle v-model="songViewMode" />
+          </div>
         </div>
 
-
+        <!-- ═══ 专辑视图 ═══ -->
         <div v-show="activeTab === 'albums'" class="tab-content">
           <div v-if="albumSort === 'alphabetical'" class="letter-bar">
             <button class="letter-chip" :class="{ active: albumLetter === null }" @click="onAlbumLetter(null)">{{ $t('album.all') }}</button>
             <button v-for="ch in letterChips" :key="ch" class="letter-chip" :class="{ active: albumLetter === ch }" @click="onAlbumLetter(ch)">{{ ch }}</button>
           </div>
           <n-spin :show="library.artistAlbumsLoading" size="small">
-            <div v-if="displayAlbums.length" class="album-grid">
-              <AlbumCard
-                v-for="album in displayAlbums"
-                :key="album.id"
-                :album="album"
-                :size="160"
-                @click="goAlbum(album.id)"
+            <template v-if="displayAlbums.length">
+              <div v-if="albumViewMode === 'grid'" class="album-grid">
+                <AlbumCard
+                  v-for="album in displayAlbums"
+                  :key="album.id"
+                  :album="album"
+                  :size="160"
+                  @click="goAlbum(album.id)"
+                />
+              </div>
+              <AlbumTable
+                v-else
+                :albums="displayAlbums"
+                :page="albumPage"
+                :page-size="albumPageSize"
+                :is-starred="(id) => player.isAlbumStarred(id)"
+                @play="(album) => goAlbum(album.id)"
+                @toggleFav="onAlbumToggleFav"
               />
-            </div>
+            </template>
             <n-empty v-else :description="$t('player.noData')" size="small" style="margin-top:32px" />
           </n-spin>
           <n-pagination
@@ -134,22 +162,33 @@
           />
         </div>
 
-
+        <!-- ═══ 歌曲视图 ═══ -->
         <div v-show="activeTab === 'songs'" class="tab-content">
           <div v-if="songSort === 'alphabetical'" class="letter-bar">
             <button class="letter-chip" :class="{ active: songLetter === null }" @click="onSongLetter(null)">{{ $t('song.all') }}</button>
             <button v-for="ch in letterChips" :key="ch" class="letter-chip" :class="{ active: songLetter === ch }" @click="onSongLetter(ch)">{{ ch }}</button>
           </div>
           <n-spin :show="library.artistSongsLoading" size="small">
-            <SongTable
-              v-if="displaySongs.length"
-              :songs="displaySongs"
-              @play="playSong"
-              @addToQueue="addToQueue"
-              @toggleFav="toggleSongFav"
-              @rate="onRateSong"
-              @addToPlaylist="onAddToPlaylist"
-            />
+            <template v-if="displaySongs.length">
+              <SongTable
+                v-if="songViewMode === 'list'"
+                :songs="displaySongs"
+                @play="playSong"
+                @addToQueue="addToQueue"
+                @toggleFav="toggleSongFav"
+                @rate="onRateSong"
+                @addToPlaylist="onAddToPlaylist"
+              />
+              <SongGrid
+                v-else
+                :songs="displaySongs"
+                @play="playSong"
+                @addToQueue="addToQueue"
+                @toggleFav="toggleSongFav"
+                @rate="onRateSong"
+                @addToPlaylist="onAddToPlaylist"
+              />
+            </template>
             <n-empty v-else :description="$t('player.noData')" size="small" style="margin-top:32px" />
           </n-spin>
           <n-pagination
@@ -168,7 +207,7 @@
       </template>
     </n-spin>
 
-
+    <!-- ═══ 编辑弹窗 ═══ -->
     <n-modal
       v-model:show="showEditModal"
       preset="card"
@@ -198,7 +237,7 @@
       </template>
     </n-modal>
 
-
+    <!-- ═══ 添加到歌单弹窗 ═══ -->
     <AddToPlaylistModal
       :show="showAddModal"
       :song-ids="addSongIds"
@@ -211,7 +250,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { PlayOutline, ShuffleOutline, HeartOutline, Heart, CreateOutline, ChevronBackOutline } from '@vicons/ionicons5'
+import { PlayOutline, ShuffleOutline, HeartOutline, Heart, CreateOutline, ChevronBackOutline, SearchOutline } from '@vicons/ionicons5'
 import { useMessage } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useLibraryStore } from '@/store/playback/library.js'
@@ -220,24 +259,38 @@ import { subsonicGetCoverArtUrl } from '@/api/playback/subsonic.js'
 import { updateArtist } from '@/api/playback/artist.js'
 import CoverArt from '@/components/playback/CoverArt.vue'
 import AlbumCard from '@/components/playback/AlbumCard.vue'
+import AlbumTable from '@/components/playback/AlbumTable.vue'
 import SongTable from '@/components/playback/SongTable.vue'
+import SongGrid from '@/components/playback/SongGrid.vue'
+import ViewToggle from '@/components/playback/ViewToggle.vue'
 import AddToPlaylistModal from '@/components/playback/AddToPlaylistModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+const searchText = ref('')
+
+function doSearch() {
+  const q = searchText.value.trim()
+  if (!q) return
+  router.push(`/player/search?q=${encodeURIComponent(q)}`)
+}
+
 const message = useMessage()
 const library = useLibraryStore()
 const player = usePlayerStore()
 
 const artist = computed(() => library.artistDetail)
 
+// ═══ 封面 ═══
 
 const coverUrl = computed(() => {
   const artId = artist.value?.coverArt || artist.value?.id
   return artId ? subsonicGetCoverArtUrl(artId, 200) : ''
 })
 
+// ═══ 标签切换 ═══
 
 const activeTab = ref('albums')
 const tabsLoaded = ref({ albums: false, songs: false })
@@ -251,6 +304,7 @@ function switchTab(tab) {
   }
 }
 
+// ═══ 字母索引 ── 共用 A-Z / 0-9 / # ═══
 
 const letterChips = (() => {
   const chips = []
@@ -259,8 +313,10 @@ const letterChips = (() => {
   return chips
 })()
 
+// ═══ 专辑区 ═══
 
 const albumSort = ref('newest')
+const albumViewMode = ref('grid')
 const albumLetter = ref(null)
 const albumPage = ref(1)
 const albumPageSize = ref(20)
@@ -271,7 +327,13 @@ const albumSortOptions = computed(() => [
   { label: t('album.byYear'), value: 'byYear' },
 ])
 
-const displayAlbums = computed(() => library.artistAlbums)
+const displayAlbums = computed(() =>
+  library.artistAlbums.map(a => ({
+    ...a,
+    artist: a.artist || artist.value?.name || '',
+    artistId: a.artistId || artist.value?.id,
+  }))
+)
 
 function loadAlbums() {
   const id = route.params.id
@@ -308,8 +370,10 @@ function onAlbumPageSizeChange() {
   loadAlbums()
 }
 
+// ═══ 歌曲区 ═══
 
 const songSort = ref('alphabetical')
+const songViewMode = ref('list')
 const songLetter = ref(null)
 const songPage = ref(1)
 const songPageSize = ref(50)
@@ -323,14 +387,14 @@ const songSortOptions = computed(() => [
 const displaySongs = computed(() =>
   library.artistSongs.map(s => ({
     ...s,
-    artist: s.artist || artist.value?.name || '',
+    artist: s.displayArtist || s.artist || artist.value?.name || '',
     album: s.album || '',
     coverArt: s.coverArt || artist.value?.coverArt || artist.value?.id,
     _starred: s.id != null ? player.isSongStarred(s.id) : false,
   }))
 )
 
-
+/** 缓存歌曲列表用于播放（首次加载后保持引用） */
 const cachedSongs = ref([])
 
 function loadSongs() {
@@ -356,6 +420,7 @@ function onSongPageSizeChange() {
   loadSongs()
 }
 
+// ═══ 收藏状态 ═══
 
 const isStarred = computed(() => {
   const id = artist.value?.id
@@ -370,30 +435,48 @@ const genderLabel = computed(() => {
   return null
 })
 
+// ═══ 生命周期 ═══
 
-onMounted(async () => {
+onMounted(() => {
+  loadArtistData()
+})
+
+// 监听路由参数变化（同一组件内跳转到另一个艺术家）
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    loadArtistData()
+  }
+})
+
+function loadArtistData() {
   const id = route.params.id
   if (id) {
     library.loadArtist(id)
     player.loadFavoriteIds()
-        tabsLoaded.value.albums = true
+    // 首屏自动加载默认标签（专辑）
+    tabsLoaded.value = { albums: false, songs: false }
+    activeTab.value = 'albums'
+    tabsLoaded.value.albums = true
     loadAlbums()
   }
-})
+}
 
+// ═══ 导航 ═══
 
-function goBack() { router.push('/player/artists') }
+function goBack() { router.back() }
 function goAlbum(albumId) {
   if (albumId) router.push(`/player/albums/${albumId}`)
 }
 
+// ═══ 播放 ═══
 
 function playSong(song) {
   if (song.path) player.play(song)
 }
 
 function playAll() {
-    const id = route.params.id
+  // 触发加载全量歌曲后播放第一首
+  const id = route.params.id
   if (!id) return
   library.loadArtistSongs(id, { sort: 'alphabetical', limit: 500, offset: 0 }).then(() => {
     const first = library.artistSongs[0]
@@ -416,6 +499,7 @@ function addToQueue(song) {
   if (song) player.addToQueue([song])
 }
 
+// ═══ 收藏 ═══
 
 async function toggleArtistFav() {
   const id = artist.value?.id
@@ -426,6 +510,22 @@ async function toggleArtistFav() {
       await player.unstarArtist(id)
     } else {
       await player.starArtist(id)
+    }
+    message.success(wasStarred ? t('player.unfavorited') : t('player.favorited'))
+  } catch {
+    message.warning(t('player.favoriteFailed'))
+  }
+}
+
+async function onAlbumToggleFav(album) {
+  const id = album?.id
+  if (id == null) return
+  const wasStarred = player.isAlbumStarred(id)
+  try {
+    if (wasStarred) {
+      await player.unstarAlbum(id)
+    } else {
+      await player.starAlbum(id)
     }
     message.success(wasStarred ? t('player.unfavorited') : t('player.favorited'))
   } catch {
@@ -449,6 +549,7 @@ async function toggleSongFav(song) {
   }
 }
 
+// ═══ 评分 ═══
 
 function onRateSong({ songId, rating }) {
   const list = library.artistSongs
@@ -458,6 +559,7 @@ function onRateSong({ songId, rating }) {
   }
 }
 
+// ═══ 添加到歌单 ═══
 
 const showAddModal = ref(false)
 const addSongIds = ref([])
@@ -469,6 +571,7 @@ function onAddToPlaylist(song) {
 
 function onAddedToPlaylist() {}
 
+// ═══ 编辑 ═══
 
 const showEditModal = ref(false)
 const saving = ref(false)
@@ -517,7 +620,9 @@ async function doSave() {
 </script>
 
 <style scoped>
-
+/* ════════════════════════════════════════════════════
+   艺术家详情页 — 标签切换 + 分区懒加载 + 方形封面
+   ════════════════════════════════════════════════════ */
 
 .artist-detail-page {
   width: min(100% - var(--content-padding-x) * 2, var(--content-max-width));
@@ -525,7 +630,7 @@ async function doSave() {
   padding: 24px 0;
 }
 
-
+/* ── 页头 ── */
 .page-header {
   display: flex;
   align-items: center;
@@ -575,7 +680,7 @@ async function doSave() {
   flex-shrink: 0;
 }
 
-
+/* ── Hero 信息 ── */
 .detail-hero {
   display: flex;
   gap: 24px;
@@ -615,7 +720,7 @@ async function doSave() {
 .meta-tag.gender  { color: var(--ct-accent); background: rgb(var(--ct-accent-rgb) / 0.1); }
 .meta-tag.country { color: var(--ct-accent); background: rgb(var(--ct-accent-rgb) / 0.1); }
 
-
+/* ── 简介 ── */
 .hero-intro {
   padding: 8px 12px;
   border-radius: 8px;
@@ -650,7 +755,7 @@ async function doSave() {
 }
 .intro-toggle:hover { text-decoration: underline; }
 
-
+/* ── 标签切换 ── */
 .tab-bar {
   display: flex;
   align-items: center;
@@ -684,12 +789,19 @@ async function doSave() {
   border-bottom-color: var(--ct-accent);
 }
 
+.tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
+/* ── 标签内容 ── */
 .tab-content {
   min-height: 200px;
 }
 
-
+/* ── 字母索引 ── */
 .letter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -726,14 +838,14 @@ async function doSave() {
   color: #fff;
 }
 
-
+/* ── 专辑网格 ── */
 .album-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
 }
 
-
+/* ── 分页 ── */
 .tab-pagination {
   margin-top: 16px;
   justify-content: flex-end;

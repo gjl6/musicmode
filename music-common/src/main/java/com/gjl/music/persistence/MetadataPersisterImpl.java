@@ -1,23 +1,58 @@
 package com.gjl.music.persistence;
 
 import com.gjl.music.infra.util.PinyinUtils;
-import com.gjl.music.mapper.MusicMapper;
+import com.gjl.music.mapper.SongMapper;
+import com.gjl.music.mapper.ArtistMapper;
+import com.gjl.music.mapper.AlbumMapper;
+import com.gjl.music.mapper.StyleMapper;
+import com.gjl.music.mapper.LyricMapper;
 import com.gjl.music.model.*;
+import com.gjl.music.search.EntityChangeEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
-
+/**
+ * 元数据批量持久化实现 —— 纯批量写入，不含 Pipeline 概念。
+ *
+ * <p>编排流程：</p>
+ * <ol>
+ *   <li>收集 + 去重 Artist / Album / Style / Lyric</li>
+ *   <li>批量 upsert artists（生成拼音排序键）→ 回查 ID</li>
+ *   <li>关联 album.artistId → 批量 upsert albums → 回查 ID</li>
+ *   <li>关联 song.albumId → 批量 upsert songs → 回查 ID</li>
+ *   <li>批量插入 song_artist（保留排序）</li>
+ *   <li>批量 upsert styles + 插入 song_style</li>
+ *   <li>关联 lyric.songId → 批量 upsert lyrics</li>
+ *   <li>刷新 album/artist/style 冗余计数</li>
+ * </ol>
+ */
 @Slf4j
 @Component
 public class MetadataPersisterImpl implements MetadataPersister {
 
-    protected final MusicMapper mapper;
+    protected final SongMapper songMapper;
+    protected final ArtistMapper artistMapper;
+    protected final AlbumMapper albumMapper;
+    protected final StyleMapper styleMapper;
+    protected final LyricMapper lyricMapper;
+    protected final ApplicationEventPublisher eventPublisher;
 
-    public MetadataPersisterImpl(MusicMapper mapper) {
-        this.mapper = mapper;
+    public MetadataPersisterImpl(SongMapper songMapper,
+                                  ArtistMapper artistMapper,
+                                  AlbumMapper albumMapper,
+                                  StyleMapper styleMapper,
+                                  LyricMapper lyricMapper,
+                                  ApplicationEventPublisher eventPublisher) {
+        this.songMapper = songMapper;
+        this.artistMapper = artistMapper;
+        this.albumMapper = albumMapper;
+        this.styleMapper = styleMapper;
+        this.lyricMapper = lyricMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     private record FileRow(String filePath, Song song, String albumName,
@@ -27,7 +62,18 @@ public class MetadataPersisterImpl implements MetadataPersister {
     @Override
     @Transactional
     public void persistBatch(List<Map.Entry<String, MusicMetadata>> batch) {
-                Map<String, Artist> artistByName = new LinkedHashMap<>();
+        doPersistBatch(batch, false);
+    }
+
+    @Override
+    @Transactional
+    public void persistBatchMergeArtistAlbum(List<Map.Entry<String, MusicMetadata>> batch) {
+        doPersistBatch(batch, true);
+    }
+
+    private void doPersistBatch(List<Map.Entry<String, MusicMetadata>> batch, boolean mergeArtistAlbum) {
+        // ── 1. 收集 + 去重 ──
+        Map<String, Artist> artistByName = new LinkedHashMap<>();
         Map<String, Album> albumByName = new LinkedHashMap<>();
         Map<String, Style> styleByName = new LinkedHashMap<>();
         List<Lyric> allLyrics = new ArrayList<>();
@@ -70,18 +116,24 @@ public class MetadataPersisterImpl implements MetadataPersister {
 
         if (rows.isEmpty()) return;
 
-                Map<String, Long> artistNameToId = Map.of();
+        // ── 2. 批量 upsert artists（生成拼音排序键）+ 回查 ID ──
+        Map<String, Long> artistNameToId = Map.of();
         if (!artistByName.isEmpty()) {
             for (Artist a : artistByName.values()) {
                 a.setSortArtistName(PinyinUtils.toSortKey(a.getArtistName()));
             }
-            mapper.batchUpsertArtists(new ArrayList<>(artistByName.values()));
+            if (mergeArtistAlbum) {
+                artistMapper.batchUpsertArtists(new ArrayList<>(artistByName.values()));
+            } else {
+                artistMapper.batchInsertArtistsIgnoreExisting(new ArrayList<>(artistByName.values()));
+            }
             artistNameToId = lookupIds(
-                    mapper.selectArtistIdsByNames(new ArrayList<>(artistByName.keySet())),
+                    artistMapper.selectArtistIdsByNames(new ArrayList<>(artistByName.keySet())),
                     "artist_name");
         }
 
-                Map<String, Long> albumNameToId = Map.of();
+        // ── 3. 关联 album.artistId + 批量 upsert albums（生成拼音排序键）+ 回查 ID ──
+        Map<String, Long> albumNameToId = Map.of();
         if (!albumByName.isEmpty()) {
             for (Album al : albumByName.values()) {
                 al.setSortAlbumName(PinyinUtils.toSortKey(al.getAlbumName()));
@@ -97,13 +149,18 @@ public class MetadataPersisterImpl implements MetadataPersister {
                     }
                 }
             }
-            mapper.batchUpsertAlbums(new ArrayList<>(albumByName.values()));
+            if (mergeArtistAlbum) {
+                albumMapper.batchUpsertAlbums(new ArrayList<>(albumByName.values()));
+            } else {
+                albumMapper.batchInsertAlbumsIgnoreExisting(new ArrayList<>(albumByName.values()));
+            }
             albumNameToId = lookupIds(
-                    mapper.selectAlbumIdsByNames(new ArrayList<>(albumByName.keySet())),
+                    albumMapper.selectAlbumIdsByNames(new ArrayList<>(albumByName.keySet())),
                     "album_name");
         }
 
-                List<Song> songsToUpsert = new ArrayList<>();
+        // ── 4. 关联 song.albumId + 批量 upsert songs + 回查 ID ──
+        List<Song> songsToUpsert = new ArrayList<>();
         for (FileRow row : rows) {
             Song s = row.song;
             s.setSortTitle(PinyinUtils.toSortKey(s.getTitle()));
@@ -115,16 +172,17 @@ public class MetadataPersisterImpl implements MetadataPersister {
             }
             songsToUpsert.add(s);
         }
-        mapper.batchUpsertSongs(songsToUpsert);
+        songMapper.batchUpsertSongs(songsToUpsert);
         Map<String, Long> filePathToSongId = Map.of();
         List<String> filePaths = rows.stream()
                 .map(FileRow::filePath).toList();
         if (!filePaths.isEmpty()) {
             filePathToSongId = lookupIds(
-                    mapper.selectSongIdsByFilePaths(filePaths), "file_path");
+                    songMapper.selectSongIdsByFilePaths(filePaths), "file_path");
         }
 
-                List<Map<String, Object>> saRelations = new ArrayList<>();
+        // ── 5. 批量插入 song_artist（记录排序以保持艺术家顺序）──
+        List<Map<String, Object>> saRelations = new ArrayList<>();
         for (int i = 0; i < rows.size(); i++) {
             FileRow row = rows.get(i);
             Long songId = filePathToSongId.get(row.filePath());
@@ -138,17 +196,18 @@ public class MetadataPersisterImpl implements MetadataPersister {
             }
         }
         if (!saRelations.isEmpty()) {
-            mapper.batchInsertSongArtists(saRelations);
+            songMapper.batchInsertSongArtists(saRelations);
         }
 
-                Map<String, Long> styleNameToId = Map.of();
+        // ── 6. 批量 upsert styles（生成拼音排序键）+ 批量插入 song_style ──
+        Map<String, Long> styleNameToId = Map.of();
         if (!styleByName.isEmpty()) {
             for (Style st : styleByName.values()) {
                 st.setSortStyleName(PinyinUtils.toSortKey(st.getStyleName()));
             }
-            mapper.batchUpsertStyles(new ArrayList<>(styleByName.values()));
+            styleMapper.batchUpsertStyles(new ArrayList<>(styleByName.values()));
             styleNameToId = lookupIds(
-                    mapper.selectStyleIdsByNames(new ArrayList<>(styleByName.keySet())),
+                    styleMapper.selectStyleIdsByNames(new ArrayList<>(styleByName.keySet())),
                     "style_name");
 
             List<Map<String, Object>> ssRelations = new ArrayList<>();
@@ -164,11 +223,12 @@ public class MetadataPersisterImpl implements MetadataPersister {
                 }
             }
             if (!ssRelations.isEmpty()) {
-                mapper.batchInsertSongStyles(ssRelations);
+                songMapper.batchInsertSongStyles(ssRelations);
             }
         }
 
-                if (!allLyrics.isEmpty()) {
+        // ── 7. 关联 lyric.songId + 批量 upsert lyrics ──
+        if (!allLyrics.isEmpty()) {
             for (int i = 0; i < rows.size(); i++) {
                 FileRow row = rows.get(i);
                 Long songId = filePathToSongId.get(row.filePath());
@@ -177,23 +237,45 @@ public class MetadataPersisterImpl implements MetadataPersister {
                     lyric.setSongId(songId);
                 }
             }
-            mapper.batchUpsertLyrics(allLyrics);
+            lyricMapper.batchUpsertLyrics(allLyrics);
         }
 
-                if (!albumNameToId.isEmpty()) {
-            mapper.updateAlbumSongCounts(new ArrayList<>(albumNameToId.values()));
+        // ── 8. 刷新受影响的专辑/艺术家/风格冗余计数 ──
+        if (!albumNameToId.isEmpty()) {
+            songMapper.updateAlbumSongCounts(new ArrayList<>(albumNameToId.values()));
         }
         if (!artistNameToId.isEmpty()) {
             List<Long> artistIds = new ArrayList<>(artistNameToId.values());
-            mapper.updateArtistAlbumCounts(artistIds);
-            mapper.updateArtistSongCounts(artistIds);
+            songMapper.updateArtistAlbumCounts(artistIds);
+            songMapper.updateArtistSongCounts(artistIds);
         }
         if (!styleNameToId.isEmpty()) {
-            mapper.updateStyleSongCounts(new ArrayList<>(styleNameToId.values()));
+            songMapper.updateStyleSongCounts(new ArrayList<>(styleNameToId.values()));
+        }
+
+        // ── 9. 发布索引更新事件（Lucene 实时同步）──
+        publishIndexEvents(filePathToSongId, albumNameToId, artistNameToId);
+    }
+
+    /** 发布实体变更事件，驱动 Lucene 索引实时更新 */
+    private void publishIndexEvents(Map<String, Long> filePathToSongId,
+                                     Map<String, Long> albumNameToId,
+                                     Map<String, Long> artistNameToId) {
+        // 歌曲：upsert 可能新建也可能更新，统一发 UPDATED（reindexSong 会处理两种情况）
+        for (Long songId : filePathToSongId.values()) {
+            eventPublisher.publishEvent(EntityChangeEvent.songUpdated(songId));
+        }
+        // 专辑
+        for (Long albumId : albumNameToId.values()) {
+            eventPublisher.publishEvent(EntityChangeEvent.albumUpdated(albumId));
+        }
+        // 艺术家
+        for (Long artistId : artistNameToId.values()) {
+            eventPublisher.publishEvent(EntityChangeEvent.artistUpdated(artistId));
         }
     }
 
-
+    /** 将 [{name_col: "xxx", id: 123}, ...] 转为 {name → id}，兼容 H2/MySQL 列名大小写 */
     private static Map<String, Long> lookupIds(List<Map<String, Object>> rows, String nameCol) {
         Map<String, Long> result = new LinkedHashMap<>();
         String upperCol = nameCol.toUpperCase();

@@ -38,12 +38,12 @@ public class Song extends MetadataItem {
     private String arranger;
     private String producer;
     private String extraTags;
-
+    /** 艺术家名 — 非 DB 字段，由 JOIN 查询填充（Subsonic API 用） */
     private String artistName;
-
+    /** 专辑名 — 非 DB 字段，由 JOIN 查询填充（Subsonic API 用） */
     private String albumName;
-
+    /** 文件最后修改时间戳（毫秒），用于增量扫描修改检测 */
     private Long fileMtime;
-
+    /** 排序键 — 中文转拼音大写，用于字母索引 + 排序 */
     private String sortTitle;
 }

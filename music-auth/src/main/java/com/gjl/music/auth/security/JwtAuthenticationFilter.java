@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-
+/**
+ * JWT 认证过滤器 —— 从 Authorization header 提取 Token 并设置 SecurityContext。
+ */
 @Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -64,7 +66,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     request.getServletPath(), request.getMethod());
         }
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-                        String username = jwtTokenProvider.getUsername(token);
+            // 检查 token 版本号：如果权限已变更，旧 token 立即失效
+            String username = jwtTokenProvider.getUsername(token);
             long tokenVer = jwtTokenProvider.getVersion(token);
             long currentVer = authCache.getVersion(username);
             if (currentVer > 0 && tokenVer < currentVer) {
@@ -86,13 +89,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-                List<String> whiteList = configService.getList("music.auth.white-list-paths", List.of());
+        // 白名单路径不拦截
+        List<String> whiteList = configService.getList("music.auth.white-list-paths", List.of());
         for (String pattern : whiteList) {
             if (PATH_MATCHER.match(pattern.trim(), path)) {
                 return true;
             }
         }
-                return PATH_MATCHER.match("/ws/**", path)
+        // 固定白名单
+        return PATH_MATCHER.match("/ws/**", path)
                 || PATH_MATCHER.match("/h2-console/**", path)
                 || PATH_MATCHER.match("/actuator/**", path)
                 || PATH_MATCHER.match("/error", path);
@@ -106,7 +111,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-
+    /** 从 Cookie 中提取 JWT（供 img/audio 等无法自定义 Header 的标签使用）。 */
     private String resolveCookieToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) return null;

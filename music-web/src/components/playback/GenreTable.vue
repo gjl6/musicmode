@@ -66,8 +66,11 @@ function cover(row, size) {
 </script>
 
 <style scoped>
+/* ═══════════════════════════════════════════════════════════════
+   Claymorphism Table — 双层阴影凸起行（与 AlbumTable 共享样式体系）
+   ═══════════════════════════════════════════════════════════════ */
 
-
+/* ── 表格基础 ── */
 .clay-table {
   width: 100%;
   border-collapse: separate;
@@ -75,14 +78,14 @@ function cover(row, size) {
   table-layout: fixed;
 }
 
-
+/* 列宽 */
 .col-idx   { width: 36px;  text-align: center; }
 .col-cv    { width: 45px;  text-align: center; }
 .col-num   { width: 72px;  text-align: center; }
 .col-act   { width: 56px;  text-align: center; }
 .col-main  { text-align: left; }
 
-
+/* ── 表头：凸起横条 ── */
 .clay-table th {
   background: var(--gradient-button);
   box-shadow:
@@ -100,7 +103,7 @@ function cover(row, size) {
 .clay-table th:first-child { border-radius: 10px 0 0 10px; }
 .clay-table th:last-child  { border-radius: 0 10px 10px 0; }
 
-
+/* ── 数据行：凸起药丸 ── */
 .clay-table td {
   background: var(--gradient-table-row);
   box-shadow:
@@ -119,7 +122,7 @@ function cover(row, size) {
 .clay-table td:first-child { border-radius: 12px 0 0 12px; }
 .clay-table td:last-child  { border-radius: 0 12px 12px 0; }
 
-
+/* hover：弹簧抬升 + 阴影加深 */
 .clay-table tbody tr:hover td {
   background: var(--gradient-card);
   box-shadow:
@@ -129,7 +132,7 @@ function cover(row, size) {
   transform: translateY(-2px);
 }
 
-
+/* ── 暗色主题 ── */
 :root.dark .clay-table th {
   box-shadow:
     var(--effect-button-inner),
@@ -146,7 +149,7 @@ function cover(row, size) {
     4px 6px 18px rgba(0 0 0 / 0.5);
 }
 
-
+/* ── 封面缩略图 ── */
 .cv-img {
   width: 42px; height: 42px;
   border-radius: 7px;
@@ -155,7 +158,7 @@ function cover(row, size) {
   margin: 0 auto;
 }
 
-
+/* ── 主列：流派名 ── */
 .col-main {
   line-height: 1.4;
 }
@@ -171,13 +174,13 @@ function cover(row, size) {
 }
 .main-name:hover { color: var(--ct-accent); }
 
-
+/* ── 占位符 ── */
 .dash {
   font-size: 12px;
   color: var(--ct-text-3);
 }
 
-
+/* 序号等宽数字 */
 .col-idx {
   font-size: 12px;
   color: var(--ct-text-3);
@@ -190,7 +193,7 @@ function cover(row, size) {
   font-variant-numeric: tabular-nums;
 }
 
-
+/* ── 操作按钮 ── */
 .actions {
   display: flex;
   gap: 5px;

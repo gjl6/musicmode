@@ -5,7 +5,7 @@
     :target-path="targetPath"
   >
     <div class="og-main">
-
+      <!-- 1. 顶部标题 -->
       <div class="og-topbar">
         <span class="og-title">{{ t('organize.title') }}</span>
         <n-tag type="info" size="small" :bordered="false">
@@ -13,7 +13,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 2. 操作模式 -->
       <div class="og-section">
         <div class="og-section-header">
           <span class="og-section-title">{{ t('organize.mode') }}</span>
@@ -24,7 +24,7 @@
         </n-radio-group>
       </div>
 
-
+      <!-- 3. 目标根目录 -->
       <div class="og-section">
         <div class="og-section-header">
           <span class="og-section-title">{{ t('organize.targetRoot') }}</span>
@@ -38,7 +38,7 @@
         <n-text depth="3" class="og-hint">{{ t('organize.targetRootHint') }}</n-text>
       </div>
 
-
+      <!-- 4. 目录层级 -->
       <div class="og-section">
         <div class="og-section-header">
           <span class="og-section-title">{{ t('organize.hierarchy') }}</span>
@@ -74,7 +74,7 @@
           @click="addLevel"
         >{{ t('organize.addLevel') }}</n-button>
 
-
+        <!-- 路径预览 -->
         <div v-if="levels.length > 0" class="og-preview">
           <span class="og-preview-label">{{ t('organize.preview') }}:</span>
           <code class="og-preview-path">{{ previewPath }}</code>
@@ -82,12 +82,12 @@
         <n-text v-else depth="3" class="og-hint">{{ t('organize.noLevels') }}</n-text>
       </div>
 
-
+      <!-- 5. 提示信息 -->
       <n-alert type="info" class="og-info">
         {{ t('organize.conflictWarning') }}
       </n-alert>
 
-
+      <!-- 6. 提交 -->
       <div class="og-section">
         <n-button
           type="primary"
@@ -98,14 +98,6 @@
         >
           {{ processing ? t('toolPanel.processing') : t('toolPanel.submit') }}
         </n-button>
-
-        <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="og-result">
-          <template #header>
-            <span v-if="result.success">{{ t('tool.success') }}</span>
-            <span v-else>{{ t('tool.failure') }}</span>
-          </template>
-          <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-        </n-alert>
 
         <n-alert v-if="error" type="error" class="og-result">{{ error }}</n-alert>
       </div>
@@ -133,15 +125,18 @@ const { t } = useI18n()
 const message = useMessage()
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
+// 操作模式
 const mode = ref('move')
 
+// 目标根目录
 const targetRoot = ref('')
 
+// 目录层级
 const levels = ref([])
 
+// 可用字段选项
 const fieldOptions = [
   { label: () => t('organize.fields.artist'), value: 'artist' },
   { label: () => t('organize.fields.album'), value: 'album' },
@@ -166,8 +161,10 @@ const totalCount = computed(
   () => props.selectedFiles.length + props.selectedFolders.length,
 )
 
+// 路径预览
 const previewPath = computed(() => {
-    const rootLabel = targetRoot.value
+  // 目标根目录优先，否则用当前浏览目录
+  const rootLabel = targetRoot.value
     || (props.targetPath && props.targetPath !== '/' ? props.targetPath : '')
     || t('organize.sourceDir')
   const segments = levels.value.map(l => {
@@ -191,6 +188,7 @@ function updateLevelField(index, newField) {
   levels.value = updated
 }
 
+// ── localStorage 持久化 ──
 
 const STORAGE_KEY_LEVELS = 'music-organize-levels'
 const STORAGE_KEY_MODE = 'music-organize-mode'
@@ -207,7 +205,7 @@ function loadFromStorage() {
     if (savedMode === 'move' || savedMode === 'copy') mode.value = savedMode
     const savedRoot = localStorage.getItem(STORAGE_KEY_ROOT)
     if (savedRoot) targetRoot.value = savedRoot
-  } catch (_) {  }
+  } catch (_) { /* ignore */ }
 }
 
 loadFromStorage()
@@ -216,11 +214,11 @@ watch(levels, v => localStorage.setItem(STORAGE_KEY_LEVELS, JSON.stringify(v)), 
 watch(mode, v => localStorage.setItem(STORAGE_KEY_MODE, v))
 watch(targetRoot, v => localStorage.setItem(STORAGE_KEY_ROOT, v))
 
+// ── 提交 ──
 
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
@@ -234,12 +232,11 @@ async function handleSubmit() {
       },
     }
     const res = await runTool('organize', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')
@@ -274,7 +271,7 @@ async function handleSubmit() {
   color: var(--ct-text);
 }
 
-
+/* section 通用 */
 .og-section {
   display: flex;
   flex-direction: column;
@@ -297,7 +294,7 @@ async function handleSubmit() {
   font-size: 12px;
 }
 
-
+/* 层级列表 */
 .og-level-list {
   display: flex;
   flex-direction: column;
@@ -317,7 +314,7 @@ async function handleSubmit() {
   text-align: right;
 }
 
-
+/* 路径预览 */
 .og-preview {
   display: flex;
   align-items: center;

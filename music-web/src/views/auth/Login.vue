@@ -1,7 +1,14 @@
 <template>
   <div class="login-page">
     <div class="login-card">
-      <h1 class="login-title">Music Pipeline</h1>
+      <!-- 品牌标识 -->
+      <div class="brand-area">
+        <div class="brand-icon-ring">
+          <n-icon class="brand-icon" :component="MusicalNotesIcon" size="22" />
+        </div>
+      </div>
+
+      <h1 class="login-title">Music Mode</h1>
       <p class="login-subtitle">登录以继续</p>
 
       <n-tabs
@@ -11,7 +18,7 @@
         class="login-tabs"
       >
         <n-tab-pane name="login" tab="登录" />
-        <n-tab-pane name="register" tab="注册" />
+        <n-tab-pane v-if="registrationAllowed" name="register" tab="注册" />
       </n-tabs>
 
       <n-form
@@ -20,16 +27,20 @@
         :rules="rules"
         class="login-form"
       >
-        <n-form-item path="username" label="用户名">
+        <n-form-item path="username">
           <n-input
             v-model:value="form.username"
             placeholder="请输入用户名"
             :disabled="auth.loading"
             @keyup.enter="handleSubmit"
-          />
+          >
+            <template #prefix>
+              <n-icon :component="PersonIcon" />
+            </template>
+          </n-input>
         </n-form-item>
 
-        <n-form-item path="password" label="密码">
+        <n-form-item path="password">
           <n-input
             v-model:value="form.password"
             type="password"
@@ -37,23 +48,35 @@
             placeholder="请输入密码"
             :disabled="auth.loading"
             @keyup.enter="handleSubmit"
-          />
+          >
+            <template #prefix>
+              <n-icon :component="LockIcon" />
+            </template>
+          </n-input>
         </n-form-item>
 
         <template v-if="activeTab === 'register'">
-          <n-form-item path="displayName" label="显示名">
+          <n-form-item path="displayName">
             <n-input
               v-model:value="form.displayName"
-              placeholder="可选"
+              placeholder="显示名（可选）"
               :disabled="auth.loading"
-            />
+            >
+              <template #prefix>
+                <n-icon :component="PersonAddIcon" />
+              </template>
+            </n-input>
           </n-form-item>
-          <n-form-item path="email" label="邮箱">
+          <n-form-item path="email">
             <n-input
               v-model:value="form.email"
-              placeholder="可选"
+              placeholder="邮箱（可选）"
               :disabled="auth.loading"
-            />
+            >
+              <template #prefix>
+                <n-icon :component="MailIcon" />
+              </template>
+            </n-input>
           </n-form-item>
         </template>
 
@@ -68,7 +91,7 @@
         </n-button>
       </n-form>
 
-
+      <!-- 错误提示 -->
       <n-alert
         v-if="errorMsg"
         type="error"
@@ -78,72 +101,51 @@
       >
         {{ errorMsg }}
       </n-alert>
-
-
-      <div v-if="auth.isAuthenticated && auth.user" class="auth-info">
-        <n-divider>当前登录信息</n-divider>
-        <n-descriptions label-placement="left" :column="1" size="small" bordered>
-          <n-descriptions-item label="用户名">
-            {{ auth.user.username }}
-          </n-descriptions-item>
-          <n-descriptions-item label="显示名">
-            {{ auth.user.displayName || '-' }}
-          </n-descriptions-item>
-          <n-descriptions-item label="角色">
-            <n-tag
-              v-for="r in auth.user.roles"
-              :key="r"
-              type="info"
-              size="small"
-              style="margin-right: 4px"
-            >
-              {{ r }}
-            </n-tag>
-            <span v-if="!auth.user.roles?.length">-</span>
-          </n-descriptions-item>
-          <n-descriptions-item label="Access Token">
-            <n-ellipsis style="max-width: 320px; font-family: monospace; font-size: 11px;">
-              {{ auth.accessToken }}
-            </n-ellipsis>
-          </n-descriptions-item>
-        </n-descriptions>
-
-        <div class="auth-actions">
-          <n-button
-            type="primary"
-            size="small"
-            @click="$router.push('/workbench')"
-          >
-            进入工作台
-          </n-button>
-          <n-button
-            size="small"
-            @click="handleLogout"
-          >
-            登出
-          </n-button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth.js'
+import { getRegisterStatus } from '@/api/auth/auth.js'
+import {
+  MusicalNotesOutline,
+  PersonOutline,
+  LockClosedOutline,
+  PersonAddOutline,
+  MailOutline,
+} from '@vicons/ionicons5'
 
 const router = useRouter()
 const auth = useAuthStore()
 
+const MusicalNotesIcon = MusicalNotesOutline
+const PersonIcon = PersonOutline
+const LockIcon = LockClosedOutline
+const PersonAddIcon = PersonAddOutline
+const MailIcon = MailOutline
+
 const activeTab = ref('login')
 const errorMsg = ref('')
 const formRef = ref(null)
+const registrationAllowed = ref(false)
 const form = ref({
   username: '',
   password: '',
   displayName: '',
   email: '',
+})
+
+onMounted(async () => {
+  try {
+    const res = await getRegisterStatus()
+    registrationAllowed.value = res.allowRegistration === true
+  } catch {
+    // 查询失败时默认显示注册 Tab，后端会兜底返回错误
+    registrationAllowed.value = true
+  }
 })
 
 const rules = computed(() => {
@@ -187,6 +189,7 @@ async function handleSubmit() {
     } else {
       await auth.register(username, password, displayName || undefined, email || undefined)
     }
+    router.replace('/player')
   } catch (err) {
     const msg =
       err?.response?.data?.message ||
@@ -196,73 +199,126 @@ async function handleSubmit() {
     errorMsg.value = msg
   }
 }
-
-async function handleLogout() {
-  await auth.logout()
-  form.value = { username: '', password: '', displayName: '', email: '' }
-  activeTab.value = 'login'
-}
 </script>
 
 <style scoped>
 .login-page {
-  min-height: 100vh;
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: var(--ct-bg, #f5f5f5);
+  padding: var(--space-4);
+  background: var(--ct-bg);
+  /* 微弱的品牌色径向辉光 */
+  background-image: radial-gradient(
+    ellipse at 50% 40%,
+    rgba(var(--color-accent-rgb), 0.05) 0%,
+    transparent 70%
+  );
 }
 
 .login-card {
   width: 100%;
-  max-width: 420px;
-  padding: 36px 32px;
-  border-radius: var(--radius-xl, 12px);
-  background: var(--gradient-card, var(--color-surface, #fff));
-  border: var(--border-width-strong, 1px) solid var(--color-border, #e0e0e0);
-  box-shadow: var(--shadow-lg, 0 4px 24px rgba(0,0,0,.08));
+  max-width: 360px;
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  background: var(--gradient-card, var(--color-surface));
+  border: var(--border-width-default) solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  animation: card-enter var(--transition-slow) both;
 }
 
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── 品牌标识 ── */
+
+.brand-area {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+}
+
+.brand-icon-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: rgba(var(--color-accent-rgb), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-icon {
+  color: var(--color-accent);
+}
+
+/* ── 标题 ── */
+
 .login-title {
-  font-size: 28px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   text-align: center;
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-1);
   letter-spacing: -0.5px;
+  color: var(--color-text);
 }
 
 .login-subtitle {
   text-align: center;
-  color: var(--ct-text-2, #888);
-  margin: 0 0 20px;
-  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-base);
 }
 
+/* ── Tab ── */
+
 .login-tabs {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
+
+/* ── 表单 ── */
 
 .login-form {
   margin-bottom: 0;
 }
 
 .submit-btn {
-  margin-top: 8px;
+  margin-top: var(--space-2);
 }
+
+/* ── 错误 ── */
 
 .error-alert {
-  margin-top: 16px;
+  margin-top: var(--space-3);
 }
 
-.auth-info {
-  margin-top: 8px;
+/* ── Naive UI 内部间距压缩 ── */
+
+.login-form :deep(.n-form-item) {
+  margin-bottom: 19px !important;
+  --n-blank-height: 0 !important;
+  --n-feedback-height: 0 !important;
+  --n-feedback-padding: 2px !important;
+  --n-label-height: 0 !important;
+  --n-label-padding: 0 !important;
 }
 
-.auth-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  justify-content: center;
+/* 压缩表单控件自身高度 */
+.login-form :deep(.n-input) {
+  --n-height: 34px !important;
+}
+
+:deep(.n-tabs) {
+  --n-tab-gap: 0;
 }
 </style>

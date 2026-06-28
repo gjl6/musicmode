@@ -97,8 +97,11 @@ function goDetail(row) {
 </script>
 
 <style scoped>
+/* ═══════════════════════════════════════════════════════════════
+   Claymorphism Table — 双层阴影凸起行（对齐 AlbumTable）
+   ═══════════════════════════════════════════════════════════════ */
 
-
+/* ── 表格基础 ── */
 .clay-table {
   width: 100%;
   border-collapse: separate;
@@ -106,7 +109,7 @@ function goDetail(row) {
   table-layout: fixed;
 }
 
-
+/* 列宽 */
 .col-idx   { width: 36px;  text-align: center; }
 .col-cv    { width: 45px;  text-align: center; }
 .col-num   { width: 72px;  text-align: center; }
@@ -114,7 +117,7 @@ function goDetail(row) {
 .col-act   { width: 56px;  text-align: center; }
 .col-main  { text-align: left; }
 
-
+/* ── 表头：凸起横条（convex extrude）── */
 .clay-table th {
   background: var(--gradient-button);
   box-shadow:
@@ -132,7 +135,7 @@ function goDetail(row) {
 .clay-table th:first-child { border-radius: 10px 0 0 10px; }
 .clay-table th:last-child  { border-radius: 0 10px 10px 0; }
 
-
+/* ── 数据行：凸起药丸（convex pill）── */
 .clay-table td {
   background: var(--gradient-table-row);
   box-shadow:
@@ -151,7 +154,7 @@ function goDetail(row) {
 .clay-table td:first-child { border-radius: 12px 0 0 12px; }
 .clay-table td:last-child  { border-radius: 0 12px 12px 0; }
 
-
+/* hover：弹簧抬升 + 阴影加深 */
 .clay-table tbody tr:hover td {
   background: var(--gradient-card);
   box-shadow:
@@ -161,7 +164,7 @@ function goDetail(row) {
   transform: translateY(-2px);
 }
 
-
+/* ── 暗色主题 ── */
 :root.dark .clay-table th {
   box-shadow:
     var(--effect-button-inner),
@@ -178,7 +181,7 @@ function goDetail(row) {
     4px 6px 18px rgba(0 0 0 / 0.5);
 }
 
-
+/* ── 封面缩略图 ── */
 .cv-img {
   width: 42px; height: 42px;
   border-radius: 7px;
@@ -187,7 +190,7 @@ function goDetail(row) {
   margin: 0 auto;
 }
 
-
+/* ── 名称 ── */
 .main-name {
   display: block;
   color: var(--ct-text);
@@ -200,7 +203,7 @@ function goDetail(row) {
 }
 .main-name:hover { color: var(--ct-accent); }
 
-
+/* ── 徽章 ── */
 .badge {
   display: inline-block;
   font-size: 11px;
@@ -218,20 +221,20 @@ function goDetail(row) {
   background: var(--ct-bg-secondary);
 }
 
-
+/* ── 占位符 ── */
 .dash {
   font-size: 12px;
   color: var(--ct-text-3);
 }
 
-
+/* 序号等宽数字 */
 .col-idx {
   font-size: 12px;
   color: var(--ct-text-3);
   font-variant-numeric: tabular-nums;
 }
 
-
+/* ── 操作按钮 ── */
 .actions {
   display: flex;
   gap: 5px;

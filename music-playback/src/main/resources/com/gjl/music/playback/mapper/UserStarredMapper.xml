@@ -3,14 +3,14 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.gjl.music.playback.mapper.UserStarredMapper">
 
-
+    <!-- MySQL: 幂等 upsert（重复 star 不报错） -->
     <insert id="insert" databaseId="mysql">
         INSERT INTO user_starred (user_id, item_id, item_type, starred_at)
         VALUES (#{userId}, #{itemId}, #{itemType}, #{starredAt})
         ON DUPLICATE KEY UPDATE starred_at = VALUES(starred_at)
     </insert>
 
-
+    <!-- H2: 幂等 MERGE（重复 star 不报错） -->
     <insert id="insert" databaseId="h2">
         MERGE INTO user_starred (user_id, item_id, item_type, starred_at)
         KEY (user_id, item_id, item_type)

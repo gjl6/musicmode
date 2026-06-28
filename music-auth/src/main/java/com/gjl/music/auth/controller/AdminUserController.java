@@ -16,11 +16,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * 用户管理 REST API（管理员）。
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/users")
-@PreAuthorize("hasAuthority('user:manage')")
+@PreAuthorize("hasAuthority('user:write')")
 @RequiredArgsConstructor
 public class AdminUserController {
 
@@ -28,6 +30,7 @@ public class AdminUserController {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthUserMapper authUserMapper;
 
+    // ── 查询 ──
 
     @GetMapping
     public ResponseEntity<?> list(@RequestParam(defaultValue = "") String keyword,
@@ -48,6 +51,7 @@ public class AdminUserController {
         return ResponseEntity.ok(user);
     }
 
+    // ── 创建 ──
 
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody CreateUserRequest req,
@@ -61,6 +65,7 @@ public class AdminUserController {
         }
     }
 
+    // ── 更新 ──
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id,
@@ -75,6 +80,7 @@ public class AdminUserController {
         }
     }
 
+    // ── 删除 ──
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id,
@@ -88,6 +94,7 @@ public class AdminUserController {
         }
     }
 
+    // ── 密码 ──
 
     @PutMapping("/{id}/password")
     public ResponseEntity<?> resetPassword(@PathVariable Long id,
@@ -102,6 +109,7 @@ public class AdminUserController {
         }
     }
 
+    // ── 角色 ──
 
     @PutMapping("/{id}/roles")
     public ResponseEntity<?> assignRoles(@PathVariable Long id,
@@ -116,6 +124,7 @@ public class AdminUserController {
         }
     }
 
+    // ── 辅助 ──
 
     private Long resolveUserId(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

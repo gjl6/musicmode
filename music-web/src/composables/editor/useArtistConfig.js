@@ -17,5 +17,6 @@ async function loadConfig() {
     const res = await apiClient.get('/config/music.artist.join-separator')
     if (res?.configValue) joinSeparator.value = res.configValue
   } catch {
-      }
+    // API 不可用时 artistNames() 的参数默认值兜底
+  }
 }

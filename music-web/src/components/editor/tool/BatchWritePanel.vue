@@ -1,6 +1,6 @@
 <template>
   <div class="batch-write-panel">
-
+    <!-- 左侧：文件/目录列表 -->
     <div class="bw-files-col">
       <div class="bw-files-header">
         <template v-if="selectedFiles.length || selectedFolders.length">
@@ -20,9 +20,9 @@
       </div>
     </div>
 
-
+    <!-- 右侧：主内容 -->
     <div class="bw-main">
-
+      <!-- 1. 顶部操作栏 -->
       <div class="bw-topbar">
         <span class="bw-title">{{ t('batchWrite.title') }}</span>
         <n-tag type="warning" size="small" :bordered="false">
@@ -30,7 +30,7 @@
         </n-tag>
       </div>
 
-
+      <!-- 2. 编辑表单区 -->
       <div class="bw-sections">
         <EditSection :title="t('batchWrite.songInfo')" :default-open="true">
           <div class="field-row">
@@ -75,7 +75,7 @@
         </EditSection>
 
         <EditSection :title="t('batchWrite.artistInfo')" :default-open="true">
-
+          <!-- 艺术家切换 tabs -->
           <div class="artist-tabs">
             <span
               v-for="(a, i) in form.artists"
@@ -132,7 +132,7 @@
         </EditSection>
       </div>
 
-
+      <!-- 3. 提交 + 结果 -->
       <div class="bw-section">
         <n-button
           type="primary"
@@ -143,14 +143,6 @@
         >
           {{ processing ? t('tool.processing') : t('tool.startProcessing') }}
         </n-button>
-
-        <n-alert v-if="result" :type="result.success ? 'success' : 'error'" class="bw-result-alert">
-          <template #header>
-            <span v-if="result.success">{{ t('tool.success') }}</span>
-            <span v-else>{{ t('tool.failure') }}</span>
-          </template>
-          <p>{{ t('tool.duration', { ms: result.durationMs ?? 0 }) }}</p>
-        </n-alert>
 
         <n-alert v-if="error" type="error" class="bw-result-alert">{{ error }}</n-alert>
       </div>
@@ -179,7 +171,6 @@ const { t } = useI18n()
 const message = useMessage()
 
 const processing = ref(false)
-const result = ref(null)
 const error = ref(null)
 
 function initForm() {
@@ -233,12 +224,13 @@ const hasTargets = computed(
 async function handleSubmit() {
   processing.value = true
   error.value = null
-  result.value = null
   try {
-        if (form.artists && form.artists.length > 0) {
+    // 同步当前活动艺术家回数组
+    if (form.artists && form.artists.length > 0) {
       form.artists[form.activeArtistIndex] = { ...form.artist }
     }
-        const meta = toMusicMetadata(form)
+    // 构建结构化 metadata
+    const meta = toMusicMetadata(form)
     const allTargets = [...props.selectedFiles, ...props.selectedFolders]
     const options = {
       path: props.targetPath,
@@ -246,13 +238,12 @@ async function handleSubmit() {
       'batch-write': { metadata: meta },
     }
     const res = await runTool('batchWrite', options)
-    result.value = res
-    if (res.success) {
-      message?.success(t('tool.success'))
+    if (res?.pipelineId) {
+      message?.success('已提交: ' + res.pipelineId)
       Object.assign(form, initForm())
       emit('done')
     } else {
-      message?.error(res.error || t('tool.failure'))
+      message?.error(res?.error || t('tool.failure'))
     }
   } catch (err) {
     const msg = err?.response?.data?.error || err.message || t('common.error')
@@ -266,7 +257,7 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-
+/* ── 艺术家 tabs ── */
 .artist-tabs {
   display: flex;
   align-items: center;
@@ -327,7 +318,7 @@ async function handleSubmit() {
   overflow: hidden;
 }
 
-
+/* 左侧：文件/目录列表 */
 .bw-files-col {
   width: 175px;
   flex-shrink: 0;
@@ -373,7 +364,7 @@ async function handleSubmit() {
   white-space: nowrap;
 }
 
-
+/* 右侧主内容 */
 .bw-main {
   flex: 1;
   display: flex;
@@ -382,7 +373,7 @@ async function handleSubmit() {
   overflow-y: auto;
 }
 
-
+/* 顶部操作栏 */
 .bw-topbar {
   display: flex;
   align-items: center;
@@ -396,21 +387,21 @@ async function handleSubmit() {
   color: var(--ct-text);
 }
 
-
+/* section */
 .bw-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-
+/* 结果 */
 .bw-result-alert {
   margin-top: 4px;
 }
 </style>
 
 <style>
-
+/* ── EditSection 样式（复用 EditDrawer 的 field-row / section 模式）── */
 
 .bw-sections {
   display: flex;
@@ -456,7 +447,7 @@ async function handleSubmit() {
   padding-bottom: 6px;
 }
 
-
+/* 字段行 */
 .bw-sections .field-row {
   display: flex;
   flex-direction: column;
@@ -484,7 +475,7 @@ async function handleSubmit() {
   min-width: 0;
 }
 
-
+/* 输入框 */
 .bw-sections .n-input {
   --n-color: var(--ct-bg-secondary);
   --n-color-focus: var(--ct-bg-secondary);

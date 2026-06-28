@@ -23,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
+/**
+ * 角色管理服务。
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,7 +38,9 @@ public class RoleAdminService {
     private final AuthAuditLogMapper auditLogMapper;
     private final AuthCacheService cache;
 
-
+    /**
+     * 获取所有角色（含权限列表和用户数）。
+     */
     public List<RoleResponse> getRoles() {
         List<AuthRole> roles = roleMapper.selectAll();
         return roles.stream()
@@ -57,7 +61,9 @@ public class RoleAdminService {
                 .collect(Collectors.toList());
     }
 
-
+    /**
+     * 获取单个角色。
+     */
     public RoleResponse getRole(Long id) {
         AuthRole role = roleMapper.selectById(id);
         if (role == null) {
@@ -77,7 +83,9 @@ public class RoleAdminService {
                 .build();
     }
 
-
+    /**
+     * 创建角色。
+     */
     @Transactional
     public RoleResponse createRole(CreateRoleRequest req, Long operatorId) {
         AuthRole role = new AuthRole();
@@ -102,7 +110,9 @@ public class RoleAdminService {
                 .build();
     }
 
-
+    /**
+     * 更新角色（不能修改 roleCode）。
+     */
     @Transactional
     public RoleResponse updateRole(Long id, UpdateRoleRequest req, Long operatorId) {
         AuthRole role = roleMapper.selectById(id);
@@ -124,7 +134,9 @@ public class RoleAdminService {
         return getRole(id);
     }
 
-
+    /**
+     * 删除角色（内置角色禁止删除，有用户使用的角色禁止删除）。
+     */
     @Transactional
     public void deleteRole(Long id, Long operatorId) {
         AuthRole role = roleMapper.selectById(id);
@@ -132,11 +144,13 @@ public class RoleAdminService {
             throw new IllegalArgumentException("角色不存在: id=" + id);
         }
 
-                if (PermissionConstants.PROTECTED_ROLES.contains(role.getRoleCode())) {
+        // 内置角色保护
+        if (PermissionConstants.PROTECTED_ROLES.contains(role.getRoleCode())) {
             throw new IllegalArgumentException("内置角色 " + role.getRoleCode() + " 不可删除");
         }
 
-                List<AuthUser> users = userMapper.selectByRoleCode(role.getRoleCode());
+        // 检查是否有用户正在使用此角色
+        List<AuthUser> users = userMapper.selectByRoleCode(role.getRoleCode());
         if (!users.isEmpty()) {
             throw new IllegalArgumentException(
                     "角色 " + role.getRoleCode() + " 下还有 " + users.size() + " 个用户，请先移除用户再删除角色");
@@ -150,7 +164,9 @@ public class RoleAdminService {
         log.info("角色删除: {} by operator={}", role.getRoleCode(), operatorId);
     }
 
-
+    /**
+     * 为角色分配权限。
+     */
     @Transactional
     public void assignPermissions(Long roleId, List<Long> permIds, Long operatorId) {
         AuthRole role = roleMapper.selectById(roleId);
@@ -158,26 +174,31 @@ public class RoleAdminService {
             throw new IllegalArgumentException("角色不存在: id=" + roleId);
         }
 
-                if (PermissionConstants.PROTECTED_ROLES.contains(role.getRoleCode())) {
-            AuthPermission userManagePerm = permissionMapper.selectByCode("user:manage");
-            if (userManagePerm != null && !permIds.contains(userManagePerm.getId())) {
+        // 内置角色保护：不允许移除 user:write 权限
+        if (PermissionConstants.PROTECTED_ROLES.contains(role.getRoleCode())) {
+            AuthPermission userWritePerm = permissionMapper.selectByCode(PermissionConstants.USER_WRITE);
+            if (userWritePerm != null && !permIds.contains(userWritePerm.getId())) {
                 throw new IllegalArgumentException(
-                        "不能从 " + role.getRoleCode() + " 角色移除 user:manage 权限");
+                        "不能从 " + role.getRoleCode() + " 角色移除 " + PermissionConstants.USER_WRITE + " 权限");
             }
         }
 
-                permissionMapper.deleteRolePermissions(roleId);
-                for (Long permId : permIds) {
+        // 清空旧权限
+        permissionMapper.deleteRolePermissions(roleId);
+        // 分配新权限
+        for (Long permId : permIds) {
             permissionMapper.insertRolePermission(roleId, permId);
         }
 
-                List<AuthUser> affectedUsers = userMapper.selectByRoleCode(role.getRoleCode());
+        // 权限变更 → 递增 token 版本 + 吊销 refreshToken + 失效缓存 → 强制重新登录
+        List<AuthUser> affectedUsers = userMapper.selectByRoleCode(role.getRoleCode());
         for (AuthUser user : affectedUsers) {
             cache.incrementVersion(user.getUsername());
             refreshTokenMapper.revokeByUserId(user.getId());
             cache.evictPermissions(user.getId());
         }
-                cache.evictAllPermissions();
+        // 权限元数据变更 → 失效全局权限缓存
+        cache.evictAllPermissions();
 
         audit(operatorId, AuthAuditLog.ACTION_ROLE_PERMS, "ROLE", role.getRoleCode(),
                 "permIds=" + permIds);
@@ -186,6 +207,7 @@ public class RoleAdminService {
                 role.getRoleCode(), permIds, affectedUsers.size(), operatorId);
     }
 
+    // ── 审计日志 ──
 
     private void audit(Long operatorId, String action, String targetType, String targetId, String detail) {
         try {

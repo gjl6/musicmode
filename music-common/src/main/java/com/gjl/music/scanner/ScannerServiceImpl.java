@@ -17,14 +17,16 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+/**
+ * 文件扫描服务实现 —— 从 editor 的 ScannerModuleImpl 提取核心业务逻辑。
+ */
 @Slf4j
 @Component
 public class ScannerServiceImpl implements ScannerService {
 
     private final ConfigService configService;
 
-
+    /** 热更新：流式扫描阈值 */
     private volatile int streamingThreshold = 2000;
 
     public ScannerServiceImpl(ConfigService configService) {
@@ -45,6 +47,7 @@ public class ScannerServiceImpl implements ScannerService {
         }
     }
 
+    // ── 领域方法 ──
 
     @Override
     public List<Path> scan(Path... roots) {
@@ -57,7 +60,11 @@ public class ScannerServiceImpl implements ScannerService {
                 throw new PipelineException("路径不存在: " + root);
             }
             try {
-                scanWalkTree(root, audioFiles);
+                if (Files.isDirectory(root)) {
+                    scanWalkTree(root, audioFiles);
+                } else if (AudioFileUtils.isAudioFile(root)) {
+                    audioFiles.add(root.toAbsolutePath());
+                }
             } catch (IOException e) {
                 throw new ModuleException("scanner", root.toString(), "扫描失败: " + root, e);
             }
@@ -84,6 +91,7 @@ public class ScannerServiceImpl implements ScannerService {
         return count.get();
     }
 
+    // ── 内部扫描实现 ──
 
     void scanWalkTree(Path dir, List<Path> sink) throws IOException {
         Files.walkFileTree(dir, new SimpleFileVisitor<>() {
@@ -113,7 +121,7 @@ public class ScannerServiceImpl implements ScannerService {
         }
     }
 
-
+    /** 根据文件数量阈值选择扫描策略 */
     void scanWithStrategy(Path root, List<Path> sink) throws IOException {
         if (!Files.isDirectory(root)) {
             if (AudioFileUtils.isAudioFile(root)) sink.add(root.toAbsolutePath());

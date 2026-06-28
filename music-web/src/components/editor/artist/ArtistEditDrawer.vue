@@ -31,9 +31,9 @@
         </div>
       </template>
 
-
+      <!-- Body: flex 布局 — 左增强面板 + 右编辑表单 -->
       <div class="drawer-body-layout">
-
+        <!-- 左侧：在线增强面板（条件渲染） -->
         <div v-if="showEnrich" class="enrich-panel-inline">
           <ArtistEnrichCompare
             ref="enrichRef"
@@ -45,9 +45,9 @@
           />
         </div>
 
-
+        <!-- 右侧：编辑表单（始终可见） -->
         <div class="drawer-edit-area">
-
+          <!-- 封面 — 顶部大图，同 song EditDrawer 风格 -->
           <div class="cover-area" v-memo="[form.coverUrl]">
             <div
               class="cover-box"
@@ -73,7 +73,7 @@
             />
           </div>
 
-
+          <!-- 数据来源标签 -->
           <div v-if="originalEnrichSource" class="enrich-source-tag">
             <n-tag size="tiny" :bordered="false" type="info">
               数据来源: {{ originalEnrichSource }}
@@ -171,12 +171,14 @@ const emit = defineEmits(['saved', 'close'])
 const message = useMessage()
 const dialog = useDialog()
 
+// ── 抽屉可见性 ──
 const drawerVisible = ref(false)
 const showEnrich = ref(false)
 const enrichRef = ref(null)
 
 const drawerWidth = computed(() => (showEnrich.value ? 1150 : 480))
 
+// 暴露 open 方法给父组件
 defineExpose({ open, close })
 
 function open(enrichTab) {
@@ -213,6 +215,7 @@ function toggleEnrich() {
   showEnrich.value = !showEnrich.value
 }
 
+// ── 表单 ──
 const formRef = ref(null)
 const form = ref({
   id: null, name: '', gender: null, country: '', introduction: '', coverUrl: '',
@@ -236,6 +239,7 @@ function resetForm() {
   showEnrich.value = false
 }
 
+// 监听 artist prop 变化（父组件切换编辑对象时 reset）
 watch(() => props.artist?.id, (newId, oldId) => {
   if (newId && newId !== oldId) resetForm()
 })
@@ -248,6 +252,7 @@ const genderOptions = [
   { label: '其他', value: 0 },
 ]
 
+// ── 脏状态 ──
 const isDirty = computed(() => {
   const f = form.value
   const init = initialForm.value
@@ -272,8 +277,9 @@ const dirtyCount = computed(() => {
   return c
 })
 
-function markDirty() {  }
+function markDirty() { /* computed 自动跟踪 */ }
 
+// ── 封面上传 ──
 const coverInputRef = ref(null)
 const uploadingCover = ref(false)
 
@@ -284,7 +290,8 @@ function triggerCoverUpload() {
 async function onCoverFileChange(e) {
   const file = e.target?.files?.[0]
   if (!file) return
-    e.target.value = ''
+  // 重置 input 以便重复选择同一文件
+  e.target.value = ''
 
   if (!form.value.id) return
   uploadingCover.value = true
@@ -301,7 +308,9 @@ async function onCoverFileChange(e) {
   }
 }
 
+// ── 接收增强面板填入 ──
 
+// 点击单元格 → 始终填入（同 song fillField，不判断模式）
 function onFillField(fieldKey, value) {
   if (value == null || value === '') return
   if (fieldKey === 'gender') {
@@ -311,6 +320,7 @@ function onFillField(fieldKey, value) {
   }
 }
 
+// 点击 [应用] → 填入整行（受 fill/overwrite 控制，同 song fillAll）
 function onFillAll(fields, mode) {
   const fillOnly = (mode === 'fill')
 
@@ -336,6 +346,7 @@ function onFillAll(fields, mode) {
   }
 }
 
+// ── 保存 ──
 const saving = ref(false)
 
 async function doSave() {
@@ -353,7 +364,8 @@ async function doSave() {
     }
     await updateArtist(form.value.id, body)
     message.success('保存成功')
-        initialForm.value = { ...form.value }
+    // 更新 initialForm 以清除脏状态
+    initialForm.value = { ...form.value }
     emit('saved')
   } catch (e) {
     console.error('[ArtistEditDrawer] 保存失败:', e)
@@ -365,7 +377,7 @@ async function doSave() {
 </script>
 
 <style scoped>
-
+/* ── Drawer 整体 ── */
 :deep(.n-drawer-content) {
   --n-header-padding: 14px 20px;
   --n-body-padding: 0 20px 16px;
@@ -385,7 +397,7 @@ async function doSave() {
   overflow: hidden;
 }
 
-
+/* ── Header ── */
 .drawer-header {
   display: flex;
   align-items: center;
@@ -408,7 +420,7 @@ async function doSave() {
   flex-shrink: 0;
 }
 
-
+/* ── Body Layout ── */
 .drawer-body-layout {
   display: flex;
   height: 100%;
@@ -430,6 +442,7 @@ async function doSave() {
   padding-bottom: 80px;
 }
 
+/* ── 封面（同 song EditDrawer 风格）── */
 
 .cover-area {
   display: flex;
@@ -497,12 +510,12 @@ async function doSave() {
   opacity: 1;
 }
 
-
+/* ── 数据来源标签 ── */
 .enrich-source-tag {
   margin-top: 4px;
 }
 
-
+/* ── Footer ── */
 .drawer-footer {
   display: flex;
   align-items: center;

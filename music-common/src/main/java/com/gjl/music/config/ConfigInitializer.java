@@ -9,7 +9,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-
+/**
+ * 配置初始化器 —— 启动时将 application.properties 和硬编码常量同步到 DB。
+ *
+ * <p>使用 {@code INSERT IGNORE} 语义：仅当 DB 中不存在该 key 时才写入，
+ * 用户已修改的值不会被覆盖。
+ */
 @Slf4j
 @Component
 public class ConfigInitializer {
@@ -36,100 +41,211 @@ public class ConfigInitializer {
     private List<SystemConfig> buildAllConfigs() {
         List<SystemConfig> list = new ArrayList<>();
 
-                add(list, "enrich.default_provider",
+        // ════════════════ enrich — 默认限流 ════════════════
+        add(list, "enrich.default_provider",
                 prop("music.enrich.default-provider", "qqmusic,kugou,kuwo,netease,itunes,musicbrainz,migu"),
                 "enrich", "默认搜索源", "逗号分隔的 provider 列表", "LIST", 1);
         add(list, "enrich.artist_provider",
                 prop("music.enrich.artist-provider", "netease,qqmusic,itunes,musicbrainz,baidubaike,wikipedia"),
                 "enrich", "艺术家详情源", "支持艺术家详情查询的 provider 列表", "LIST", 2);
+        add(list, "enrich.album_provider",
+                prop("music.enrich.album-provider", "qqmusic,musicbrainz,itunes,netease"),
+                "enrich", "专辑详情源", "支持专辑详情查询的 provider 列表", "LIST", 3);
         add(list, "enrich.default.rate_limit_ms",
                 prop("music.enrich.providers.default.rate-limit-ms", "240"),
-                "enrich", "默认请求间隔(ms)", null, "INT", 3);
+                "enrich", "默认请求间隔(ms)", null, "INT", 4);
         add(list, "enrich.default.max_concurrent",
                 prop("music.enrich.providers.default.max-concurrent", "6"),
-                "enrich", "默认最大并发", null, "INT", 4);
+                "enrich", "默认最大并发", null, "INT", 5);
         add(list, "enrich.default.timeout_seconds",
                 prop("music.enrich.providers.default.timeout-seconds", "15"),
-                "enrich", "默认超时(秒)", null, "INT", 5);
+                "enrich", "默认超时(秒)", null, "INT", 6);
         add(list, "enrich.default.rate_limit_retries",
                 prop("music.enrich.providers.default.rate-limit-retries", "3"),
-                "enrich", "默认重试次数", "频控退避重试次数", "INT", 6);
+                "enrich", "默认重试次数", "频控退避重试次数", "INT", 7);
         add(list, "enrich.default.rate_limit_backoff_ms",
                 prop("music.enrich.providers.default.rate-limit-backoff-ms", "30000"),
-                "enrich", "默认退避间隔(ms)", "指数退避初始等待", "LONG", 6);
+                "enrich", "默认退避间隔(ms)", "指数退避初始等待", "LONG", 7);
 
-                addProviderConfigs(list, "qqmusic", "QQ音乐", 10,
+        // ════════════════ enrich — Song providers ════════════════
+        addEntityProviderConfigs(list, "song", "qqmusic", "QQ音乐", 10,
                 new String[][]{
-                        {"search-url", "https://u.y.qq.com/cgi-bin/musicu.fcg"},
-                        {"album-url", "https://i.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg"},
-                        {"lyric-url", "https://i.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg"},
+                        {"search_url", "https://u.y.qq.com/cgi-bin/musicu.fcg"},
+                        {"album_url", "https://i.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg"},
+                        {"lyric_url", "https://i.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg"},
                 },
                 "120", "8", "15", "3", "3000");
-        addProviderStatic(list, "qqmusic", "cover_tpl",
-                "https://y.gtimg.cn/music/photo_new/T002R300x300M000%s.jpg", "QQ音乐封面模板", "STRING", 14);
-        addProviderStatic(list, "qqmusic", "referer", "https://y.qq.com", "QQ音乐 Referer", "STRING", 15);
-        addProviderStatic(list, "qqmusic", "rate_limit_code", "2001", "QQ音乐限流错误码", "INT", 16);
+        addEntityProviderStatic(list, "song", "qqmusic", "rate_limit_code", "2001", "QQ音乐限流错误码", "INT", 16);
 
-        addProviderConfigs(list, "kugou", "酷狗音乐", 20,
-                new String[][]{},
-                "240", "6", "15", "3", "30000");
-        addProviderStatic(list, "kugou", "search_url", "http://mobilecdn.kugou.com/api/v3/search/song", "酷狗搜索URL", "STRING", 21);
-        addProviderStatic(list, "kugou", "detail_url", "http://m.kugou.com/app/i/getSongInfo.php", "酷狗详情URL", "STRING", 22);
-        addProviderStatic(list, "kugou", "lyric_search_url", "http://lyrics.kugou.com/search", "酷狗歌词搜索URL", "STRING", 23);
-        addProviderStatic(list, "kugou", "lyric_download_url", "http://lyrics.kugou.com/download", "酷狗歌词下载URL", "STRING", 24);
-        addProviderStatic(list, "kugou", "referer", "https://www.kugou.com", "酷狗 Referer", "STRING", 25);
-
-        addProviderConfigs(list, "kuwo", "酷我音乐", 30,
-                new String[][]{},
-                "240", "6", "15", "3", "30000");
-        addProviderStatic(list, "kuwo", "search_url", "http://search.kuwo.cn/r.s", "酷我搜索URL", "STRING", 31);
-        addProviderStatic(list, "kuwo", "lyric_url", "https://m.kuwo.cn/newh5/singles/songinfoandlrc", "酷我歌词URL", "STRING", 32);
-        addProviderStatic(list, "kuwo", "cover_cdn", "https://img4.kuwo.cn/star/albumcover/", "酷我封面CDN", "STRING", 33);
-        addProviderStatic(list, "kuwo", "cover_cdn_mv", "https://img4.kuwo.cn/wmvpic/", "酷我MV封面CDN", "STRING", 34);
-        addProviderStatic(list, "kuwo", "referer", "https://www.kuwo.cn", "酷我 Referer", "STRING", 35);
-        addProviderStatic(list, "kuwo", "csrf", "music", "酷我 CSRF Token", "STRING", 36);
-
-        addProviderConfigs(list, "netease", "网易云音乐", 40,
-                new String[][]{},
-                "240", "6", "15", "3", "30000");
-        addProviderStatic(list, "netease", "search_url", "https://music.163.com/api/search/get", "网易云搜索URL", "STRING", 41);
-        addProviderStatic(list, "netease", "detail_url", "https://music.163.com/api/song/detail", "网易云详情URL", "STRING", 42);
-        addProviderStatic(list, "netease", "lyric_url", "https://music.163.com/api/song/lyric", "网易云歌词URL", "STRING", 43);
-        addProviderStatic(list, "netease", "referer", "https://music.163.com", "网易云 Referer", "STRING", 44);
-
-        addProviderConfigs(list, "itunes", "iTunes", 50,
+        addEntityProviderConfigs(list, "song", "kugou", "酷狗音乐", 20,
                 new String[][]{
-                        {"search-url", "https://itunes.apple.com/search"},
-                        {"lookup-url", "https://itunes.apple.com/lookup"},
+                        {"search_url", "http://mobilecdn.kugou.com/api/v3/search/song"},
+                        {"detail_url", "http://m.kugou.com/app/i/getSongInfo.php"},
+                        {"lyric_search_url", "http://lyrics.kugou.com/search"},
+                        {"lyric_download_url", "http://lyrics.kugou.com/download"},
+                },
+                "240", "6", "15", "3", "30000");
+        addEntityProviderStatic(list, "song", "kugou", "referer", "https://www.kugou.com", "酷狗 Referer", "STRING", 25);
+        addEntityProviderStatic(list, "song", "kugou", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "User-Agent", "STRING", 26);
+
+        addEntityProviderConfigs(list, "song", "kuwo", "酷我音乐", 30,
+                new String[][]{
+                        {"search_url", "http://search.kuwo.cn/r.s"},
+                        {"lyric_url", "https://m.kuwo.cn/newh5/singles/songinfoandlrc"},
+                        {"cover_cdn", "https://img4.kuwo.cn/star/albumcover/"},
+                        {"cover_cdn_mv", "https://img4.kuwo.cn/wmvpic/"},
+                },
+                "240", "6", "15", "3", "30000");
+        addEntityProviderStatic(list, "song", "kuwo", "referer", "https://www.kuwo.cn", "酷我 Referer", "STRING", 35);
+        addEntityProviderStatic(list, "song", "kuwo", "csrf", "music", "酷我 CSRF Token", "STRING", 36);
+        addEntityProviderStatic(list, "song", "kuwo", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "User-Agent", "STRING", 37);
+
+        addEntityProviderConfigs(list, "song", "netease", "网易云音乐", 40,
+                new String[][]{
+                        {"search_url", "https://music.163.com/api/search/get"},
+                        {"detail_url", "https://music.163.com/api/song/detail"},
+                        {"lyric_url", "https://music.163.com/api/song/lyric"},
+                        {"artist_search_url", "https://music.163.com/api/search/get"},
+                        {"artist_detail_url", "https://music.163.com/api/artist"},
+                },
+                "240", "6", "15", "3", "30000");
+        addEntityProviderStatic(list, "song", "netease", "referer", "https://music.163.com", "网易云 Referer", "STRING", 45);
+        addEntityProviderStatic(list, "song", "netease", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "User-Agent", "STRING", 46);
+
+        addEntityProviderConfigs(list, "song", "itunes", "iTunes", 50,
+                new String[][]{
+                        {"search_url", "https://itunes.apple.com/search"},
+                        {"lookup_url", "https://itunes.apple.com/lookup"},
                 },
                 "2000", "6", "15", "1", "30000");
 
-        addProviderConfigs(list, "musicbrainz", "MusicBrainz", 60,
+        addEntityProviderConfigs(list, "song", "musicbrainz", "MusicBrainz", 60,
                 new String[][]{
-                        {"search-url", "https://musicbrainz.org/ws/2/recording"},
-                        {"release-url", "https://musicbrainz.org/ws/2/release"},
+                        {"search_url", "https://musicbrainz.org/ws/2/recording"},
+                        {"release_url", "https://musicbrainz.org/ws/2/release"},
                 },
                 "1500", "6", "20", "3", "60000");
-        addProviderStatic(list, "musicbrainz", "user_agent", "MusicPipeline/1.0", "User-Agent", "STRING", 61);
-        addProviderStatic(list, "musicbrainz", "cover_art_tpl",
-                "https://coverartarchive.org/release/%s/front", "封面归档URL模板", "STRING", 62);
+        addEntityProviderStatic(list, "song", "musicbrainz", "user_agent", "MusicPipeline/1.0", "User-Agent", "STRING", 63);
+        addEntityProviderStatic(list, "song", "musicbrainz", "cover_art_tpl",
+                "https://coverartarchive.org/release/%s/front", "封面归档URL模板", "STRING", 64);
 
-        addProviderConfigs(list, "migu", "咪咕音乐", 70,
+        addEntityProviderConfigs(list, "song", "migu", "咪咕音乐", 70,
                 new String[][]{
-                        {"search-url", "https://m.music.migu.cn/migu/remoting/scr_search_tag"},
-                        {"song-url", "https://c.musicapp.migu.cn/MIGUM2/v2.0/music/song"},
+                        {"search_url", "https://m.music.migu.cn/migu/remoting/scr_search_tag"},
+                        {"song_url", "https://c.musicapp.migu.cn/MIGUM2/v2.0/music/song"},
+                },
+                "1000", "6", "15", "3", "30000");
+        addEntityProviderStatic(list, "song", "migu", "referer", "https://music.migu.cn", "咪咕 Referer", "STRING", 73);
+        addEntityProviderStatic(list, "song", "migu", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "User-Agent", "STRING", 74);
+
+        // ════════════════ enrich — Artist providers ════════════════
+        addEntityProviderConfigs(list, "artist", "qqmusic", "QQ音乐", 80,
+                new String[][]{
+                        {"search_url", "https://c.y.qq.com/splcloud/fcgi-bin/smartbox_new.fcg"},
+                        {"detail_url", "https://u.y.qq.com/cgi-bin/musicu.fcg"},
+                },
+                "120", "8", "15", "3", "3000");
+        addEntityProviderStatic(list, "artist", "qqmusic", "cover_tpl",
+                "https://y.gtimg.cn/music/photo_new/T001R300x300M000%s.jpg", "QQ音乐歌手封面模板", "STRING", 83);
+        addEntityProviderStatic(list, "artist", "qqmusic", "referer", "https://y.qq.com", "QQ音乐 Referer", "STRING", 84);
+        addEntityProviderStatic(list, "artist", "qqmusic", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "User-Agent", "STRING", 85);
+
+        addEntityProviderConfigs(list, "artist", "netease", "网易云音乐", 90,
+                new String[][]{
+                        {"search_url", "https://music.163.com/api/search/get"},
+                        {"detail_url", "https://music.163.com/api/v1/artist"},
                 },
                 "240", "6", "15", "3", "30000");
-        addProviderStatic(list, "migu", "referer", "https://music.migu.cn", "咪咕 Referer", "STRING", 71);
+        addEntityProviderStatic(list, "artist", "netease", "referer", "https://music.163.com", "网易云 Referer", "STRING", 93);
+        addEntityProviderStatic(list, "artist", "netease", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "User-Agent", "STRING", 94);
 
-                add(list, "enrich.search.max_results",
+        addEntityProviderConfigs(list, "artist", "itunes", "iTunes", 100,
+                new String[][]{
+                        {"search_url", "https://itunes.apple.com/search"},
+                        {"lookup_url", "https://itunes.apple.com/lookup"},
+                },
+                "2000", "6", "15", "1", "30000");
+
+        addEntityProviderConfigs(list, "artist", "musicbrainz", "MusicBrainz", 110,
+                new String[][]{
+                        {"search_url", "https://musicbrainz.org/ws/2/artist/"},
+                        {"detail_url", "https://musicbrainz.org/ws/2/artist/"},
+                },
+                "1500", "6", "20", "3", "60000");
+        addEntityProviderStatic(list, "artist", "musicbrainz", "user_agent", "MusicPipeline/1.0", "User-Agent", "STRING", 113);
+
+        addEntityProviderConfigs(list, "artist", "baidubaike", "百度百科", 120,
+                new String[][]{
+                        {"search_url", "https://www.baidu.com/s?wd="},
+                        {"base_url", "https://baike.baidu.com/item/"},
+                        {"warmup_url", "https://www.baidu.com/"},
+                },
+                "500", "3", "15", "3", "5000");
+        addEntityProviderStatic(list, "artist", "baidubaike", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent", "STRING", 124);
+
+        addEntityProviderConfigs(list, "artist", "wikipedia", "Wikipedia", 130,
+                new String[][]{
+                        {"api_url", "https://%s.wikipedia.org/w/api.php"},
+                },
+                "2000", "6", "10", "3", "30000");
+        addEntityProviderStatic(list, "artist", "wikipedia", "user_agent",
+                "MusicMode/1.0 (music-management; bot)", "User-Agent", "STRING", 133);
+        addEntityProviderStatic(list, "artist", "wikipedia", "max_intro_len", "500", "简介最大长度", "INT", 134);
+
+        // ════════════════ enrich — Album providers ════════════════
+        addEntityProviderConfigs(list, "album", "qqmusic", "QQ音乐", 140,
+                new String[][]{
+                        {"api_url", "https://u.y.qq.com/cgi-bin/musicu.fcg"},
+                },
+                "120", "8", "15", "3", "3000");
+        addEntityProviderStatic(list, "album", "qqmusic", "cover_tpl",
+                "https://y.gtimg.cn/music/photo_new/T002R300x300M000%s.jpg", "QQ音乐专辑封面模板", "STRING", 143);
+        addEntityProviderStatic(list, "album", "qqmusic", "referer", "https://y.qq.com", "QQ音乐 Referer", "STRING", 144);
+        addEntityProviderStatic(list, "album", "qqmusic", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "User-Agent", "STRING", 145);
+
+        addEntityProviderConfigs(list, "album", "netease", "网易云音乐", 150,
+                new String[][]{
+                        {"search_url", "https://music.163.com/api/search/get"},
+                        {"detail_url", "https://music.163.com/api/v1/album"},
+                },
+                "240", "6", "15", "3", "30000");
+        addEntityProviderStatic(list, "album", "netease", "referer", "https://music.163.com", "网易云 Referer", "STRING", 153);
+        addEntityProviderStatic(list, "album", "netease", "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "User-Agent", "STRING", 154);
+
+        addEntityProviderConfigs(list, "album", "itunes", "iTunes", 160,
+                new String[][]{
+                        {"search_url", "https://itunes.apple.com/search"},
+                },
+                "2000", "6", "15", "3", "30000");
+
+        addEntityProviderConfigs(list, "album", "musicbrainz", "MusicBrainz", 170,
+                new String[][]{
+                        {"search_url", "https://musicbrainz.org/ws/2/release-group/"},
+                },
+                "1100", "6", "15", "3", "60000");
+        addEntityProviderStatic(list, "album", "musicbrainz", "user_agent",
+                "MusicMode/1.0 ( personal-music-manager )", "User-Agent", "STRING", 173);
+
+        // ════════════════ enrich — 搜索/匹配 ════════════════
+        add(list, "enrich.search.max_results",
                 "12", "enrich", "最大搜索结果数", null, "INT", 80);
         add(list, "enrich.match.loose_threshold",
                 "0.60", "enrich", "宽松匹配阈值", "Levenshtein 相似度", "DOUBLE", 81);
         add(list, "enrich.match.standard_threshold",
                 "0.75", "enrich", "标准匹配阈值", "Levenshtein 相似度", "DOUBLE", 82);
 
-                add(list, "pipeline.executor.scheduler.max_pipelines",
+        // ════════════════ pipeline — executor ════════════════
+        add(list, "pipeline.executor.scheduler.max_pipelines",
                 prop("pipeline.executor.scheduler.max-pipelines", "1"),
                 "pipeline", "最大并发管道数", "信号量许可数", "INT", 101);
         add(list, "pipeline.executor.worker.core_size",
@@ -147,52 +263,55 @@ public class ConfigInitializer {
                 prop("pipeline.executor.virtual.max-concurrent", "0"),
                 "pipeline", "虚拟线程最大并发", "0 = 不限流", "INT", 105);
 
-                add(list, "pipeline.recovery.enabled",
+        // ════════════════ pipeline — persistence ════════════════
+        add(list, "pipeline.recovery.auto_resume",
+                prop("pipeline.recovery.auto-resume", "false"),
+                "pipeline", "启动时自动恢复管道", "开启后启动时按原状态恢复RUNNING/READY管道，关闭则全部转为暂停", "BOOLEAN", 110);
+        add(list, "pipeline.recovery.enabled",
                 prop("pipeline.recovery.enabled", "true"),
-                "pipeline", "启动恢复未完成管道", null, "BOOLEAN", 110);
+                "pipeline", "启动恢复未完成管道", null, "BOOLEAN", 111);
         add(list, "pipeline.task.retention_hours",
                 prop("pipeline.task.retention-hours", "720"),
-                "pipeline", "任务保留小时数", null, "INT", 111);
+                "pipeline", "任务保留小时数", null, "INT", 112);
         add(list, "pipeline.persistence.item_log_flush_size",
-                "200", "pipeline", "日志批量刷盘大小", "PipelinePersistence ITEM_LOG_FLUSH_SIZE", "INT", 112);
+                "200", "pipeline", "日志批量刷盘大小", "PipelinePersistence ITEM_LOG_FLUSH_SIZE", "INT", 113);
 
-                add(list, "pipeline.store.max_active_size",
+        // ════════════════ pipeline — store ════════════════
+        add(list, "pipeline.store.max_active_size",
                 "100", "pipeline", "Redis 活跃管道上限", "PipelineRecordStore MAX_ACTIVE_SIZE", "INT", 120);
         add(list, "pipeline.store.cache_ttl_minutes",
                 "5", "pipeline", "缓存穿透 TTL(分钟)", "PipelineRecordStore EMPTY_TTL", "INT", 121);
 
-                add(list, "switches.persist_enabled",
+        // ════════════════ switches ════════════════
+        add(list, "switches.persist_enabled",
                 prop("music.persist.enabled", "true"),
                 "switches", "写入数据库", "全局 DB 持久化开关", "BOOLEAN", 130);
         add(list, "switches.write_tags_enabled",
                 prop("music.write-tags.enabled", "true"),
                 "switches", "写回文件标签", "全局写标签开关", "BOOLEAN", 131);
 
-                add(list, "watch.enabled",
-                prop("music.watch.enabled", "true"),
-                "watch", "启用文件监控", null, "BOOLEAN", 140);
-        add(list, "watch.incremental_interval_sec",
-                prop("music.watch.incremental-interval-sec", "30"),
-                "watch", "增量扫描间隔(秒)", null, "INT", 141);
-        add(list, "watch.full_scan_interval_min",
-                prop("music.watch.full-scan-interval-min", "120"),
-                "watch", "全量对账间隔(分钟)", null, "INT", 142);
+        // ════════════════ watch (v2 废弃) ════════════════
+        // watch.* keys 已移除。扫描调度配置迁移到 watch_profile 表（每任务独立）。
+        // 不再需要全局 watch.enabled / watch.incremental_interval_sec / watch.full_scan_interval_min。
 
-                add(list, "fingerprint.skip_if_exists",
+        // ════════════════ fingerprint ════════════════
+        add(list, "fingerprint.skip_if_exists",
                 prop("music.fingerprint.skip-if-exists", "true"),
                 "fingerprint", "跳过已有指纹", null, "BOOLEAN", 150);
         add(list, "fingerprint.timeout_seconds",
                 prop("music.fingerprint.timeout-seconds", "120"),
                 "fingerprint", "指纹计算超时(秒)", null, "INT", 151);
 
-                add(list, "music.ffmpeg.path",
+        // ════════════════ ffmpeg ════════════════
+        add(list, "music.ffmpeg.path",
                 prop("music.ffmpeg.path", "ffmpeg"),
                 "ffmpeg", "FFmpeg 可执行文件路径", null, "STRING", 155);
         add(list, "music.ffprobe.path",
                 prop("music.ffprobe.path", "ffprobe"),
                 "ffmpeg", "ffprobe 可执行文件路径", null, "STRING", 156);
 
-                add(list, "dedup.default_strategies",
+        // ════════════════ dedup ════════════════
+        add(list, "dedup.default_strategies",
                 "hash,filename,metadata", "dedup", "默认去重策略", "逗号分隔", "LIST", 160);
         add(list, "dedup.fingerprint.threshold",
                 "0.80", "dedup", "指纹去重阈值", "FingerprintDedupStrategy", "DOUBLE", 161);
@@ -207,7 +326,8 @@ public class ConfigInitializer {
         add(list, "dedup.metadata.persist_batch",
                 "50", "dedup", "元数据去重持久批大小", null, "INT", 166);
 
-                add(list, "delete.batch_size",
+        // ════════════════ module — 批量大小 ════════════════
+        add(list, "delete.batch_size",
                 "200", "module", "删除模块批大小", "DeleteModuleImpl", "INT", 170);
         add(list, "writer.batch_size",
                 "200", "module", "写标签批大小", "GapFillingModule", "INT", 171);
@@ -218,18 +338,27 @@ public class ConfigInitializer {
         add(list, "scanner.streaming_threshold",
                 "2000", "module", "流式扫描阈值", "ScannerModuleImpl", "INT", 174);
 
-                add(list, "music.artist.split-separators",
+        // ════════════════ search ════════════════
+        add(list, "music.search.health-threshold",
+                "0.8", "search", "索引健康阈值",
+                "索引文档数 / DB 记录数低于此值时触发自动全量重建（0=永不自动重建，1=必须完全一致）", "DOUBLE", 175);
+
+        // ════════════════ artist ════════════════
+        add(list, "music.artist.split-separators",
                 "[\"\\\\\", \",\", \";\", \"&\", \"+\", \"|\", \"、\", \"，\", \"/\", \"_\", \"ft.\", \"feat.\", \"featuring\", \"presents\", \"pres.\", \"vs.\", \"versus\", \"x\", \" \", \"\\\\u0000\"]",
                 "artist", "艺术家分隔符", "JSON 数组，单字符=字面分隔符，多字符=词边界关键词，\\\\u0000=null字节。空格做智能分割：CJK↔Latin边界切割，全英文整体保留", "JSON", 175);
         add(list, "music.artist.join-separator",
                 " / ", "artist", "艺术家连接符", "多艺术家显示时的连接字符串", "STRING", 176);
 
-                add(list, "organize.max_segment_length",
+        // ════════════════ organize ════════════════
+        add(list, "organize.max_segment_length",
                 "200", "module", "路径段最大长度", "OrganizePathBuilder", "INT", 180);
         add(list, "organize.max_conflict_retries",
                 "1000", "module", "文件名冲突最大重试", null, "INT", 181);
 
-                        String jwtSecret = prop("music.auth.jwt.secret", null);
+        // ════════════════ auth ════════════════
+        // JWT Secret：优先从 properties 读取，否则自动生成强随机 secret
+        String jwtSecret = prop("music.auth.jwt.secret", null);
         if (jwtSecret == null || jwtSecret.isBlank()) {
             jwtSecret = UUID.randomUUID().toString() + "." + UUID.randomUUID().toString();
         }
@@ -282,6 +411,7 @@ public class ConfigInitializer {
         return list;
     }
 
+    // ── helpers ──
 
     private String prop(String key, String fallback) {
         return env.getProperty(key, fallback);
@@ -301,40 +431,41 @@ public class ConfigInitializer {
         list.add(c);
     }
 
-
-    private void addProviderConfigs(List<SystemConfig> list, String code, String label,
-                                     int sortStart, String[][] extraUrls,
-                                     String rateMs, String concurrent, String timeout,
-                                     String retries, String backoffMs) {
-        String prefix = "music.enrich.providers." + code;
+    /** 为 entity×provider 添加限流 + URL 配置（从 properties 读取，fallback 到默认值） */
+    private void addEntityProviderConfigs(List<SystemConfig> list, String entity, String code, String label,
+                                           int sortStart, String[][] extraUrls,
+                                           String rateMs, String concurrent, String timeout,
+                                           String retries, String backoffMs) {
+        String propPrefix = "music.enrich.providers." + code;
+        String keyPrefix = "enrich." + entity + "." + code;
         int s = sortStart;
-        add(list, "enrich." + code + ".rate_limit_ms",
-                env.getProperty(prefix + ".rate-limit-ms", rateMs),
-                "enrich", label + " 请求间隔(ms)", null, "LONG", s++);
-        add(list, "enrich." + code + ".max_concurrent",
-                env.getProperty(prefix + ".max-concurrent", concurrent),
-                "enrich", label + " 最大并发", null, "INT", s++);
-        add(list, "enrich." + code + ".timeout_seconds",
-                env.getProperty(prefix + ".timeout-seconds", timeout),
-                "enrich", label + " 超时(秒)", null, "INT", s++);
-        add(list, "enrich." + code + ".rate_limit_retries",
-                env.getProperty(prefix + ".rate-limit-retries", retries),
-                "enrich", label + " 重试次数", null, "INT", s++);
-        add(list, "enrich." + code + ".rate_limit_backoff_ms",
-                env.getProperty(prefix + ".rate-limit-backoff-ms", backoffMs),
-                "enrich", label + " 退避间隔(ms)", null, "LONG", s++);
+        add(list, keyPrefix + ".rate_limit_ms",
+                env.getProperty(propPrefix + ".rate-limit-ms", rateMs),
+                "enrich", label + "(" + entity + ") 请求间隔(ms)", null, "LONG", s++);
+        add(list, keyPrefix + ".max_concurrent",
+                env.getProperty(propPrefix + ".max-concurrent", concurrent),
+                "enrich", label + "(" + entity + ") 最大并发", null, "INT", s++);
+        add(list, keyPrefix + ".timeout_seconds",
+                env.getProperty(propPrefix + ".timeout-seconds", timeout),
+                "enrich", label + "(" + entity + ") 超时(秒)", null, "INT", s++);
+        add(list, keyPrefix + ".rate_limit_retries",
+                env.getProperty(propPrefix + ".rate-limit-retries", retries),
+                "enrich", label + "(" + entity + ") 重试次数", null, "INT", s++);
+        add(list, keyPrefix + ".rate_limit_backoff_ms",
+                env.getProperty(propPrefix + ".rate-limit-backoff-ms", backoffMs),
+                "enrich", label + "(" + entity + ") 退避间隔(ms)", null, "LONG", s++);
 
         for (String[] url : extraUrls) {
             String urlKey = url[0].replace("-", "_");
-            add(list, "enrich." + code + "." + urlKey,
-                    env.getProperty(prefix + "." + url[0], url[1]),
-                    "enrich", label + " " + url[0], null, "STRING", s++);
+            add(list, keyPrefix + "." + urlKey,
+                    env.getProperty(propPrefix + "." + url[0], url[1]),
+                    "enrich", label + "(" + entity + ") " + url[0], null, "STRING", s++);
         }
     }
 
-
-    private void addProviderStatic(List<SystemConfig> list, String code, String key,
-                                    String value, String label, String type, int sort) {
-        add(list, "enrich." + code + "." + key, value, "enrich", label, null, type, sort);
+    /** 为 entity×provider 添加纯静态配置（无 properties fallback） */
+    private void addEntityProviderStatic(List<SystemConfig> list, String entity, String code, String key,
+                                          String value, String label, String type, int sort) {
+        add(list, "enrich." + entity + "." + code + "." + key, value, "enrich", label, null, type, sort);
     }
 }

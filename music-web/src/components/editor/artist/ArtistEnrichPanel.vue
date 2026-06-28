@@ -1,6 +1,6 @@
 <template>
   <div class="aep-root">
-
+    <!-- 处理范围 -->
     <div class="aep-section">
       <div class="aep-section-title">{{ $t('artistManager.toolEnrichScope') }}</div>
       <n-radio-group v-model:value="scope" size="small">
@@ -13,7 +13,7 @@
       </n-radio-group>
     </div>
 
-
+    <!-- 标签源 -->
     <div class="aep-section">
       <div class="aep-section-title">{{ $t('artistManager.toolEnrichProviders') }}</div>
       <n-select
@@ -25,7 +25,7 @@
       />
     </div>
 
-
+    <!-- 写入模式 -->
     <div class="aep-section">
       <div class="aep-section-title">写入模式</div>
       <n-radio-group v-model:value="writeMode" size="small">
@@ -37,7 +37,7 @@
       </span>
     </div>
 
-
+    <!-- 提交 -->
     <div class="aep-footer">
       <n-button type="primary" size="small" :loading="submitting" @click="doSubmit">
         {{ $t('artistManager.submitPipeline') }}
@@ -73,7 +73,8 @@ onMounted(async () => {
     const res = await getArtistProviders()
     const list = res?.providers || []
     providerOptions.value = list.map(p => ({ label: p.label, value: p.name }))
-        if (list.length && providers.value.length === 0) {
+    // 默认全选所有可用 provider
+    if (list.length && providers.value.length === 0) {
       providers.value = list.map(p => p.name)
     }
   } catch (e) {

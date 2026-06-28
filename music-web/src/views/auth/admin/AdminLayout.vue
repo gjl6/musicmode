@@ -1,7 +1,7 @@
 <template>
   <div class="admin-layout">
     <header class="admin-header">
-      <n-button text @click="$router.push({ name: 'Workbench' })">
+      <n-button text @click="$router.push({ name: 'Home' })">
         <template #icon><n-icon><ArrowBackOutline /></n-icon></template>
         返回工作台
       </n-button>

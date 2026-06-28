@@ -19,4 +19,7 @@ public interface PlayQueueMapper {
                                      @Param("position") int position);
 
     void batchInsert(@Param("list") List<PlayQueueEntry> entries);
+
+    /** 获取最近活跃的队列条目（跨用户），用于 Subsonic getNowPlaying */
+    List<PlayQueueEntry> findRecentActive(@Param("limit") int limit);
 }

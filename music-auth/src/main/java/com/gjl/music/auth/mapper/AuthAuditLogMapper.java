@@ -7,7 +7,9 @@ import org.apache.ibatis.annotations.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-
+/**
+ * 审计日志 Mapper。
+ */
 @Mapper
 public interface AuthAuditLogMapper {
 

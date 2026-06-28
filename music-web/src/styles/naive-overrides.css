@@ -1,11 +1,22 @@
+/* ═══════════════════════════════════════════════════════════════
+   Music Mode — Naive UI Global Overrides
+   三层 Token 架构的"主题无关"层：覆盖 Naive UI 组件的默认样式
 
+   所有值引用 var(--token)，不写死颜色/阴影/圆角数值。
+   主题切换时 Token 值自动变化，此文件无需修改。
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ── 页面背景 ── */
 body {
   background: var(--gradient-page, var(--color-bg));
   font-family: var(--font-family-base);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   按钮
+   ═══════════════════════════════════════════════════════════════ */
 
+/* 普通 / 默认按钮：渐变背景 + 可选凸起效果 */
 .n-button:not(.n-button--primary-type):not(.n-button--error-type):not(.n-button--warning-type):not(.n-button--info-type):not(.n-button--success-type) {
   border-radius: var(--radius-xl) !important;
   background: var(--gradient-button, var(--color-surface)) !important;
@@ -13,14 +24,14 @@ body {
   transition: var(--transition-button-active) !important;
 }
 
-
+/* primary 按钮：渐变背景 */
 .n-button--primary-type {
   background: var(--gradient-button-primary, var(--color-accent)) !important;
   color: #fff !important;
   border-radius: var(--radius-xl) !important;
 }
 
-
+/* 语义色按钮：保持自身颜色，仅加圆角和可选效果 */
 .n-button--error-type,
 .n-button--warning-type,
 .n-button--info-type,
@@ -29,13 +40,15 @@ body {
   box-shadow: var(--effect-button-inner), var(--effect-button-outer);
 }
 
-
+/* 按下态：弹性缩放 + 内凹 */
 .n-button:not(.n-button--disabled):active {
   transform: scale(var(--scale-button-active));
   box-shadow: var(--effect-press) !important;
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   卡片
+   ═══════════════════════════════════════════════════════════════ */
 .n-card {
   border-radius: var(--radius-xl) !important;
   background: var(--gradient-card, var(--color-surface)) !important;
@@ -46,7 +59,9 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   输入框 / 选择器
+   ═══════════════════════════════════════════════════════════════ */
 .n-input,
 .n-base-selection {
   border-radius: var(--radius-md) !important;
@@ -54,7 +69,12 @@ body {
   box-shadow: var(--effect-input-inner);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   表格 — 粘土纵深（凹陷托盘 + 凸起行 + 凸起表头）
+   背景色由组件 theme-overrides 设透明，CSS 只做纵深效果
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ── 托盘：内凹容器 ── */
 .clay-table-tray {
   background: var(--gradient-table-tray, var(--color-bg-secondary));
   border-radius: 16px;
@@ -64,13 +84,13 @@ body {
   overflow: hidden;
 }
 
-
+/* 行间距：托盘底色从间隙透出 */
 .clay-table-tray .n-data-table table {
   border-collapse: separate;
   border-spacing: 0 5px;
 }
 
-
+/* ── 表头：凸起横条 ── */
 .clay-table-tray .n-data-table-th th {
   background: var(--gradient-button) !important;
   box-shadow: var(--effect-button-inner), var(--effect-button-outer);
@@ -84,7 +104,7 @@ body {
 .clay-table-tray .n-data-table-th th:first-child { border-radius: 10px 0 0 10px; }
 .clay-table-tray .n-data-table-th th:last-child  { border-radius: 0 10px 10px 0; }
 
-
+/* ── 数据行：凸起药丸 ── */
 .clay-table-tray .n-data-table-tr td {
   background: var(--gradient-table-row) !important;
   box-shadow: var(--effect-card-inner), 1px 2px 6px rgba(0 0 0 / 0.05);
@@ -95,20 +115,20 @@ body {
 .clay-table-tray .n-data-table-tr td:first-child { border-radius: 10px 0 0 10px; }
 .clay-table-tray .n-data-table-tr td:last-child  { border-radius: 0 10px 10px 0; }
 
-
+/* 行 hover：抬升 + 投影加深 */
 .clay-table-tray .n-data-table-tr:hover td {
   background: var(--gradient-card) !important;
   box-shadow: var(--effect-card-inner), 2px 4px 14px rgba(0 0 0 / 0.1) !important;
   transform: translateY(-1px);
 }
 
-
+/* 行选中 */
 .clay-table-tray .n-data-table-tr.n-data-table-tr--checked td {
   background: var(--gradient-card-hover) !important;
   box-shadow: var(--effect-card-inner), var(--effect-selection-glow) !important;
 }
 
-
+/* ── 暗色微调：阴影加深 ── */
 :root.dark .clay-table-tray {
   box-shadow: inset 2px 2px 10px rgba(0 0 0 / 0.4), inset -1px -1px 4px rgba(255 255 255 / 0.02);
 }
@@ -119,7 +139,7 @@ body {
   box-shadow: var(--effect-card-inner), 2px 4px 14px rgba(0 0 0 / 0.45) !important;
 }
 
-
+/* ── 全局回退：非托盘内的表格（编辑器等）── */
 .n-data-table-tr td {
   background: var(--gradient-table-row, transparent) !important;
 }
@@ -136,7 +156,9 @@ body {
   background: var(--gradient-button, transparent) !important;
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   Modal / Drawer
+   ═══════════════════════════════════════════════════════════════ */
 .n-modal .n-card,
 .n-drawer-content {
   border-radius: var(--radius-xl) !important;
@@ -144,7 +166,9 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   弹出层 / 下拉菜单
+   ═══════════════════════════════════════════════════════════════ */
 .n-popover {
   border-radius: var(--radius-xl) !important;
   box-shadow: var(--shadow-lg);
@@ -154,23 +178,31 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   标签
+   ═══════════════════════════════════════════════════════════════ */
 .n-tag {
   border-radius: var(--radius-sm) !important;
   box-shadow: var(--effect-button-inner), var(--shadow-sm);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   进度条
+   ═══════════════════════════════════════════════════════════════ */
 .n-progress {
   border-radius: var(--radius-md);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   折叠面板
+   ═══════════════════════════════════════════════════════════════ */
 .n-collapse-item {
   border-radius: var(--radius-md);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   开关
+   ═══════════════════════════════════════════════════════════════ */
 .n-switch__rail {
   box-shadow: var(--effect-input-inner);
 }
@@ -178,25 +210,33 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   单选 / 复选
+   ═══════════════════════════════════════════════════════════════ */
 .n-radio,
 .n-checkbox {
   border-radius: var(--radius-sm);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   Alert
+   ═══════════════════════════════════════════════════════════════ */
 .n-alert {
   border-radius: var(--radius-md);
   background: var(--gradient-card, var(--color-surface)) !important;
   box-shadow: var(--effect-card-inner), var(--shadow-sm);
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   分页按钮
+   ═══════════════════════════════════════════════════════════════ */
 .n-pagination .n-button {
   border-radius: var(--radius-md) !important;
 }
 
-
+/* ═══════════════════════════════════════════════════════════════
+   滚动条（全局）
+   ═══════════════════════════════════════════════════════════════ */
 ::-webkit-scrollbar-thumb {
   border-radius: var(--radius-md);
 }

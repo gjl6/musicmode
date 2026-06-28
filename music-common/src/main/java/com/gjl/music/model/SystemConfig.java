@@ -5,7 +5,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-
+/** 系统配置模型 —— 统一管理所有可配置项，支持热更新 + 前端管理 */
 @Getter
 @Setter
 public class SystemConfig {
@@ -15,7 +15,7 @@ public class SystemConfig {
     private String category;
     private String label;
     private String description;
-    private String valueType;
+    private String valueType;          // STRING/INT/LONG/DOUBLE/BOOLEAN/LIST
     private boolean isSensitive;
     private boolean isRestartRequired;
     private int sortOrder;

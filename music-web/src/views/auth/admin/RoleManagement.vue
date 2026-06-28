@@ -18,7 +18,7 @@
       />
     </n-spin>
 
-
+    <!-- 创建/编辑弹窗 -->
     <n-modal v-model:show="showForm" :title="editingId ? '编辑角色' : '新增角色'" preset="card" style="width: 480px">
       <n-form ref="formRef" :model="form" :rules="formRules" label-placement="left" label-width="80">
         <n-form-item label="角色名" path="roleName">
@@ -39,7 +39,7 @@
       </template>
     </n-modal>
 
-
+    <!-- 分配权限弹窗 -->
     <n-modal v-model:show="showPerms" title="分配权限" preset="card" style="width: 420px">
       <n-checkbox-group v-model:value="permForm.permIds">
         <n-space vertical>
@@ -66,6 +66,7 @@ import * as adminApi from '@/api/auth/admin.js'
 const message = useMessage()
 const auth = useAuthStore()
 
+// ── 列表 ──
 const loading = ref(false)
 const roles = ref([])
 
@@ -107,6 +108,7 @@ async function load() {
   }
 }
 
+// ── 创建/编辑 ──
 const showForm = ref(false)
 const editingId = ref(null)
 const saving = ref(false)
@@ -151,6 +153,7 @@ async function save() {
   }
 }
 
+// ── 删除 ──
 async function doDelete(id) {
   try {
     await adminApi.deleteRole(id)
@@ -161,6 +164,7 @@ async function doDelete(id) {
   }
 }
 
+// ── 权限分配 ──
 const showPerms = ref(false)
 const permRoleId = ref(null)
 const permForm = ref({ permIds: [] })

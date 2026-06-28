@@ -1,5 +1,13 @@
-
-
+/*
+ * main.js — 应用入口文件
+ *
+ * 初始化顺序：
+ *   1. createApp(Vue)        创建 Vue 应用实例
+ *   2. createPinia()         注入 Pinia 状态管理
+ *   3. router                注入 Vue Router 路由
+ *   4. naive (组件注册)      注入 Naive UI 组件库
+ *   5. mount('#app')         挂载到 index.html 的 #app 容器
+ */
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import naive from './plugins/naive-ui.js'

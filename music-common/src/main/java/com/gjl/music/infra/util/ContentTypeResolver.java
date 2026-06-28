@@ -2,12 +2,19 @@ package com.gjl.music.infra.util;
 
 import java.util.Locale;
 
-
+/**
+ * 文件扩展名 → MIME Type 映射。
+ *
+ * <p>与 {@link FfmpegUtil#mimeTypeForFormat} 互补：
+ * 本类用于原始文件（基于文件扩展名），FfmpegUtil 用于转码流（基于目标格式名）。
+ */
 public final class ContentTypeResolver {
 
     private ContentTypeResolver() {}
 
-
+    /**
+     * 根据文件扩展名推断 MIME Type。
+     */
     public static String resolve(String fileName) {
         if (fileName == null) return "application/octet-stream";
         String name = fileName.toLowerCase(Locale.ROOT);

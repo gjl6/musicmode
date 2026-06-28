@@ -24,6 +24,7 @@ function saveRules(rules) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
 }
 
+// 可选的目标字段
 const FIELD_OPTIONS = [
   { label: '歌曲标题 (song.title)', value: 'song.title' },
   { label: '艺术家 (artist.artistName)', value: 'artist.artistName' },
@@ -48,15 +49,17 @@ export function useReplace() {
   const rules = ref(loadRules())
   const sourceField = ref('song.title')
   const sourceText = ref('')
-  const previewResult = ref(null)
+  const previewResult = ref(null)   // { text: '...', changes: 3 }
 
   watch(rules, (v) => saveRules(v), { deep: true })
 
-    function syncSourceText() {
+  // 切换目标字段时同步当前值
+  function syncSourceText() {
     sourceText.value = getCurrentFieldValue(editStore, sourceField.value)
   }
 
-    function executePreview() {
+  // 执行预览
+  function executePreview() {
     if (!sourceText.value) {
       previewResult.value = null
       return
@@ -74,11 +77,13 @@ export function useReplace() {
     previewResult.value = { text, changes }
   }
 
-    function applyReplace() {
+  // 应用替换结果
+  function applyReplace() {
     if (!previewResult.value) return
     editStore.setField(sourceField.value, previewResult.value.text)
   }
 
+  // ── 括号智能检测 ──
 
   const BRACKET_PAIRS = [
     { open: '[', close: ']', label: '方括号', regex: '\\[.*?\\]' },
@@ -147,7 +152,8 @@ export function useReplace() {
     return rule
   }
 
-    function addRule() {
+  // 规则管理
+  function addRule() {
     rules.value.push({ id: generateId(), name: '', find: '', replace: '', isRegex: true, enabled: true })
   }
 
@@ -164,7 +170,9 @@ export function useReplace() {
     rules.value[index].enabled = !rules.value[index].enabled
   }
 
-      function toFormula(rule) {
+  // ── 公式 ↔ find/replace 转换 ──
+  // 显示格式: s/查找/替换/g 或 /查找/g（替换为空时）
+  function toFormula(rule) {
     if (!rule) return ''
     const f = rule.find || ''
     const r = rule.replace || ''
@@ -175,7 +183,8 @@ export function useReplace() {
 
   function parseFormula(formula) {
     if (!formula) return { find: '', replace: '', isRegex: false }
-        const full = formula.match(/^s\/(.*?)(?<!\\)\/(.*?)(?<!\\)\/([gim]*)$/)
+    // 匹配 s/pattern/replacement/flags 或 /pattern/flags
+    const full = formula.match(/^s\/(.*?)(?<!\\)\/(.*?)(?<!\\)\/([gim]*)$/)
     if (full) {
       return { find: full[1], replace: full[2], isRegex: true }
     }
@@ -183,7 +192,8 @@ export function useReplace() {
     if (simple) {
       return { find: simple[1], replace: '', isRegex: true }
     }
-        return { find: formula, replace: '', isRegex: true }
+    // 不匹配格式时当作纯正则
+    return { find: formula, replace: '', isRegex: true }
   }
 
   return {

@@ -2,7 +2,17 @@ import { ref, onUnmounted } from 'vue'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 
-
+/**
+ * 管道进度 WebSocket 订阅。
+ *
+ * 订阅两个 topic：
+ *   /topic/pipelines/{id}/progress — 聚合进度快照
+ *   /topic/pipelines/{id}/items    — 逐文件处理结果（实时）
+ *
+ * 用法：
+ *   const { progressEvent, itemEvents, connect, disconnect, connected } = usePipelineWebSocket()
+ *   onMounted(() => connect(pipelineId))
+ */
 export function usePipelineWebSocket() {
   const progressEvent = ref(null)
   const itemEvents = ref([])
@@ -59,8 +69,14 @@ export function usePipelineWebSocket() {
       `/topic/pipelines/${pipelineId}/items`,
       (message) => {
         try {
-          const item = JSON.parse(message.body)
-          itemEvents.value = [...itemEvents.value, item]
+          const data = JSON.parse(message.body)
+          // 批量消息：{ items: [...], count, final? } — 完整快照，直接替换
+          if (data.items && Array.isArray(data.items)) {
+            itemEvents.value = data.items
+          } else {
+            // 兼容旧的单条消息格式
+            itemEvents.value = [...itemEvents.value, data]
+          }
         } catch (e) {
           console.error('[PipelineWS] 解析 item 消息失败:', e)
         }

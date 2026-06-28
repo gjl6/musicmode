@@ -15,7 +15,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-
+/**
+ * 播放计数 / 收藏 / 评分服务实现。
+ *
+ * <h3>去重策略</h3>
+ * <ul>
+ *   <li><b>Caffeine 本地缓存</b>：key=userId:songId, 30s TTL, maxSize=10000。
+ *       拦截同一实例内的重复上报，减少无效 DB 调用。</li>
+ *   <li><b>MySQL SQL 层</b>：ON DUPLICATE KEY UPDATE + TIMESTAMPDIFF >= 30
+ *       保证集群/多端同时上报时不重复计数。</li>
+ *   <li><b>H2</b>：仅 Caffeine 层去重。H2 MERGE + 纯 UPDATE +1，SQL 层不做时间判断。</li>
+ * </ul>
+ *
+ * <h3>事务范围</h3>
+ * 读操作（查歌曲/艺术家/风格）在事务外完成，仅 INSERT play_history + UPDATE play_count 在事务内。
+ */
 @Slf4j
 @Service
 public class PlayCountServiceImpl implements PlayCountService {
@@ -38,6 +52,7 @@ public class PlayCountServiceImpl implements PlayCountService {
         this.isH2 = datasourceUrl != null && datasourceUrl.startsWith("jdbc:h2");
     }
 
+    // ═══ 两层去重：Caffeine 前置限流 + SQL 全局兜底 ═══
 
     private final Cache<String, Boolean> recentPlays =
             Caffeine.newBuilder()
@@ -50,30 +65,35 @@ public class PlayCountServiceImpl implements PlayCountService {
         return Boolean.TRUE.equals(recentPlays.asMap().putIfAbsent(key, Boolean.TRUE));
     }
 
+    // ═══ 播放 ═══
 
     @Override
     @Transactional
     public void scrobbleTransactional(Long userId, Long songId, Long albumId,
                                        List<Long> artistIds, List<Long> styleIds, String source) {
         if (userId == null || songId == null) return;
-                if (isDuplicateLocally(userId, songId)) return;
+        // Caffeine 前置限流（减少无效 DB 调用）
+        if (isDuplicateLocally(userId, songId)) return;
 
-                playHistoryMapper.insert(PlayHistory.builder()
+        // 1. 写入流水
+        playHistoryMapper.insert(PlayHistory.builder()
                 .userId(userId).songId(songId)
                 .playedAt(LocalDateTime.now()).source(source != null ? source : "web")
                 .build());
 
-                inc(userId, songId, "song");
+        // 2. 递增预聚合计数
+        inc(userId, songId, "song");
         if (albumId != null) inc(userId, albumId, "album");
         if (artistIds != null) artistIds.forEach(aid -> inc(userId, aid, "artist"));
         if (styleIds != null) styleIds.forEach(sid -> inc(userId, sid, "style"));
     }
 
-
+    /** 统一递增（H2/MySQL 均使用 INSERT ON DUPLICATE KEY UPDATE，去重靠 Caffeine 层） */
     private void inc(Long userId, Long itemId, String itemType) {
         playCountMapper.incPlayCount(userId, itemId, itemType);
     }
 
+    // ═══ 查询 ═══
 
     @Override
     public Map<Long, Integer> getSongPlayCounts(Long userId, List<Long> songIds) {
@@ -81,6 +101,7 @@ public class PlayCountServiceImpl implements PlayCountService {
         return playCountMapper.batchGetSongCounts(userId, songIds);
     }
 
+    // ═══ 收藏 ═══
 
     @Override
     public void star(Long userId, Long itemId, String itemType) {
@@ -110,6 +131,7 @@ public class PlayCountServiceImpl implements PlayCountService {
         return userStarredMapper.findStarredIds(userId, itemType);
     }
 
+    // ═══ 评分 ═══
 
     @Override
     public void rate(Long userId, Long itemId, String itemType, int rating) {
@@ -126,6 +148,7 @@ public class PlayCountServiceImpl implements PlayCountService {
         return userRatingMapper.batchGetUserRatings(userId, "song", songIds);
     }
 
+    // ═══ 级联清理 ═══
 
     @Override
     public void deleteByItem(Long itemId, String itemType) {

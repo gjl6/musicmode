@@ -1,5 +1,7 @@
-
-
+/**
+ * 跨模块通用翻译 — common + nav + home
+ * 被 auth / core / playback 共享
+ */
 export const en = {
   common: {
     save: 'Save',
@@ -30,7 +32,10 @@ export const en = {
     themeToggle: 'Toggle Theme',
     langToggle: 'Toggle Language',
     config: 'Config',
-    artistManager: 'Artist Manager',
+    musicManagement: 'Music',
+    songManagement: 'Songs',
+    artistManager: 'Artists',
+    albumManager: 'Albums',
     switchToDefault: 'Switch to Default Style',
     switchToClay: 'Switch to Clay Style',
   },
@@ -79,7 +84,11 @@ export const zhCN = {
     themeToggle: '切换主题',
     langToggle: '切换语言',
     config: '配置',
+    musicManagement: '音乐管理',
+    songManagement: '歌曲管理',
     artistManager: '艺术家管理',
+    albumManager: '专辑管理',
+    autoTasks: '自动任务',
     switchToDefault: '切换到默认风格',
     switchToClay: '切换到粘土风格',
   },
